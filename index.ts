@@ -11,6 +11,10 @@ const filterOperator = {
 	text: z.enum(['CONTAINS', 'ENDS-WITH', 'EQUALS', 'IS-EMPTY', 'MATCHES-REGEX', 'STARTS-WITH'])
 };
 
+const filterValue = (schema: z.ZodSchema) => {
+	return z.union([schema, z.object({ $path: z.array(z.string()) })]);
+};
+
 const filterCriteria = z.discriminatedUnion('type', [
 	z.object({
 		defaultValue: z.array(z.unknown()).default([]),
@@ -18,14 +22,14 @@ const filterCriteria = z.discriminatedUnion('type', [
 		operator: filterOperator.array,
 		source: z.array(z.string()),
 		type: z.literal('ARRAY'),
-		value: z.array(z.unknown())
+		value: filterValue(z.array(z.unknown()))
 	}),
 	z.object({
 		defaultValue: z.boolean().default(false),
 		operator: filterOperator.boolean,
 		source: z.array(z.string()),
 		type: z.literal('BOOLEAN'),
-		value: z.boolean()
+		value: filterValue(z.boolean())
 	}),
 	z.object({
 		defaultValue: z
@@ -37,7 +41,7 @@ const filterCriteria = z.discriminatedUnion('type', [
 		operator: filterOperator.date,
 		source: z.array(z.string()),
 		type: z.literal('DATE'),
-		value: z.union([z.string().datetime(), z.tuple([z.string().datetime(), z.string().datetime()])])
+		value: filterValue(z.union([z.string().datetime(), z.tuple([z.string().datetime(), z.string().datetime()])]))
 	}),
 	z.object({
 		defaultValue: z.record(z.number()).default({ lat: 0, lng: 0 }),
@@ -49,19 +53,21 @@ const filterCriteria = z.discriminatedUnion('type', [
 		operator: filterOperator.geo,
 		source: z.array(z.string()),
 		type: z.literal('GEO'),
-		value: z.object({
-			lat: z.number(),
-			lng: z.number(),
-			radius: z.number().optional(),
-			unit: z.enum(['km', 'mi']).optional()
-		})
+		value: filterValue(
+			z.object({
+				lat: z.number(),
+				lng: z.number(),
+				radius: z.number().optional(),
+				unit: z.enum(['km', 'mi']).optional()
+			})
+		)
 	}),
 	z.object({
 		defaultValue: z.number().default(0),
 		operator: filterOperator.number,
 		source: z.array(z.string()),
 		type: z.literal('NUMBER'),
-		value: z.union([z.number(), z.array(z.number())])
+		value: filterValue(z.union([z.number(), z.array(z.number())]))
 	}),
 	z.object({
 		defaultValue: z.string().default(''),
@@ -175,10 +181,14 @@ class FilterCriteria {
 	}
 
 	static applyCriteria(item: any, criteria: FilterCriteria.CriteriaInput): boolean {
-		let value = this.getValue(item, criteria.source, criteria.defaultValue);
+		let value = _.get(item, criteria.source, criteria.defaultValue);
 
 		if (_.isUndefined(value)) {
 			return false;
+		}
+
+		if (_.isPlainObject(criteria.value) && _.isArray(criteria.value.$path)) {
+			criteria.value = _.get(item, criteria.value.$path, criteria.defaultValue);
 		}
 
 		if ('normalize' in criteria && criteria.normalize) {
@@ -348,10 +358,6 @@ class FilterCriteria {
 		const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
 		const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 		return R * c;
-	}
-
-	static getValue(obj: any, path: string[], defaultValue?: any): any {
-		return _.get(obj, path, defaultValue);
 	}
 
 	static normalize = _.memoize((value: any): any => {

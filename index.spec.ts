@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import { describe, expect, it, should } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import FilterCriteria from './index';
 
@@ -161,6 +161,31 @@ describe('/index', () => {
 
 				const res = FilterCriteria.apply(testData, filter);
 				expect(res).toHaveLength(0);
+			});
+		});
+
+		describe('dynamic value ($path)', () => {
+			it('should handle filter with dynamic value', () => {
+				const filter: FilterCriteria.FilterInput = {
+					operator: 'AND',
+					rules: [
+						{
+							operator: 'AND',
+							criteria: [
+								{
+									type: 'ARRAY',
+									operator: 'EXACTLY_MATCHES',
+									source: ['tags'],
+									value: { $path: ['tags'] }
+								}
+							]
+						}
+					]
+				};
+
+				const res = FilterCriteria.apply(testData, filter);
+				expect(res).toHaveLength(1);
+				expect(_.map(res, 'id').sort()).toEqual([1]);
 			});
 		});
 	});
