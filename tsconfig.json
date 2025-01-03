@@ -1,0 +1,13 @@
+{
+	"compilerOptions": {
+		"allowJs": true,
+		"declaration": true,
+		"esModuleInterop": true,
+		"module": "ESNext",
+		"moduleResolution": "node",
+		"outDir": "./dist",
+		"strict": true,
+		"target": "ESNext"
+	},
+	"exclude": ["coverage", "dist", "node_modules", "**/*.spec.ts", "vitest.config.mts"]
+}
