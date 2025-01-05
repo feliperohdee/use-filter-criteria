@@ -559,11 +559,29 @@ class FilterCriteria {
 	): boolean {
 		switch (operator) {
 			case 'IN_RADIUS': {
-				return this.calculateDistance(value, filterValue) <= (filterValue.radius || 0);
+				return (
+					this.calculateDistance(
+						value,
+						{
+							lat: filterValue.lat,
+							lng: filterValue.lng
+						},
+						filterValue.unit
+					) <= (filterValue.radius || 0)
+				);
 			}
 
 			case 'NOT_IN_RADIUS': {
-				return this.calculateDistance(value, filterValue) > (filterValue.radius || 0);
+				return (
+					this.calculateDistance(
+						value,
+						{
+							lat: filterValue.lat,
+							lng: filterValue.lng
+						},
+						filterValue.unit
+					) > (filterValue.radius || 0)
+				);
 			}
 
 			default:
@@ -736,9 +754,13 @@ class FilterCriteria {
 		}
 	}
 
-	private static calculateDistance(point1: { lat: number; lng: number }, point2: { lat: number; lng: number }): number {
+	private static calculateDistance(
+		point1: { lat: number; lng: number },
+		point2: { lat: number; lng: number },
+		unit: 'km' | 'mi' = 'km'
+	): number {
 		// Haversine formula implementation
-		const R = 6371; // Earth's radius in kilometers
+		const R = unit === 'km' ? 6371 : 3959;
 		const dLat = this.toRad(point2.lat - point1.lat);
 		const dLon = this.toRad(point2.lng - point1.lng);
 		const lat1 = this.toRad(point1.lat);

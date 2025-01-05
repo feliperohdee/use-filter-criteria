@@ -855,72 +855,231 @@ describe('/index', () => {
 		});
 
 		describe('geo', () => {
-			it('should handle IN_RADIUS operator', () => {
+			it('should handle IN_RADIUS operator with km unit', () => {
+				// From New York
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'GEO',
 					operator: 'IN_RADIUS',
 					path: ['location'],
-					value: { lat: 40.7128, lng: -74.006 }
+					value: {
+						lat: 40.7128,
+						lng: -74.006,
+						radius: 100,
+						unit: 'km'
+					}
+				};
+
+				// Los Angeles is ~3936km from NY, should not be in the radius
+				const LAPoint = {
+					location: { lat: 34.0522, lng: -118.2437 }
+				};
+
+				// Newark is ~16km from NY, should be in the radius
+				const newarkPoint = {
+					location: { lat: 40.7357, lng: -74.1724 }
 				};
 
 				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const resLA = [FilterCriteria.applyCriteria(LAPoint, criteria), FilterCriteria.applyCriteria(LAPoint, criteria, true)];
+				// @ts-expect-error
+				const resNewark = [FilterCriteria.applyCriteria(newarkPoint, criteria), FilterCriteria.applyCriteria(newarkPoint, criteria, true)];
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
-					criteriaValue: { lat: 40.7128, lng: -74.006 },
-					level: 'criteria',
-					operator: 'IN_RADIUS',
-					passed: true,
-					reason: 'Geo "IN_RADIUS" check PASSED',
-					value: { lat: 40.7128, lng: -74.006 }
-				});
-			});
-
-			it('should handle IN_RADIUS operator with getCoordinates', () => {
-				const criteria: FilterCriteria.CriteriaInput = {
-					type: 'GEO',
-					getCoordinates: (item: any) => {
-						return [item.lat, item.lng];
+				expect(resLA[0]).toEqual(false);
+				expect(resLA[1]).toEqual({
+					criteriaValue: {
+						lat: 40.7128,
+						lng: -74.006,
+						radius: 100,
+						unit: 'km'
 					},
+					level: 'criteria',
 					operator: 'IN_RADIUS',
-					path: ['location'],
-					value: { lat: 40.7128, lng: -74.006 }
-				};
+					passed: false,
+					reason: 'Geo "IN_RADIUS" check FAILED',
+					value: { lat: 34.0522, lng: -118.2437 }
+				});
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
-
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
-					criteriaValue: { lat: 40.7128, lng: -74.006 },
+				expect(resNewark[0]).toEqual(true);
+				expect(resNewark[1]).toEqual({
+					criteriaValue: {
+						lat: 40.7128,
+						lng: -74.006,
+						radius: 100,
+						unit: 'km'
+					},
 					level: 'criteria',
 					operator: 'IN_RADIUS',
 					passed: true,
 					reason: 'Geo "IN_RADIUS" check PASSED',
-					value: { lat: 40.7128, lng: -74.006 }
+					value: { lat: 40.7357, lng: -74.1724 }
 				});
 			});
 
-			it('should handle NOT_IN_RADIUS operator', () => {
+			it('should handle IN_RADIUS operator with mi unit', () => {
+				// From New York
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'GEO',
-					operator: 'NOT_IN_RADIUS',
+					operator: 'IN_RADIUS',
 					path: ['location'],
-					value: { lat: 40.7128, lng: -74.006 }
+					value: {
+						lat: 40.7128,
+						lng: -74.006,
+						radius: 62, // ~100km in miles
+						unit: 'mi'
+					}
+				};
+
+				// Los Angeles is ~2445 miles from NY, should not be in the radius
+				const LAPoint = {
+					location: { lat: 34.0522, lng: -118.2437 }
+				};
+
+				// Newark is ~10 miles from NY, should be in the radius
+				const newarkPoint = {
+					location: { lat: 40.7357, lng: -74.1724 }
 				};
 
 				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const resLA = [FilterCriteria.applyCriteria(LAPoint, criteria), FilterCriteria.applyCriteria(LAPoint, criteria, true)];
+				const resNewark = [
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(newarkPoint, criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(newarkPoint, criteria, true)
+				];
 
-				expect(res[0]).toEqual(false);
-				expect(res[1]).toEqual({
-					criteriaValue: { lat: 40.7128, lng: -74.006 },
+				expect(resLA[0]).toEqual(false);
+				expect(resLA[1]).toEqual({
+					criteriaValue: {
+						lat: 40.7128,
+						lng: -74.006,
+						radius: 62,
+						unit: 'mi'
+					},
+					level: 'criteria',
+					operator: 'IN_RADIUS',
+					passed: false,
+					reason: 'Geo "IN_RADIUS" check FAILED',
+					value: { lat: 34.0522, lng: -118.2437 }
+				});
+
+				expect(resNewark[0]).toEqual(true);
+				expect(resNewark[1]).toEqual({
+					criteriaValue: {
+						lat: 40.7128,
+						lng: -74.006,
+						radius: 62,
+						unit: 'mi'
+					},
+					level: 'criteria',
+					operator: 'IN_RADIUS',
+					passed: true,
+					reason: 'Geo "IN_RADIUS" check PASSED',
+					value: { lat: 40.7357, lng: -74.1724 }
+				});
+			});
+
+			it('should handle NOT_IN_RADIUS operator with different units', () => {
+				// From New York
+				const criteriaKm: FilterCriteria.CriteriaInput = {
+					type: 'GEO',
+					operator: 'NOT_IN_RADIUS',
+					path: ['location'],
+					value: {
+						lat: 40.7128,
+						lng: -74.006,
+						radius: 3000,
+						unit: 'km'
+					}
+				};
+
+				// From New York
+				const criteriaMi: FilterCriteria.CriteriaInput = {
+					type: 'GEO',
+					operator: 'NOT_IN_RADIUS',
+					path: ['location'],
+					value: {
+						lat: 40.7128,
+						lng: -74.006,
+						radius: 1864, // ~3000km in miles
+						unit: 'mi'
+					}
+				};
+
+				// Los Angeles is ~3936km from NY, should not be in the radius
+				const LAPoint = {
+					location: { lat: 34.0522, lng: -118.2437 }
+				};
+
+				// @ts-expect-error
+				const resKm = [FilterCriteria.applyCriteria(LAPoint, criteriaKm), FilterCriteria.applyCriteria(LAPoint, criteriaKm, true)];
+				// @ts-expect-error
+				const resMi = [FilterCriteria.applyCriteria(LAPoint, criteriaMi), FilterCriteria.applyCriteria(LAPoint, criteriaMi, true)];
+
+				// A distance is ~3936km or ~2445mi, so it should be outside the radius in both cases
+				expect(resKm[0]).toEqual(true);
+				expect(resKm[1]).toEqual({
+					criteriaValue: {
+						lat: 40.7128,
+						lng: -74.006,
+						radius: 3000,
+						unit: 'km'
+					},
 					level: 'criteria',
 					operator: 'NOT_IN_RADIUS',
-					passed: false,
-					reason: 'Geo "NOT_IN_RADIUS" check FAILED',
-					value: { lat: 40.7128, lng: -74.006 }
+					passed: true,
+					reason: 'Geo "NOT_IN_RADIUS" check PASSED',
+					value: { lat: 34.0522, lng: -118.2437 }
+				});
+
+				expect(resMi[0]).toEqual(true);
+				expect(resMi[1]).toEqual({
+					criteriaValue: {
+						lat: 40.7128,
+						lng: -74.006,
+						radius: 1864,
+						unit: 'mi'
+					},
+					level: 'criteria',
+					operator: 'NOT_IN_RADIUS',
+					passed: true,
+					reason: 'Geo "NOT_IN_RADIUS" check PASSED',
+					value: { lat: 34.0522, lng: -118.2437 }
+				});
+			});
+
+			it('should default to km when unit is not specified', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'GEO',
+					operator: 'IN_RADIUS',
+					path: ['location'],
+					value: {
+						lat: 40.7128,
+						lng: -74.006,
+						radius: 100
+					}
+				};
+
+				// Newark is a ~16 km from NY, should be in the radius if using km
+				const newarkPoint = {
+					location: { lat: 40.7357, lng: -74.1724 }
+				};
+
+				// @ts-expect-error
+				const res = [FilterCriteria.applyCriteria(newarkPoint, criteria), FilterCriteria.applyCriteria(newarkPoint, criteria, true)];
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					criteriaValue: {
+						lat: 40.7128,
+						lng: -74.006,
+						radius: 100
+					},
+					level: 'criteria',
+					operator: 'IN_RADIUS',
+					passed: true,
+					reason: 'Geo "IN_RADIUS" check PASSED',
+					value: { lat: 40.7357, lng: -74.1724 }
 				});
 			});
 		});
