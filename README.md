@@ -164,6 +164,107 @@ This feature is particularly useful when you need to:
 - Build dynamic filters based on object properties
 - Create relative comparisons between fields
 
+## Detailed API Reference
+
+### Basic Filter Application
+
+```typescript
+FilterCriteria.apply(data: any[], filter: FilterCriteria.FilterInput): any[]
+```
+
+Applies the filter to an array of data and returns filtered results.
+
+### Match Operations
+
+#### Simple Match
+
+```typescript
+FilterCriteria.applyMatch(
+  data: any,
+  filter: FilterCriteria.FilterInput,
+  detailed: false
+): boolean
+```
+
+Returns a boolean indicating if the data matches the filter criteria.
+
+#### Detailed Match
+
+```typescript
+FilterCriteria.applyMatch(
+  data: any,
+  filter: FilterCriteria.FilterInput,
+  detailed: true
+): FilterCriteria.MatchResult
+```
+
+Returns a detailed result object with the following structure:
+
+```typescript
+type MatchResult = {
+	level: 'match';
+	operator: LogicalOperator; // 'AND' | 'OR'
+	passed: boolean;
+	reason: string;
+	results: RuleResult[];
+};
+
+type RuleResult = {
+	level: 'rule';
+	operator: LogicalOperator;
+	passed: boolean;
+	reason: string;
+	results: CriteriaResult[];
+};
+
+type CriteriaResult = {
+	criteriaValue: any;
+	level: 'criteria';
+	operator: string;
+	passed: boolean;
+	reason: string;
+	value: any;
+};
+```
+
+Example usage:
+
+```typescript
+// Simple match
+const isMatch = FilterCriteria.applyMatch(item, filter);
+console.log(isMatch); // true/false
+
+// Detailed match
+const detailedResult = FilterCriteria.applyMatch(item, filter, true);
+console.log(detailedResult);
+/* Output example:
+{
+  level: 'match',
+  operator: 'AND',
+  passed: true,
+  reason: 'Match "AND" check PASSED',
+  results: [
+    {
+      level: 'rule',
+      operator: 'OR',
+      passed: true,
+      reason: 'Rule "OR" check PASSED',
+      results: [
+        {
+          criteriaValue: 'john',
+          level: 'criteria',
+          operator: 'CONTAINS',
+          passed: true,
+          reason: 'Text "CONTAINS" check PASSED',
+          value: 'john-doe'
+        }
+      ]
+    }
+  ]
+}
+*/
+```
+
 ## TypeScript Support
 
 Full TypeScript support is provided out of the box. The library exports all necessary types and interfaces:
