@@ -10,8 +10,10 @@ const testData = [
 		createdAt: '2023-01-01T00:00:00Z',
 		id: 1,
 		location: { lat: 40.7128, lng: -74.006 },
+		map: new Map([['key-1', 'value-1']]),
 		name: 'John Doe',
-		tags: ['developer', 'javascript']
+		tags: ['developer', 'javascript'],
+		tagsSet: new Set(['developer', 'javascript'])
 	},
 	{
 		active: false,
@@ -19,8 +21,10 @@ const testData = [
 		createdAt: '2023-03-01T00:00:00Z',
 		id: 2,
 		location: { lat: 34.0522, lng: -118.2437 },
+		map: new Map([['key-2', 'value-2']]),
 		name: 'Jane Smith',
-		tags: ['designer', 'ui/ux']
+		tags: ['designer', 'ui/ux'],
+		tagsSet: new Set(['designer', 'ui/ux'])
 	},
 	{
 		active: true,
@@ -28,13 +32,15 @@ const testData = [
 		createdAt: '2023-06-01T00:00:00Z',
 		id: 3,
 		location: { lat: 51.5074, lng: -0.1278 },
+		map: new Map([['key-3', 'value-3']]),
 		name: 'John Smith',
-		tags: ['developer', 'python']
+		tags: ['developer', 'python'],
+		tagsSet: new Set(['developer', 'python'])
 	}
 ];
 
 describe('/index', () => {
-	describe('apply', () => {
+	describe('filter', () => {
 		describe('complex filters', () => {
 			it('should handle nested AND/OR combinations', () => {
 				const filter: FilterCriteria.FilterInput = {
@@ -71,7 +77,7 @@ describe('/index', () => {
 					]
 				};
 
-				const res = FilterCriteria.apply(testData, filter);
+				const res = FilterCriteria.filter(testData, filter);
 				expect(res).toHaveLength(2);
 				expect(_.map(res, 'id').sort()).toEqual([1, 3]);
 			});
@@ -111,7 +117,7 @@ describe('/index', () => {
 					]
 				};
 
-				const res = FilterCriteria.apply(testData, filter);
+				const res = FilterCriteria.filter(testData, filter);
 				expect(res).toHaveLength(2);
 				expect(_.map(res, 'id').sort()).toEqual([1, 3]);
 			});
@@ -137,7 +143,7 @@ describe('/index', () => {
 					]
 				};
 
-				const res = FilterCriteria.apply(testData, filter);
+				const res = FilterCriteria.filter(testData, filter);
 				expect(res).toHaveLength(3);
 			});
 
@@ -159,13 +165,13 @@ describe('/index', () => {
 					]
 				};
 
-				const res = FilterCriteria.apply(testData, filter);
+				const res = FilterCriteria.filter(testData, filter);
 				expect(res).toHaveLength(0);
 			});
 		});
 	});
 
-	describe('applyMatch', () => {
+	describe('match', () => {
 		it('should return with AND', () => {
 			const filter: FilterCriteria.FilterInput = {
 				operator: 'AND',
@@ -190,7 +196,7 @@ describe('/index', () => {
 				})
 			};
 
-			const res = [FilterCriteria.applyMatch(testData[0], filter, false), FilterCriteria.applyMatch(testData[0], filter, true)];
+			const res = [FilterCriteria.match(testData[0], filter, false), FilterCriteria.match(testData[0], filter, true)];
 
 			expect(res[0]).toEqual(true);
 			expect(res[1]).toEqual({
@@ -251,7 +257,7 @@ describe('/index', () => {
 				})
 			};
 
-			const res = [FilterCriteria.applyMatch(testData[0], filter, false), FilterCriteria.applyMatch(testData[0], filter, true)];
+			const res = [FilterCriteria.match(testData[0], filter, false), FilterCriteria.match(testData[0], filter, true)];
 
 			expect(res[0]).toEqual(true);
 			expect(res[1]).toEqual({
@@ -309,6 +315,7 @@ describe('/index', () => {
 				]
 			};
 
+			// @ts-expect-error
 			const res = [FilterCriteria.applyRule(testData[0], rule, false), FilterCriteria.applyRule(testData[0], rule, true)];
 
 			expect(res[0]).toEqual(false);
@@ -348,7 +355,9 @@ describe('/index', () => {
 				value: 'value'
 			};
 
+			// @ts-expect-error
 			const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
 			expect(res[0]).toEqual(false);
 			expect(res[1]).toEqual({
 				criteriaValue: 'value',
@@ -368,7 +377,9 @@ describe('/index', () => {
 				value: { $path: ['tags'] }
 			};
 
+			// @ts-expect-error
 			const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
 			expect(res[0]).toEqual(true);
 			expect(res[1]).toEqual({
 				criteriaValue: ['developer', 'javascript'],
@@ -389,7 +400,9 @@ describe('/index', () => {
 				value: 'John'
 			};
 
+			// @ts-expect-error
 			const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
 			expect(res[0]).toEqual(false);
 			expect(res[1]).toEqual({
 				criteriaValue: null,
@@ -411,6 +424,7 @@ describe('/index', () => {
 					value: ['Develóper', 'JavaScript']
 				};
 
+				// @ts-expect-error
 				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
 
 				expect(res[0]).toEqual(true);
@@ -433,6 +447,7 @@ describe('/index', () => {
 					value: ['Develóper', 'JavaScript']
 				};
 
+				// @ts-expect-error
 				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
 
 				expect(res[0]).toEqual(false);
@@ -454,6 +469,7 @@ describe('/index', () => {
 					value: ['developer', 'javascript']
 				};
 
+				// @ts-expect-error
 				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
 
 				expect(res[0]).toEqual(true);
@@ -475,6 +491,7 @@ describe('/index', () => {
 					value: ['developer', 'javascript']
 				};
 
+				// @ts-expect-error
 				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
 
 				expect(res[0]).toEqual(true);
@@ -496,6 +513,7 @@ describe('/index', () => {
 					value: []
 				};
 
+				// @ts-expect-error
 				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
 
 				expect(res[0]).toEqual(false);
@@ -517,6 +535,7 @@ describe('/index', () => {
 					value: []
 				};
 
+				// @ts-expect-error
 				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
 
 				expect(res[0]).toEqual(true);
@@ -538,6 +557,7 @@ describe('/index', () => {
 					value: ['developer', 'javascript']
 				};
 
+				// @ts-expect-error
 				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
 
 				expect(res[0]).toEqual(false);
@@ -559,6 +579,7 @@ describe('/index', () => {
 					value: ['developer', 'javascript']
 				};
 
+				// @ts-expect-error
 				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
 
 				expect(res[0]).toEqual(false);
@@ -568,6 +589,116 @@ describe('/index', () => {
 					operator: 'NOT_INCLUDES_ANY',
 					passed: false,
 					reason: 'Array "NOT_INCLUDES_ANY" check FAILED',
+					value: ['developer', 'javascript']
+				});
+			});
+
+			it('should handle SIZE_EQUALS operator', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'ARRAY',
+					operator: 'SIZE_EQUALS',
+					path: ['tags'],
+					value: 2
+				};
+
+				// @ts-expect-error
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					criteriaValue: 2,
+					level: 'criteria',
+					operator: 'SIZE_EQUALS',
+					passed: true,
+					reason: 'Array "SIZE_EQUALS" check PASSED',
+					value: ['developer', 'javascript']
+				});
+			});
+
+			it('should handle SIZE_GREATER operator', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'ARRAY',
+					operator: 'SIZE_GREATER',
+					path: ['tags'],
+					value: 1
+				};
+
+				// @ts-expect-error
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					criteriaValue: 1,
+					level: 'criteria',
+					operator: 'SIZE_GREATER',
+					passed: true,
+					reason: 'Array "SIZE_GREATER" check PASSED',
+					value: ['developer', 'javascript']
+				});
+			});
+
+			it('should handle SIZE_GREATER_OR_EQUALS operator', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'ARRAY',
+					operator: 'SIZE_GREATER_OR_EQUALS',
+					path: ['tags'],
+					value: 2
+				};
+
+				// @ts-expect-error
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					criteriaValue: 2,
+					level: 'criteria',
+					operator: 'SIZE_GREATER_OR_EQUALS',
+					passed: true,
+					reason: 'Array "SIZE_GREATER_OR_EQUALS" check PASSED',
+					value: ['developer', 'javascript']
+				});
+			});
+
+			it('should handle SIZE_LESS operator', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'ARRAY',
+					operator: 'SIZE_LESS',
+					path: ['tags'],
+					value: 3
+				};
+
+				// @ts-expect-error
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					criteriaValue: 3,
+					level: 'criteria',
+					operator: 'SIZE_LESS',
+					passed: true,
+					reason: 'Array "SIZE_LESS" check PASSED',
+					value: ['developer', 'javascript']
+				});
+			});
+
+			it('should handle SIZE_LESS_OR_EQUALS operator', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'ARRAY',
+					operator: 'SIZE_LESS_OR_EQUALS',
+					path: ['tags'],
+					value: 2
+				};
+
+				// @ts-expect-error
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					criteriaValue: 2,
+					level: 'criteria',
+					operator: 'SIZE_LESS_OR_EQUALS',
+					passed: true,
+					reason: 'Array "SIZE_LESS_OR_EQUALS" check PASSED',
 					value: ['developer', 'javascript']
 				});
 			});
@@ -582,6 +713,7 @@ describe('/index', () => {
 					value: true
 				};
 
+				// @ts-expect-error
 				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
 
 				expect(res[0]).toEqual(true);
@@ -603,6 +735,7 @@ describe('/index', () => {
 					value: true
 				};
 
+				// @ts-expect-error
 				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
 
 				expect(res[0]).toEqual(false);
@@ -626,6 +759,7 @@ describe('/index', () => {
 					value: '2023-01-01T00:00:00+00:01'
 				};
 
+				// @ts-expect-error
 				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
 
 				expect(res[0]).toEqual(true);
@@ -647,6 +781,7 @@ describe('/index', () => {
 					value: '2023-01-01T00:00:00Z'
 				};
 
+				// @ts-expect-error
 				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
 
 				expect(res[0]).toEqual(true);
@@ -668,6 +803,7 @@ describe('/index', () => {
 					value: '2023-01-01T00:00:00-00:01'
 				};
 
+				// @ts-expect-error
 				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
 
 				expect(res[0]).toEqual(true);
@@ -689,6 +825,7 @@ describe('/index', () => {
 					value: '2023-01-01T00:00:00Z'
 				};
 
+				// @ts-expect-error
 				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
 
 				expect(res[0]).toEqual(true);
@@ -702,6 +839,7 @@ describe('/index', () => {
 					value: ['2023-01-01T00:00:00Z', '2023-01-01T00:00:00Z']
 				};
 
+				// @ts-expect-error
 				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
 
 				expect(res[0]).toEqual(true);
@@ -725,6 +863,7 @@ describe('/index', () => {
 					value: { lat: 40.7128, lng: -74.006 }
 				};
 
+				// @ts-expect-error
 				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
 
 				expect(res[0]).toEqual(true);
@@ -749,6 +888,7 @@ describe('/index', () => {
 					value: { lat: 40.7128, lng: -74.006 }
 				};
 
+				// @ts-expect-error
 				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
 
 				expect(res[0]).toEqual(true);
@@ -770,6 +910,7 @@ describe('/index', () => {
 					value: { lat: 40.7128, lng: -74.006 }
 				};
 
+				// @ts-expect-error
 				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
 
 				expect(res[0]).toEqual(false);
@@ -784,6 +925,226 @@ describe('/index', () => {
 			});
 		});
 
+		describe('map', () => {
+			it('should handle HAS_KEY operator with normalize = true', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'MAP',
+					normalize: true,
+					operator: 'HAS_KEY',
+					path: ['map'],
+					value: 'KÉY-1'
+				};
+
+				const res = [
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				];
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					criteriaValue: 'key-1',
+					level: 'criteria',
+					operator: 'HAS_KEY',
+					passed: true,
+					reason: 'Map "HAS_KEY" check PASSED',
+					value: new Map([['key-1', 'value-1']])
+				});
+			});
+
+			it('should handle HAS_KEY operator with normalize = false', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'MAP',
+					normalize: false,
+					operator: 'HAS_KEY',
+					path: ['map'],
+					value: 'KÉY-1'
+				};
+
+				// @ts-expect-error
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
+				expect(res[0]).toEqual(false);
+				expect(res[1]).toEqual({
+					criteriaValue: 'KÉY-1',
+					level: 'criteria',
+					operator: 'HAS_KEY',
+					passed: false,
+					reason: 'Map "HAS_KEY" check FAILED',
+					value: new Map([['key-1', 'value-1']])
+				});
+			});
+
+			it('should handle HAS_VALUE operator', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'MAP',
+					operator: 'HAS_VALUE',
+					path: ['map'],
+					value: 'value-1'
+				};
+
+				// @ts-expect-error
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
+				expect(res[0]).toEqual(true);
+			});
+
+			it('should handle IS_EMPTY operator', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'MAP',
+					operator: 'IS_EMPTY',
+					path: ['map'],
+					value: ''
+				};
+
+				// @ts-expect-error
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
+				expect(res[0]).toEqual(false);
+				expect(res[1]).toEqual({
+					criteriaValue: '',
+					level: 'criteria',
+					operator: 'IS_EMPTY',
+					passed: false,
+					reason: 'Map "IS_EMPTY" check FAILED',
+					value: new Map([['key-1', 'value-1']])
+				});
+			});
+
+			it('should handle IS_NOT_EMPTY operator', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'MAP',
+					operator: 'IS_NOT_EMPTY',
+					path: ['map'],
+					value: ''
+				};
+
+				// @ts-expect-error
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					criteriaValue: '',
+					level: 'criteria',
+					operator: 'IS_NOT_EMPTY',
+					passed: true,
+					reason: 'Map "IS_NOT_EMPTY" check PASSED',
+					value: new Map([['key-1', 'value-1']])
+				});
+			});
+
+			it('should handle SIZE_EQUALS operator', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'MAP',
+					operator: 'SIZE_EQUALS',
+					path: ['map'],
+					value: 1
+				};
+
+				// @ts-expect-error
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					criteriaValue: 1,
+					level: 'criteria',
+					operator: 'SIZE_EQUALS',
+					passed: true,
+					reason: 'Map "SIZE_EQUALS" check PASSED',
+					value: new Map([['key-1', 'value-1']])
+				});
+			});
+
+			it('should handle SIZE_GREATER operator', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'MAP',
+					operator: 'SIZE_GREATER',
+					path: ['map'],
+					value: 0
+				};
+
+				// @ts-expect-error
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					criteriaValue: 0,
+					level: 'criteria',
+					operator: 'SIZE_GREATER',
+					passed: true,
+					reason: 'Map "SIZE_GREATER" check PASSED',
+					value: new Map([['key-1', 'value-1']])
+				});
+			});
+
+			it('should handle SIZE_GREATER_OR_EQUALS operator', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'MAP',
+					operator: 'SIZE_GREATER_OR_EQUALS',
+					path: ['map'],
+					value: 1
+				};
+
+				// @ts-expect-error
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					criteriaValue: 1,
+					level: 'criteria',
+					operator: 'SIZE_GREATER_OR_EQUALS',
+					passed: true,
+					reason: 'Map "SIZE_GREATER_OR_EQUALS" check PASSED',
+					value: new Map([['key-1', 'value-1']])
+				});
+			});
+
+			it('should handle SIZE_LESS operator', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'MAP',
+					operator: 'SIZE_LESS',
+					path: ['map'],
+					value: 2
+				};
+
+				// @ts-expect-error
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					criteriaValue: 2,
+					level: 'criteria',
+					operator: 'SIZE_LESS',
+					passed: true,
+					reason: 'Map "SIZE_LESS" check PASSED',
+					value: new Map([['key-1', 'value-1']])
+				});
+			});
+
+			it('should handle SIZE_LESS_OR_EQUALS operator', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'MAP',
+					operator: 'SIZE_LESS_OR_EQUALS',
+					path: ['map'],
+					value: 1
+				};
+
+				// @ts-expect-error
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					criteriaValue: 1,
+					level: 'criteria',
+					operator: 'SIZE_LESS_OR_EQUALS',
+					passed: true,
+					reason: 'Map "SIZE_LESS_OR_EQUALS" check PASSED',
+					value: new Map([['key-1', 'value-1']])
+				});
+			});
+		});
+
 		describe('number', () => {
 			it('should handle BETWEEN operator', () => {
 				const criteria: FilterCriteria.CriteriaInput = {
@@ -793,6 +1154,7 @@ describe('/index', () => {
 					value: [25, 30]
 				};
 
+				// @ts-expect-error
 				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
 
 				expect(res[0]).toEqual(true);
@@ -814,6 +1176,7 @@ describe('/index', () => {
 					value: 25
 				};
 
+				// @ts-expect-error
 				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
 
 				expect(res[0]).toEqual(true);
@@ -835,6 +1198,7 @@ describe('/index', () => {
 					value: 20
 				};
 
+				// @ts-expect-error
 				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
 
 				expect(res[0]).toEqual(true);
@@ -856,6 +1220,7 @@ describe('/index', () => {
 					value: 25
 				};
 
+				// @ts-expect-error
 				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
 
 				expect(res[0]).toEqual(true);
@@ -877,6 +1242,7 @@ describe('/index', () => {
 					value: 30
 				};
 
+				// @ts-expect-error
 				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
 
 				expect(res[0]).toEqual(true);
@@ -898,6 +1264,7 @@ describe('/index', () => {
 					value: 30
 				};
 
+				// @ts-expect-error
 				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
 
 				expect(res[0]).toEqual(true);
@@ -912,6 +1279,326 @@ describe('/index', () => {
 			});
 		});
 
+		describe('set', () => {
+			it('should handle EXACTLY_MATCHES operator with normalize = true', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'SET',
+					normalize: true,
+					operator: 'EXACTLY_MATCHES',
+					path: ['tagsSet'],
+					value: ['Develóper', 'JavaScript']
+				};
+
+				const res = [
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				];
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					criteriaValue: ['developer', 'javascript'],
+					level: 'criteria',
+					operator: 'EXACTLY_MATCHES',
+					passed: true,
+					reason: 'Set "EXACTLY_MATCHES" check PASSED',
+					value: new Set(['developer', 'javascript'])
+				});
+			});
+
+			it('should handle EXACTLY_MATCHES operator with normalize = false', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'SET',
+					normalize: false,
+					operator: 'EXACTLY_MATCHES',
+					path: ['tagsSet'],
+					value: ['Develóper', 'JavaScript']
+				};
+
+				// @ts-expect-error
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
+				expect(res[0]).toEqual(false);
+				expect(res[1]).toEqual({
+					criteriaValue: ['Develóper', 'JavaScript'],
+					level: 'criteria',
+					operator: 'EXACTLY_MATCHES',
+					passed: false,
+					reason: 'Set "EXACTLY_MATCHES" check FAILED',
+					value: new Set(['developer', 'javascript'])
+				});
+			});
+
+			it('should handle HAS operator', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'SET',
+					operator: 'HAS',
+					path: ['tagsSet'],
+					value: 'developer'
+				};
+
+				const res = [
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				];
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					criteriaValue: 'developer',
+					level: 'criteria',
+					operator: 'HAS',
+					passed: true,
+					reason: 'Set "HAS" check PASSED',
+					value: new Set(['developer', 'javascript'])
+				});
+			});
+
+			it('should handle INCLUDES_ALL operator', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'SET',
+					operator: 'INCLUDES_ALL',
+					path: ['tagsSet'],
+					value: ['developer', 'javascript']
+				};
+
+				// @ts-expect-error
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					criteriaValue: ['developer', 'javascript'],
+					level: 'criteria',
+					operator: 'INCLUDES_ALL',
+					passed: true,
+					reason: 'Set "INCLUDES_ALL" check PASSED',
+					value: new Set(['developer', 'javascript'])
+				});
+			});
+
+			it('should handle INCLUDES_ANY operator', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'SET',
+					operator: 'INCLUDES_ANY',
+					path: ['tagsSet'],
+					value: ['developer', 'javascript']
+				};
+
+				// @ts-expect-error
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					criteriaValue: ['developer', 'javascript'],
+					level: 'criteria',
+					operator: 'INCLUDES_ANY',
+					passed: true,
+					reason: 'Set "INCLUDES_ANY" check PASSED',
+					value: new Set(['developer', 'javascript'])
+				});
+			});
+
+			it('should handle IS_EMPTY operator', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'SET',
+					operator: 'IS_EMPTY',
+					path: ['tagsSet'],
+					value: []
+				};
+
+				// @ts-expect-error
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
+				expect(res[0]).toEqual(false);
+				expect(res[1]).toEqual({
+					criteriaValue: [],
+					level: 'criteria',
+					operator: 'IS_EMPTY',
+					passed: false,
+					reason: 'Set "IS_EMPTY" check FAILED',
+					value: new Set(['developer', 'javascript'])
+				});
+			});
+
+			it('should handle IS_NOT_EMPTY operator', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'SET',
+					operator: 'IS_NOT_EMPTY',
+					path: ['tagsSet'],
+					value: []
+				};
+
+				// @ts-expect-error
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					criteriaValue: [],
+					level: 'criteria',
+					operator: 'IS_NOT_EMPTY',
+					passed: true,
+					reason: 'Set "IS_NOT_EMPTY" check PASSED',
+					value: new Set(['developer', 'javascript'])
+				});
+			});
+
+			it('should handle NOT_INCLUDES_ALL operator', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'SET',
+					operator: 'NOT_INCLUDES_ALL',
+					path: ['tagsSet'],
+					value: ['developer', 'javascript']
+				};
+
+				// @ts-expect-error
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
+				expect(res[0]).toEqual(false);
+				expect(res[1]).toEqual({
+					criteriaValue: ['developer', 'javascript'],
+					level: 'criteria',
+					operator: 'NOT_INCLUDES_ALL',
+					passed: false,
+					reason: 'Set "NOT_INCLUDES_ALL" check FAILED',
+					value: new Set(['developer', 'javascript'])
+				});
+			});
+
+			it('should handle NOT_INCLUDES_ANY operator', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'SET',
+					operator: 'NOT_INCLUDES_ANY',
+					path: ['tagsSet'],
+					value: ['developer', 'javascript']
+				};
+
+				// @ts-expect-error
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
+				expect(res[0]).toEqual(false);
+				expect(res[1]).toEqual({
+					criteriaValue: ['developer', 'javascript'],
+					level: 'criteria',
+					operator: 'NOT_INCLUDES_ANY',
+					passed: false,
+					reason: 'Set "NOT_INCLUDES_ANY" check FAILED',
+					value: new Set(['developer', 'javascript'])
+				});
+			});
+
+			it('should handle SIZE_EQUALS operator', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'SET',
+					operator: 'SIZE_EQUALS',
+					path: ['tagsSet'],
+					value: 2
+				};
+
+				// @ts-expect-error
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					criteriaValue: 2,
+					level: 'criteria',
+					operator: 'SIZE_EQUALS',
+					passed: true,
+					reason: 'Set "SIZE_EQUALS" check PASSED',
+					value: new Set(['developer', 'javascript'])
+				});
+			});
+
+			it('should handle SIZE_GREATER operator', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'SET',
+					operator: 'SIZE_GREATER',
+					path: ['tagsSet'],
+					value: 1
+				};
+
+				// @ts-expect-error
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					criteriaValue: 1,
+					level: 'criteria',
+					operator: 'SIZE_GREATER',
+					passed: true,
+					reason: 'Set "SIZE_GREATER" check PASSED',
+					value: new Set(['developer', 'javascript'])
+				});
+			});
+
+			it('should handle SIZE_GREATER_OR_EQUALS operator', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'SET',
+					operator: 'SIZE_GREATER_OR_EQUALS',
+					path: ['tagsSet'],
+					value: 2
+				};
+
+				// @ts-expect-error
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					criteriaValue: 2,
+					level: 'criteria',
+					operator: 'SIZE_GREATER_OR_EQUALS',
+					passed: true,
+					reason: 'Set "SIZE_GREATER_OR_EQUALS" check PASSED',
+					value: new Set(['developer', 'javascript'])
+				});
+			});
+
+			it('should handle SIZE_LESS operator', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'SET',
+					operator: 'SIZE_LESS',
+					path: ['tagsSet'],
+					value: 3
+				};
+
+				// @ts-expect-error
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					criteriaValue: 3,
+					level: 'criteria',
+					operator: 'SIZE_LESS',
+					passed: true,
+					reason: 'Set "SIZE_LESS" check PASSED',
+					value: new Set(['developer', 'javascript'])
+				});
+			});
+
+			it('should handle SIZE_LESS_OR_EQUALS operator', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'SET',
+					operator: 'SIZE_LESS_OR_EQUALS',
+					path: ['tagsSet'],
+					value: 2
+				};
+
+				// @ts-expect-error
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					criteriaValue: 2,
+					level: 'criteria',
+					operator: 'SIZE_LESS_OR_EQUALS',
+					passed: true,
+					reason: 'Set "SIZE_LESS_OR_EQUALS" check PASSED',
+					value: new Set(['developer', 'javascript'])
+				});
+			});
+		});
+
 		describe('text', () => {
 			it('should handle CONTAINS operator with normalize = true', () => {
 				const criteria: FilterCriteria.CriteriaInput = {
@@ -922,6 +1609,7 @@ describe('/index', () => {
 					value: 'doe'
 				};
 
+				// @ts-expect-error
 				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
 
 				expect(res[0]).toEqual(true);
@@ -944,6 +1632,7 @@ describe('/index', () => {
 					value: 'doe'
 				};
 
+				// @ts-expect-error
 				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
 
 				expect(res[0]).toEqual(false);
@@ -965,6 +1654,7 @@ describe('/index', () => {
 					value: 'Doe'
 				};
 
+				// @ts-expect-error
 				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
 
 				expect(res[0]).toEqual(true);
@@ -986,6 +1676,7 @@ describe('/index', () => {
 					value: 'John Doe'
 				};
 
+				// @ts-expect-error
 				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
 
 				expect(res[0]).toEqual(true);
@@ -1007,6 +1698,7 @@ describe('/index', () => {
 					value: []
 				};
 
+				// @ts-expect-error
 				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
 
 				expect(res[0]).toEqual(false);
@@ -1028,6 +1720,7 @@ describe('/index', () => {
 					value: /john/i
 				};
 
+				// @ts-expect-error
 				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
 
 				expect(res[0]).toEqual(true);
@@ -1049,6 +1742,7 @@ describe('/index', () => {
 					value: 'John'
 				};
 
+				// @ts-expect-error
 				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
 
 				expect(res[0]).toEqual(true);
@@ -1066,20 +1760,42 @@ describe('/index', () => {
 
 	describe('normalize', () => {
 		it('should normalize array', () => {
+			// @ts-expect-error
 			expect(FilterCriteria.normalize([1, 'Develóper', 3])).toEqual([1, 'developer', 3]);
 		});
 
 		it('should normalize boolean', () => {
+			// @ts-expect-error
 			expect(FilterCriteria.normalize(true)).toEqual(true);
+			// @ts-expect-error
 			expect(FilterCriteria.normalize(false)).toEqual(false);
 		});
 
+		it('should normalize map', () => {
+			expect(
+				// @ts-expect-error
+				FilterCriteria.normalize(
+					new Map([
+						['a', '1'],
+						['b', 'Develóper']
+					])
+				)
+			).toEqual(
+				new Map([
+					['a', '1'],
+					['b', 'developer']
+				])
+			);
+		});
+
 		it('should normalize number', () => {
+			// @ts-expect-error
 			expect(FilterCriteria.normalize(123)).toEqual(123);
 		});
 
 		it('should normalize object', () => {
 			expect(
+				// @ts-expect-error
 				FilterCriteria.normalize({
 					a: 1,
 					b: 'Develóper',
@@ -1094,6 +1810,7 @@ describe('/index', () => {
 
 		it('should normalize nested object', () => {
 			expect(
+				// @ts-expect-error
 				FilterCriteria.normalize({
 					a: 1,
 					b: 'Develóper',
@@ -1112,18 +1829,27 @@ describe('/index', () => {
 			});
 		});
 
+		it('should normalize set', () => {
+			// @ts-expect-error
+			expect(FilterCriteria.normalize(new Set(['1', 'Develóper']))).toEqual(new Set(['1', 'developer']));
+		});
+
 		it('should normalize text', () => {
+			// @ts-expect-error
 			expect(FilterCriteria.normalize('Develóper')).toEqual('developer');
 		});
 
 		it('should normalize undefined', () => {
+			// @ts-expect-error
 			expect(FilterCriteria.normalize(undefined)).toEqual(undefined);
 		});
 	});
 
 	describe('normalizeText', () => {
 		it('should normalize text', () => {
+			// @ts-expect-error
 			expect(FilterCriteria.normalizeText('Develóper')).toEqual('developer');
+			// @ts-expect-error
 			expect(FilterCriteria.normalizeText('Devel  óper')).toEqual('devel-oper');
 		});
 	});

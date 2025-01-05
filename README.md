@@ -10,7 +10,7 @@ A TypeScript-based filtering engine that provides a flexible, type-safe way to f
 ## Features
 
 - 🎯 **Type-Safe**: Built with TypeScript and Zod for runtime type validation
-- 🔄 **Multiple Data Types**: Support for arrays, booleans, dates, geographic coordinates, numbers, and text
+- 🔄 **Multiple Data Types**: Support for arrays, booleans, dates, geographic coordinates, maps, numbers, sets, and text
 - 🎨 **Rich Operators**: Comprehensive set of comparison and logical operators
 - 🌐 **Internationalization-Ready**: Built-in text normalization (accents, case, etc.)
 - 🔍 **Complex Queries**: Support for nested AND/OR logic combinations
@@ -36,7 +36,9 @@ const data = [
 		active: true,
 		age: 25,
 		name: 'John Doe',
-		tags: ['developer', 'javascript']
+		tags: ['developer', 'javascript'],
+		skills: new Set(['typescript', 'react']),
+		metadata: new Map([['level', 'senior']])
 	}
 	// ... more items
 ];
@@ -55,10 +57,10 @@ const filter = {
 					value: 20
 				},
 				{
-					type: 'ARRAY',
+					type: 'SET',
 					operator: 'INCLUDES_ANY',
-					path: ['tags'],
-					value: ['developer']
+					path: ['skills'],
+					value: ['typescript']
 				}
 			]
 		}
@@ -80,6 +82,11 @@ const results = FilterCriteria.apply(data, filter);
 - `IS_NOT_EMPTY`: Array is not empty
 - `NOT_INCLUDES_ALL`: Array is missing AT LEAST ONE filter value
 - `NOT_INCLUDES_ANY`: Array contains NONE of the filter values
+- `SIZE_EQUALS`: Array size equals the filter value
+- `SIZE_GREATER`: Array size is greater than the filter value
+- `SIZE_GREATER_OR_EQUALS`: Array size is greater than or equal to the filter value
+- `SIZE_LESS`: Array size is less than the filter value
+- `SIZE_LESS_OR_EQUALS`: Array size is less than or equal to the filter value
 
 ### Boolean Operators
 
@@ -99,6 +106,18 @@ const results = FilterCriteria.apply(data, filter);
 - `IN_RADIUS`: Point is within the specified radius
 - `NOT_IN_RADIUS`: Point is outside the specified radius
 
+### Map Operators
+
+- `HAS_KEY`: Map contains the specified key
+- `HAS_VALUE`: Map contains the specified value
+- `IS_EMPTY`: Map is empty
+- `IS_NOT_EMPTY`: Map is not empty
+- `SIZE_EQUALS`: Map size equals the filter value
+- `SIZE_GREATER`: Map size is greater than the filter value
+- `SIZE_GREATER_OR_EQUALS`: Map size is greater than or equal to the filter value
+- `SIZE_LESS`: Map size is less than the filter value
+- `SIZE_LESS_OR_EQUALS`: Map size is less than or equal to the filter value
+
 ### Number Operators
 
 - `BETWEEN`: Number is between two values (inclusive)
@@ -107,6 +126,22 @@ const results = FilterCriteria.apply(data, filter);
 - `GREATER_OR_EQUALS`: Number is greater than or equal to the filter value
 - `LESS`: Number is less than the filter value
 - `LESS_OR_EQUALS`: Number is less than or equal to the filter value
+
+### Set Operators
+
+- `EXACTLY_MATCHES`: Set contains the exact same elements
+- `HAS`: Set contains the specific element
+- `INCLUDES_ALL`: Set contains ALL filter values
+- `INCLUDES_ANY`: Set contains AT LEAST ONE filter value
+- `IS_EMPTY`: Set is empty
+- `IS_NOT_EMPTY`: Set is not empty
+- `NOT_INCLUDES_ALL`: Set is missing AT LEAST ONE filter value
+- `NOT_INCLUDES_ANY`: Set contains NONE of the filter values
+- `SIZE_EQUALS`: Set size equals the filter value
+- `SIZE_GREATER`: Set size is greater than the filter value
+- `SIZE_GREATER_OR_EQUALS`: Set size is greater than or equal to the filter value
+- `SIZE_LESS`: Set size is less than the filter value
+- `SIZE_LESS_OR_EQUALS`: Set size is less than or equal to the filter value
 
 ### Text Operators
 
@@ -119,21 +154,66 @@ const results = FilterCriteria.apply(data, filter);
 
 ## Advanced Usage
 
-### Dynamic Values Using $path
-
-You can use dynamic values in your filters by referencing other fields in the same object using the `$path` syntax:
+### Working with Sets and Maps
 
 ```typescript
 const data = [
 	{
 		id: 1,
-		tags: ['developer', 'javascript'],
-		requiredTags: ['developer', 'javascript']
-	},
+		skills: new Set(['typescript', 'react']),
+		metadata: new Map([
+			['level', 'senior'],
+			['department', 'engineering']
+		])
+	}
+];
+
+// Filter by Set contents
+const setFilter = {
+	operator: 'AND',
+	rules: [
+		{
+			operator: 'AND',
+			criteria: [
+				{
+					type: 'SET',
+					operator: 'INCLUDES_ALL',
+					path: ['skills'],
+					value: ['typescript', 'react'],
+					normalize: true // Optional: normalize text values
+				}
+			]
+		}
+	]
+};
+
+// Filter by Map contents
+const mapFilter = {
+	operator: 'AND',
+	rules: [
+		{
+			operator: 'AND',
+			criteria: [
+				{
+					type: 'MAP',
+					operator: 'HAS_KEY',
+					path: ['metadata'],
+					value: 'level'
+				}
+			]
+		}
+	]
+};
+```
+
+### Dynamic Values Using $path
+
+```typescript
+const data = [
 	{
-		id: 2,
-		tags: ['developer', 'python'],
-		requiredTags: ['developer', 'javascript']
+		id: 1,
+		requiredSkills: new Set(['typescript', 'react']),
+		actualSkills: new Set(['typescript', 'react', 'node'])
 	}
 ];
 
@@ -144,125 +224,15 @@ const filter = {
 			operator: 'AND',
 			criteria: [
 				{
-					type: 'ARRAY',
-					operator: 'EXACTLY_MATCHES',
-					path: ['tags'],
-					value: { $path: ['requiredTags'] } // Compare tags with requiredTags
+					type: 'SET',
+					operator: 'INCLUDES_ALL',
+					path: ['actualSkills'],
+					value: { $path: ['requiredSkills'] } // Compare actualSkills with requiredSkills
 				}
 			]
 		}
 	]
 };
-
-// Will return only items where tags exactly match requiredTags
-const results = FilterCriteria.apply(data, filter);
-```
-
-This feature is particularly useful when you need to:
-
-- Compare fields within the same object
-- Build dynamic filters based on object properties
-- Create relative comparisons between fields
-
-## Detailed API Reference
-
-### Basic Filter Application
-
-```typescript
-FilterCriteria.apply(data: any[], filter: FilterCriteria.FilterInput): any[]
-```
-
-Applies the filter to an array of data and returns filtered results.
-
-### Match Operations
-
-#### Simple Match
-
-```typescript
-FilterCriteria.applyMatch(
-  data: any,
-  filter: FilterCriteria.FilterInput,
-  detailed: false
-): boolean
-```
-
-Returns a boolean indicating if the data matches the filter criteria.
-
-#### Detailed Match
-
-```typescript
-FilterCriteria.applyMatch(
-  data: any,
-  filter: FilterCriteria.FilterInput,
-  detailed: true
-): FilterCriteria.MatchResult
-```
-
-Returns a detailed result object with the following structure:
-
-```typescript
-type MatchResult = {
-	level: 'match';
-	operator: LogicalOperator; // 'AND' | 'OR'
-	passed: boolean;
-	reason: string;
-	results: RuleResult[];
-};
-
-type RuleResult = {
-	level: 'rule';
-	operator: LogicalOperator;
-	passed: boolean;
-	reason: string;
-	results: CriteriaResult[];
-};
-
-type CriteriaResult = {
-	criteriaValue: any;
-	level: 'criteria';
-	operator: string;
-	passed: boolean;
-	reason: string;
-	value: any;
-};
-```
-
-Example usage:
-
-```typescript
-// Simple match
-const isMatch = FilterCriteria.applyMatch(item, filter);
-console.log(isMatch); // true/false
-
-// Detailed match
-const detailedResult = FilterCriteria.applyMatch(item, filter, true);
-console.log(detailedResult);
-/* Output example:
-{
-  level: 'match',
-  operator: 'AND',
-  passed: true,
-  reason: 'Match "AND" check PASSED',
-  results: [
-    {
-      level: 'rule',
-      operator: 'OR',
-      passed: true,
-      reason: 'Rule "OR" check PASSED',
-      results: [
-        {
-          criteriaValue: 'john',
-          level: 'criteria',
-          operator: 'CONTAINS',
-          passed: true,
-          reason: 'Text "CONTAINS" check PASSED',
-          value: 'john-doe'
-        }
-      ]
-    }
-  ]
-}
-*/
 ```
 
 ## TypeScript Support

@@ -2,17 +2,51 @@ import _ from 'lodash';
 import z from 'zod';
 
 const filterLogicalOperator = z.enum(['AND', 'OR']);
+const filterOperatorArrayOrSet: [string, ...string[]] = [
+	'EXACTLY_MATCHES',
+	'INCLUDES_ALL',
+	'INCLUDES_ANY',
+	'IS_EMPTY',
+	'IS_NOT_EMPTY',
+	'NOT_INCLUDES_ALL',
+	'NOT_INCLUDES_ANY',
+	'SIZE_EQUALS',
+	'SIZE_GREATER',
+	'SIZE_GREATER_OR_EQUALS',
+	'SIZE_LESS',
+	'SIZE_LESS_OR_EQUALS'
+];
 const filterOperator = {
-	array: z.enum(['EXACTLY_MATCHES', 'INCLUDES_ALL', 'INCLUDES_ANY', 'IS_EMPTY', 'IS_NOT_EMPTY', 'NOT_INCLUDES_ALL', 'NOT_INCLUDES_ANY']),
+	array: z.enum(filterOperatorArrayOrSet),
 	boolean: z.enum(['IS', 'IS_NOT']),
 	date: z.enum(['AFTER', 'AFTER_OR_EQUALS', 'BEFORE', 'BEFORE_OR_EQUALS', 'BETWEEN']),
 	geo: z.enum(['IN_RADIUS', 'NOT_IN_RADIUS']),
+	map: z.enum([
+		'HAS_KEY',
+		'HAS_VALUE',
+		'IS_EMPTY',
+		'IS_NOT_EMPTY',
+		'SIZE_EQUALS',
+		'SIZE_GREATER',
+		'SIZE_GREATER_OR_EQUALS',
+		'SIZE_LESS',
+		'SIZE_LESS_OR_EQUALS'
+	]),
 	number: z.enum(['BETWEEN', 'EQUALS', 'GREATER', 'GREATER_OR_EQUALS', 'LESS', 'LESS_OR_EQUALS']),
+	set: z.enum([...filterOperatorArrayOrSet, 'HAS']),
 	text: z.enum(['CONTAINS', 'ENDS_WITH', 'EQUALS', 'IS_EMPTY', 'MATCHES_REGEX', 'STARTS_WITH'])
 };
 
-const filterValue = (schema: z.ZodSchema) => {
-	return z.union([schema, z.object({ $path: z.array(z.string()) })]);
+const filterValue = (...schemas: [z.ZodTypeAny, ...z.ZodTypeAny[]]) => {
+	const schemasWith = [
+		z.object({
+			$path: z.array(z.string())
+		}),
+		schemas[0],
+		...schemas.slice(1)
+	] as [z.ZodTypeAny, z.ZodTypeAny, ...z.ZodTypeAny[]];
+
+	return z.union(schemasWith);
 };
 
 const filterCriteria = z.discriminatedUnion('type', [
@@ -22,7 +56,7 @@ const filterCriteria = z.discriminatedUnion('type', [
 		operator: filterOperator.array,
 		path: z.array(z.string()),
 		type: z.literal('ARRAY'),
-		value: filterValue(z.array(z.unknown()))
+		value: filterValue(z.array(z.unknown()), z.number())
 	}),
 	z.object({
 		defaultValue: z.boolean().default(false),
@@ -41,7 +75,7 @@ const filterCriteria = z.discriminatedUnion('type', [
 		operator: filterOperator.date,
 		path: z.array(z.string()),
 		type: z.literal('DATE'),
-		value: filterValue(z.union([z.string().datetime(), z.tuple([z.string().datetime(), z.string().datetime()])]))
+		value: filterValue(z.string().datetime(), z.tuple([z.string().datetime(), z.string().datetime()]))
 	}),
 	z.object({
 		defaultValue: z.record(z.number()).default({ lat: 0, lng: 0 }),
@@ -63,11 +97,27 @@ const filterCriteria = z.discriminatedUnion('type', [
 		)
 	}),
 	z.object({
+		defaultValue: z.map(z.unknown(), z.unknown()).default(new Map()),
+		normalize: z.boolean().default(true),
+		operator: filterOperator.map,
+		path: z.array(z.string()),
+		type: z.literal('MAP'),
+		value: filterValue(z.number(), z.string(), z.map(z.unknown(), z.unknown()))
+	}),
+	z.object({
 		defaultValue: z.number().default(0),
 		operator: filterOperator.number,
 		path: z.array(z.string()),
 		type: z.literal('NUMBER'),
 		value: filterValue(z.union([z.number(), z.array(z.number())]))
+	}),
+	z.object({
+		defaultValue: z.set(z.unknown()).default(new Set()),
+		normalize: z.boolean().default(true),
+		operator: filterOperator.set,
+		path: z.array(z.string()),
+		type: z.literal('SET'),
+		value: filterValue(z.number(), z.string(), z.set(z.unknown()))
 	}),
 	z.object({
 		defaultValue: z.string().default(''),
@@ -127,7 +177,7 @@ namespace FilterCriteria {
 }
 
 class FilterCriteria {
-	static apply(data: any[], input: FilterCriteria.FilterInput): any[] {
+	static filter(data: any[], input: FilterCriteria.FilterInput): any[] {
 		input = filter.parse(input);
 
 		return _.filter(data, item => {
@@ -139,7 +189,7 @@ class FilterCriteria {
 		});
 	}
 
-	static applyMatch(data: any, input: FilterCriteria.FilterInput, detailed: boolean = false): boolean | FilterCriteria.MatchResult {
+	static match(data: any, input: FilterCriteria.FilterInput, detailed: boolean = false): boolean | FilterCriteria.MatchResult {
 		input = filter.parse(input);
 
 		const ruleResults = _.map(input.rules, rule => {
@@ -168,7 +218,7 @@ class FilterCriteria {
 		return passed;
 	}
 
-	static applyRule(item: any, rule: FilterCriteria.RuleInput, detailed: boolean = false): boolean | FilterCriteria.RuleResult {
+	private static applyRule(item: any, rule: FilterCriteria.RuleInput, detailed: boolean = false): boolean | FilterCriteria.RuleResult {
 		const criteriaResults = _.map(rule.criteria, criteria => {
 			return this.applyCriteria(item, criteria, detailed);
 		});
@@ -195,7 +245,7 @@ class FilterCriteria {
 		return passed;
 	}
 
-	static applyCriteria(
+	private static applyCriteria(
 		item: any,
 		criteria: FilterCriteria.CriteriaInput,
 		detailed: boolean = false
@@ -298,6 +348,23 @@ class FilterCriteria {
 				return result;
 			}
 
+			case 'MAP': {
+				const result = this.applyMapFilter(value, criteria.operator, criteria.value);
+
+				if (detailed) {
+					return {
+						criteriaValue: criteria.value,
+						level: 'criteria',
+						operator: criteria.operator,
+						passed: result,
+						reason: `Map "${criteria.operator}" check ${result ? 'PASSED' : 'FAILED'}`,
+						value
+					};
+				}
+
+				return result;
+			}
+
 			case 'NUMBER': {
 				const result = this.applyNumberFilter(value, criteria.operator, criteria.value);
 
@@ -308,6 +375,23 @@ class FilterCriteria {
 						operator: criteria.operator,
 						passed: result,
 						reason: `Number "${criteria.operator}" check ${result ? 'PASSED' : 'FAILED'}`,
+						value
+					};
+				}
+
+				return result;
+			}
+
+			case 'SET': {
+				const result = this.applySetFilter(value, criteria.operator, criteria.value);
+
+				if (detailed) {
+					return {
+						criteriaValue: criteria.value,
+						level: 'criteria',
+						operator: criteria.operator,
+						passed: result,
+						reason: `Set "${criteria.operator}" check ${result ? 'PASSED' : 'FAILED'}`,
 						value
 					};
 				}
@@ -349,49 +433,62 @@ class FilterCriteria {
 		}
 	}
 
-	static applyArrayFilter(value: any[], operator: FilterCriteria.FilterOperators['array'], filterValue: unknown[]): boolean {
+	private static applyArrayFilter(value: any[], operator: FilterCriteria.FilterOperators['array'], filterValue: any): boolean {
 		switch (operator) {
 			case 'EXACTLY_MATCHES': {
-				// Returns true if arrays contain the same elements (order independent)
 				return _.isEqual(_.sortBy(value), _.sortBy(filterValue));
 			}
 
 			case 'INCLUDES_ALL': {
-				// Returns true if array contains ALL filter values
 				return _.every(filterValue, v => {
 					return _.includes(value, v);
 				});
 			}
 
 			case 'INCLUDES_ANY': {
-				// Returns true if array contains AT LEAST ONE filter value
 				return _.some(filterValue, v => {
 					return _.includes(value, v);
 				});
 			}
 
 			case 'IS_EMPTY': {
-				// Returns true if array is empty
 				return _.size(value) === 0;
 			}
 
 			case 'IS_NOT_EMPTY': {
-				// Returns true if array is not empty
 				return _.size(value) > 0;
 			}
 
 			case 'NOT_INCLUDES_ALL': {
-				// Returns true if array is missing AT LEAST ONE filter value
 				return !_.every(filterValue, v => {
 					return _.includes(value, v);
 				});
 			}
 
 			case 'NOT_INCLUDES_ANY': {
-				// Returns true if array contains NONE of the filter values
 				return !_.some(filterValue, v => {
 					return _.includes(value, v);
 				});
+			}
+
+			case 'SIZE_EQUALS': {
+				return _.size(value) === filterValue;
+			}
+
+			case 'SIZE_GREATER': {
+				return _.size(value) > filterValue;
+			}
+
+			case 'SIZE_GREATER_OR_EQUALS': {
+				return _.size(value) >= filterValue;
+			}
+
+			case 'SIZE_LESS': {
+				return _.size(value) < filterValue;
+			}
+
+			case 'SIZE_LESS_OR_EQUALS': {
+				return _.size(value) <= filterValue;
 			}
 
 			default:
@@ -399,7 +496,7 @@ class FilterCriteria {
 		}
 	}
 
-	static applyBooleanFilter(value: boolean, operator: FilterCriteria.FilterOperators['boolean'], filterValue: boolean): boolean {
+	private static applyBooleanFilter(value: boolean, operator: FilterCriteria.FilterOperators['boolean'], filterValue: boolean): boolean {
 		switch (operator) {
 			case 'IS': {
 				return value === filterValue;
@@ -414,7 +511,11 @@ class FilterCriteria {
 		}
 	}
 
-	static applyDateFilter(value: string, operator: FilterCriteria.FilterOperators['date'], filterValue: string | [string, string]): boolean {
+	private static applyDateFilter(
+		value: string,
+		operator: FilterCriteria.FilterOperators['date'],
+		filterValue: string | [string, string]
+	): boolean {
 		const date = new Date(value);
 
 		if (_.isString(filterValue)) {
@@ -451,7 +552,7 @@ class FilterCriteria {
 		}
 	}
 
-	static applyGeoFilter(
+	private static applyGeoFilter(
 		value: { lat: number; lng: number },
 		operator: FilterCriteria.FilterOperators['geo'],
 		filterValue: { lat: number; lng: number; radius?: number; unit?: 'km' | 'mi' }
@@ -470,30 +571,73 @@ class FilterCriteria {
 		}
 	}
 
-	static applyNumberFilter(value: number, operator: FilterCriteria.FilterOperators['number'], filterValue: number | number[]): boolean {
+	private static applyMapFilter(value: Map<any, any>, operator: FilterCriteria.FilterOperators['map'], filterValue: any): boolean {
+		switch (operator) {
+			case 'HAS_KEY': {
+				return value.has(filterValue);
+			}
+
+			case 'HAS_VALUE': {
+				return Array.from(value.values()).includes(filterValue);
+			}
+
+			case 'IS_EMPTY': {
+				return value.size === 0;
+			}
+
+			case 'IS_NOT_EMPTY': {
+				return value.size > 0;
+			}
+
+			case 'SIZE_EQUALS': {
+				return value.size === filterValue;
+			}
+
+			case 'SIZE_GREATER': {
+				return value.size > filterValue;
+			}
+
+			case 'SIZE_GREATER_OR_EQUALS': {
+				return value.size >= filterValue;
+			}
+
+			case 'SIZE_LESS': {
+				return value.size < filterValue;
+			}
+
+			case 'SIZE_LESS_OR_EQUALS': {
+				return value.size <= filterValue;
+			}
+
+			default:
+				return false;
+		}
+	}
+
+	private static applyNumberFilter(value: number, operator: FilterCriteria.FilterOperators['number'], filterValue: any): boolean {
 		switch (operator) {
 			case 'EQUALS': {
 				return value === filterValue;
 			}
 
 			case 'GREATER': {
-				return value > (filterValue as number);
+				return value > filterValue;
 			}
 
 			case 'GREATER_OR_EQUALS': {
-				return value >= (filterValue as number);
+				return value >= filterValue;
 			}
 
 			case 'LESS': {
-				return value < (filterValue as number);
+				return value < filterValue;
 			}
 
 			case 'LESS_OR_EQUALS': {
-				return value <= (filterValue as number);
+				return value <= filterValue;
 			}
 
 			case 'BETWEEN': {
-				const [min, max] = filterValue as number[];
+				const [min, max] = filterValue;
 				return value >= min && value <= max;
 			}
 
@@ -502,34 +646,58 @@ class FilterCriteria {
 		}
 	}
 
-	static applyTextFilter(
-		value: string,
-		operator: FilterCriteria.FilterOperators['text'],
-		filterValue: string | string[] | RegExp
-	): boolean {
+	private static applySetFilter(value: Set<any>, operator: FilterCriteria.FilterOperators['set'], filterValue: any): boolean {
 		switch (operator) {
-			case 'CONTAINS': {
-				return _.includes(value, filterValue as string);
+			case 'EXACTLY_MATCHES': {
+				return this.applyArrayFilter(Array.from(value), 'EXACTLY_MATCHES', filterValue);
 			}
 
-			case 'EQUALS': {
-				return value === filterValue;
+			case 'HAS': {
+				return value.has(filterValue);
 			}
 
-			case 'ENDS_WITH': {
-				return _.endsWith(value, filterValue as string);
+			case 'INCLUDES_ALL': {
+				return this.applyArrayFilter(Array.from(value), 'INCLUDES_ALL', filterValue);
+			}
+
+			case 'INCLUDES_ANY': {
+				return this.applyArrayFilter(Array.from(value), 'INCLUDES_ANY', filterValue);
 			}
 
 			case 'IS_EMPTY': {
-				return _.isEmpty(value);
+				return value.size === 0;
 			}
 
-			case 'MATCHES_REGEX': {
-				return new RegExp(filterValue as string).test(value);
+			case 'IS_NOT_EMPTY': {
+				return value.size > 0;
 			}
 
-			case 'STARTS_WITH': {
-				return _.startsWith(value, filterValue as string);
+			case 'NOT_INCLUDES_ALL': {
+				return this.applyArrayFilter(Array.from(value), 'NOT_INCLUDES_ALL', filterValue);
+			}
+
+			case 'NOT_INCLUDES_ANY': {
+				return this.applyArrayFilter(Array.from(value), 'NOT_INCLUDES_ANY', filterValue);
+			}
+
+			case 'SIZE_EQUALS': {
+				return value.size === filterValue;
+			}
+
+			case 'SIZE_GREATER': {
+				return value.size > filterValue;
+			}
+
+			case 'SIZE_GREATER_OR_EQUALS': {
+				return value.size >= filterValue;
+			}
+
+			case 'SIZE_LESS': {
+				return value.size < filterValue;
+			}
+
+			case 'SIZE_LESS_OR_EQUALS': {
+				return value.size <= filterValue;
 			}
 
 			default:
@@ -537,7 +705,38 @@ class FilterCriteria {
 		}
 	}
 
-	static calculateDistance(point1: { lat: number; lng: number }, point2: { lat: number; lng: number }): number {
+	private static applyTextFilter(value: string, operator: FilterCriteria.FilterOperators['text'], filterValue: any): boolean {
+		switch (operator) {
+			case 'CONTAINS': {
+				return _.includes(value, filterValue);
+			}
+
+			case 'EQUALS': {
+				return value === filterValue;
+			}
+
+			case 'ENDS_WITH': {
+				return _.endsWith(value, filterValue);
+			}
+
+			case 'IS_EMPTY': {
+				return _.isEmpty(value);
+			}
+
+			case 'MATCHES_REGEX': {
+				return new RegExp(filterValue).test(value);
+			}
+
+			case 'STARTS_WITH': {
+				return _.startsWith(value, filterValue);
+			}
+
+			default:
+				return false;
+		}
+	}
+
+	private static calculateDistance(point1: { lat: number; lng: number }, point2: { lat: number; lng: number }): number {
 		// Haversine formula implementation
 		const R = 6371; // Earth's radius in kilometers
 		const dLat = this.toRad(point2.lat - point1.lat);
@@ -550,11 +749,27 @@ class FilterCriteria {
 		return R * c;
 	}
 
-	static normalize = _.memoize((value: any): any => {
+	private static normalize = _.memoize((value: any): any => {
 		if (_.isArray(value)) {
 			return _.map(value, v => {
 				return this.normalize(v);
 			});
+		}
+
+		if (_.isMap(value)) {
+			return new Map(
+				Array.from(value).map(([k, v]) => {
+					return [k, this.normalize(v)];
+				})
+			);
+		}
+
+		if (_.isSet(value)) {
+			return new Set(
+				Array.from(value).map(v => {
+					return this.normalize(v);
+				})
+			);
 		}
 
 		if (_.isPlainObject(value)) {
@@ -570,7 +785,7 @@ class FilterCriteria {
 		return value;
 	});
 
-	static normalizeText = _.memoize((value: string): string => {
+	private static normalizeText = _.memoize((value: string): string => {
 		value = _.trim(value);
 		value = _.toLower(value);
 		value = _.deburr(value);
@@ -582,7 +797,7 @@ class FilterCriteria {
 		return value;
 	});
 
-	static toRad(value: number): number {
+	private static toRad(value: number): number {
 		return (value * Math.PI) / 180;
 	}
 }
