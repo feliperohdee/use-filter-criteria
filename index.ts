@@ -4,11 +4,11 @@ import z from 'zod';
 const filterLogicalOperator = z.enum(['AND', 'OR']);
 const filterOperator = {
 	array: z.enum(['EXACTLY_MATCHES', 'INCLUDES_ALL', 'INCLUDES_ANY', 'IS_EMPTY', 'IS_NOT_EMPTY', 'NOT_INCLUDES_ALL', 'NOT_INCLUDES_ANY']),
-	boolean: z.enum(['IS', 'IS-NOT']),
-	date: z.enum(['AFTER', 'BEFORE', 'BETWEEN']),
-	geo: z.enum(['IN-RADIUS']),
-	number: z.enum(['BETWEEN', 'EQUALS', 'GREATER', 'GREATER-EQUALS', 'LESS', 'LESS-EQUALS']),
-	text: z.enum(['CONTAINS', 'ENDS-WITH', 'EQUALS', 'IS-EMPTY', 'MATCHES-REGEX', 'STARTS-WITH'])
+	boolean: z.enum(['IS', 'IS_NOT']),
+	date: z.enum(['AFTER', 'AFTER_OR_EQUALS', 'BEFORE', 'BEFORE_OR_EQUALS', 'BETWEEN']),
+	geo: z.enum(['IN_RADIUS', 'NOT_IN_RADIUS']),
+	number: z.enum(['BETWEEN', 'EQUALS', 'GREATER', 'GREATER_OR_EQUALS', 'LESS', 'LESS_OR_EQUALS']),
+	text: z.enum(['CONTAINS', 'ENDS_WITH', 'EQUALS', 'IS_EMPTY', 'MATCHES_REGEX', 'STARTS_WITH'])
 };
 
 const filterValue = (schema: z.ZodSchema) => {
@@ -20,14 +20,14 @@ const filterCriteria = z.discriminatedUnion('type', [
 		defaultValue: z.array(z.unknown()).default([]),
 		normalize: z.boolean().default(true),
 		operator: filterOperator.array,
-		source: z.array(z.string()),
+		path: z.array(z.string()),
 		type: z.literal('ARRAY'),
 		value: filterValue(z.array(z.unknown()))
 	}),
 	z.object({
 		defaultValue: z.boolean().default(false),
 		operator: filterOperator.boolean,
-		source: z.array(z.string()),
+		path: z.array(z.string()),
 		type: z.literal('BOOLEAN'),
 		value: filterValue(z.boolean())
 	}),
@@ -39,7 +39,7 @@ const filterCriteria = z.discriminatedUnion('type', [
 				return new Date().toISOString();
 			}),
 		operator: filterOperator.date,
-		source: z.array(z.string()),
+		path: z.array(z.string()),
 		type: z.literal('DATE'),
 		value: filterValue(z.union([z.string().datetime(), z.tuple([z.string().datetime(), z.string().datetime()])]))
 	}),
@@ -51,7 +51,7 @@ const filterCriteria = z.discriminatedUnion('type', [
 			.returns(z.tuple([z.number(), z.number()]))
 			.optional(),
 		operator: filterOperator.geo,
-		source: z.array(z.string()),
+		path: z.array(z.string()),
 		type: z.literal('GEO'),
 		value: filterValue(
 			z.object({
@@ -65,7 +65,7 @@ const filterCriteria = z.discriminatedUnion('type', [
 	z.object({
 		defaultValue: z.number().default(0),
 		operator: filterOperator.number,
-		source: z.array(z.string()),
+		path: z.array(z.string()),
 		type: z.literal('NUMBER'),
 		value: filterValue(z.union([z.number(), z.array(z.number())]))
 	}),
@@ -73,7 +73,7 @@ const filterCriteria = z.discriminatedUnion('type', [
 		defaultValue: z.string().default(''),
 		normalize: z.boolean().default(true),
 		operator: filterOperator.text,
-		source: z.array(z.string()),
+		path: z.array(z.string()),
 		type: z.literal('TEXT'),
 		value: z.union([z.string(), z.array(z.string()), z.instanceof(RegExp)])
 	})
@@ -100,6 +100,30 @@ namespace FilterCriteria {
 	export type LogicalOperator = z.infer<typeof filterLogicalOperator>;
 	export type Rule = z.infer<typeof filterRule>;
 	export type RuleInput = z.input<typeof filterRule>;
+	export type CriteriaResult = {
+		criteriaValue: any;
+		level: 'criteria';
+		operator: string;
+		passed: boolean;
+		reason: string;
+		value: any;
+	};
+
+	export type MatchResult = {
+		level: 'match';
+		operator: LogicalOperator;
+		passed: boolean;
+		reason: string;
+		results: RuleResult[];
+	};
+
+	export type RuleResult = {
+		level: 'rule';
+		operator: LogicalOperator;
+		passed: boolean;
+		reason: string;
+		results: CriteriaResult[];
+	};
 }
 
 class FilterCriteria {
@@ -107,12 +131,222 @@ class FilterCriteria {
 		input = filter.parse(input);
 
 		return _.filter(data, item => {
-			const results = _.map(input.rules, rule => {
+			const ruleResults = _.map(input.rules, rule => {
 				return this.applyRule(item, rule);
-			});
+			}) as boolean[];
 
-			return input.operator === 'AND' ? _.every(results, Boolean) : _.some(results, Boolean);
+			return input.operator === 'AND' ? _.every(ruleResults, Boolean) : _.some(ruleResults, Boolean);
 		});
+	}
+
+	static applyMatch(data: any, input: FilterCriteria.FilterInput, detailed: boolean = false): boolean | FilterCriteria.MatchResult {
+		input = filter.parse(input);
+
+		const ruleResults = _.map(input.rules, rule => {
+			return this.applyRule(data, rule, detailed);
+		});
+
+		const passed =
+			input.operator === 'AND'
+				? _.every(ruleResults, r => {
+						return _.isBoolean(r) ? r : r.passed;
+					})
+				: _.some(ruleResults, r => {
+						return _.isBoolean(r) ? r : r.passed;
+					});
+
+		if (detailed) {
+			return {
+				level: 'match',
+				operator: input.operator,
+				passed,
+				reason: `Match "${input.operator}" check ${passed ? 'PASSED' : 'FAILED'}`,
+				results: ruleResults as FilterCriteria.RuleResult[]
+			};
+		}
+
+		return passed;
+	}
+
+	static applyRule(item: any, rule: FilterCriteria.RuleInput, detailed: boolean = false): boolean | FilterCriteria.RuleResult {
+		const criteriaResults = _.map(rule.criteria, criteria => {
+			return this.applyCriteria(item, criteria, detailed);
+		});
+
+		const passed =
+			rule.operator === 'AND'
+				? _.every(criteriaResults, r => {
+						return _.isBoolean(r) ? r : r.passed;
+					})
+				: _.some(criteriaResults, r => {
+						return _.isBoolean(r) ? r : r.passed;
+					});
+
+		if (detailed) {
+			return {
+				operator: rule.operator,
+				passed,
+				reason: `Rule "${rule.operator}" check ${passed ? 'PASSED' : 'FAILED'}`,
+				results: criteriaResults as FilterCriteria.CriteriaResult[],
+				level: 'rule'
+			};
+		}
+
+		return passed;
+	}
+
+	static applyCriteria(
+		item: any,
+		criteria: FilterCriteria.CriteriaInput,
+		detailed: boolean = false
+	): boolean | FilterCriteria.CriteriaResult {
+		let value = _.get(item, criteria.path, criteria.defaultValue);
+
+		if (_.isUndefined(value)) {
+			return detailed
+				? {
+						criteriaValue: criteria.value,
+						level: 'criteria',
+						operator: criteria.operator,
+						passed: false,
+						reason: 'Value not found in path',
+						value: null
+					}
+				: false;
+		}
+
+		if (_.isPlainObject(criteria.value) && _.isArray(criteria.value.$path)) {
+			criteria.value = _.get(item, criteria.value.$path, criteria.defaultValue);
+		}
+
+		if ('normalize' in criteria && criteria.normalize) {
+			criteria.value = this.normalize(criteria.value);
+			value = this.normalize(value);
+		}
+
+		switch (criteria.type) {
+			case 'ARRAY': {
+				const result = this.applyArrayFilter(value, criteria.operator, criteria.value);
+
+				if (detailed) {
+					return {
+						criteriaValue: criteria.value,
+						level: 'criteria',
+						operator: criteria.operator,
+						passed: result,
+						reason: `Array "${criteria.operator}" check ${result ? 'PASSED' : 'FAILED'}`,
+						value
+					};
+				}
+
+				return result;
+			}
+
+			case 'BOOLEAN': {
+				const result = this.applyBooleanFilter(value, criteria.operator, criteria.value);
+
+				if (detailed) {
+					return {
+						criteriaValue: criteria.value,
+						level: 'criteria',
+						operator: criteria.operator,
+						passed: result,
+						reason: `Boolean "${criteria.operator}" check ${result ? 'PASSED' : 'FAILED'}`,
+						value
+					};
+				}
+
+				return result;
+			}
+
+			case 'DATE': {
+				const result = this.applyDateFilter(value, criteria.operator, criteria.value);
+
+				if (detailed) {
+					return {
+						criteriaValue: _.isString(criteria.value)
+							? new Date(criteria.value).toISOString()
+							: _.map(criteria.value, v => {
+									return new Date(v).toISOString();
+								}),
+						level: 'criteria',
+						operator: criteria.operator,
+						passed: result,
+						reason: `Date "${criteria.operator}" check ${result ? 'PASSED' : 'FAILED'}`,
+						value
+					};
+				}
+
+				return result;
+			}
+
+			case 'GEO': {
+				const [lat, lng] = criteria.getCoordinates?.(value) || [value.lat, value.lng];
+				const result = this.applyGeoFilter({ lat, lng }, criteria.operator, criteria.value);
+
+				if (detailed) {
+					return {
+						criteriaValue: criteria.value,
+						level: 'criteria',
+						operator: criteria.operator,
+						passed: result,
+						reason: `Geo "${criteria.operator}" check ${result ? 'PASSED' : 'FAILED'}`,
+						value: { lat, lng }
+					};
+				}
+
+				return result;
+			}
+
+			case 'NUMBER': {
+				const result = this.applyNumberFilter(value, criteria.operator, criteria.value);
+
+				if (detailed) {
+					return {
+						criteriaValue: criteria.value,
+						level: 'criteria',
+						operator: criteria.operator,
+						passed: result,
+						reason: `Number "${criteria.operator}" check ${result ? 'PASSED' : 'FAILED'}`,
+						value
+					};
+				}
+
+				return result;
+			}
+
+			case 'TEXT': {
+				const result = this.applyTextFilter(value, criteria.operator, criteria.value);
+
+				if (detailed) {
+					return {
+						criteriaValue: criteria.value,
+						level: 'criteria',
+						operator: criteria.operator,
+						passed: result,
+						reason: `Text "${criteria.operator}" check ${result ? 'PASSED' : 'FAILED'}`,
+						value
+					};
+				}
+
+				return result;
+			}
+
+			default: {
+				if (detailed) {
+					return {
+						criteriaValue: null,
+						level: 'criteria',
+						operator: '',
+						passed: false,
+						reason: 'Unknown filter type',
+						value
+					};
+				}
+
+				return false;
+			}
+		}
 	}
 
 	static applyArrayFilter(value: any[], operator: FilterCriteria.FilterOperators['array'], filterValue: unknown[]): boolean {
@@ -171,56 +405,8 @@ class FilterCriteria {
 				return value === filterValue;
 			}
 
-			case 'IS-NOT': {
+			case 'IS_NOT': {
 				return value !== filterValue;
-			}
-
-			default:
-				return false;
-		}
-	}
-
-	static applyCriteria(item: any, criteria: FilterCriteria.CriteriaInput): boolean {
-		let value = _.get(item, criteria.source, criteria.defaultValue);
-
-		if (_.isUndefined(value)) {
-			return false;
-		}
-
-		if (_.isPlainObject(criteria.value) && _.isArray(criteria.value.$path)) {
-			criteria.value = _.get(item, criteria.value.$path, criteria.defaultValue);
-		}
-
-		if ('normalize' in criteria && criteria.normalize) {
-			criteria.value = this.normalize(criteria.value);
-			value = this.normalize(value);
-		}
-
-		switch (criteria.type) {
-			case 'ARRAY': {
-				return this.applyArrayFilter(value, criteria.operator, criteria.value);
-			}
-
-			case 'BOOLEAN': {
-				return this.applyBooleanFilter(value, criteria.operator, criteria.value);
-			}
-
-			case 'DATE': {
-				return this.applyDateFilter(value, criteria.operator, criteria.value);
-			}
-
-			case 'GEO': {
-				const [lat, lng] = criteria.getCoordinates?.(value) || [value.lat, value.lng];
-
-				return this.applyGeoFilter({ lat, lng }, criteria.operator, criteria.value);
-			}
-
-			case 'NUMBER': {
-				return this.applyNumberFilter(value, criteria.operator, criteria.value);
-			}
-
-			case 'TEXT': {
-				return this.applyTextFilter(value, criteria.operator, criteria.value);
 			}
 
 			default:
@@ -240,12 +426,20 @@ class FilterCriteria {
 		});
 
 		switch (operator) {
+			case 'AFTER': {
+				return date > start;
+			}
+
+			case 'AFTER_OR_EQUALS': {
+				return date >= start;
+			}
+
 			case 'BEFORE': {
 				return date < start;
 			}
 
-			case 'AFTER': {
-				return date > start;
+			case 'BEFORE_OR_EQUALS': {
+				return date <= start;
 			}
 
 			case 'BETWEEN': {
@@ -263,8 +457,12 @@ class FilterCriteria {
 		filterValue: { lat: number; lng: number; radius?: number; unit?: 'km' | 'mi' }
 	): boolean {
 		switch (operator) {
-			case 'IN-RADIUS': {
+			case 'IN_RADIUS': {
 				return this.calculateDistance(value, filterValue) <= (filterValue.radius || 0);
+			}
+
+			case 'NOT_IN_RADIUS': {
+				return this.calculateDistance(value, filterValue) > (filterValue.radius || 0);
 			}
 
 			default:
@@ -282,7 +480,7 @@ class FilterCriteria {
 				return value > (filterValue as number);
 			}
 
-			case 'GREATER-EQUALS': {
+			case 'GREATER_OR_EQUALS': {
 				return value >= (filterValue as number);
 			}
 
@@ -290,7 +488,7 @@ class FilterCriteria {
 				return value < (filterValue as number);
 			}
 
-			case 'LESS-EQUALS': {
+			case 'LESS_OR_EQUALS': {
 				return value <= (filterValue as number);
 			}
 
@@ -302,14 +500,6 @@ class FilterCriteria {
 			default:
 				return false;
 		}
-	}
-
-	static applyRule(item: any, rule: FilterCriteria.RuleInput): boolean {
-		const results = _.map(rule.criteria, criteria => {
-			return this.applyCriteria(item, criteria);
-		});
-
-		return rule.operator === 'AND' ? _.every(results, Boolean) : _.some(results, Boolean);
 	}
 
 	static applyTextFilter(
@@ -326,19 +516,19 @@ class FilterCriteria {
 				return value === filterValue;
 			}
 
-			case 'ENDS-WITH': {
+			case 'ENDS_WITH': {
 				return _.endsWith(value, filterValue as string);
 			}
 
-			case 'IS-EMPTY': {
+			case 'IS_EMPTY': {
 				return _.isEmpty(value);
 			}
 
-			case 'MATCHES-REGEX': {
+			case 'MATCHES_REGEX': {
 				return new RegExp(filterValue as string).test(value);
 			}
 
-			case 'STARTS-WITH': {
+			case 'STARTS_WITH': {
 				return _.startsWith(value, filterValue as string);
 			}
 

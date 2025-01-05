@@ -51,13 +51,13 @@ const filter = {
 				{
 					type: 'NUMBER',
 					operator: 'GREATER',
-					source: ['age'],
+					path: ['age'],
 					value: 20
 				},
 				{
 					type: 'ARRAY',
 					operator: 'INCLUDES_ANY',
-					source: ['tags'],
+					path: ['tags'],
 					value: ['developer']
 				}
 			]
@@ -71,7 +71,51 @@ const results = FilterCriteria.apply(data, filter);
 
 ## Supported Filter Types
 
-[Previous filter types section remains the same...]
+### Array Operators
+
+- `EXACTLY_MATCHES`: Arrays contain the same elements (order independent)
+- `INCLUDES_ALL`: Array contains ALL filter values
+- `INCLUDES_ANY`: Array contains AT LEAST ONE filter value
+- `IS_EMPTY`: Array is empty
+- `IS_NOT_EMPTY`: Array is not empty
+- `NOT_INCLUDES_ALL`: Array is missing AT LEAST ONE filter value
+- `NOT_INCLUDES_ANY`: Array contains NONE of the filter values
+
+### Boolean Operators
+
+- `IS`: Value equals the filter value
+- `IS_NOT`: Value does not equal the filter value
+
+### Date Operators
+
+- `AFTER`: Date is after the filter value
+- `AFTER_OR_EQUALS`: Date is after or equal to the filter value
+- `BEFORE`: Date is before the filter value
+- `BEFORE_OR_EQUALS`: Date is before or equal to the filter value
+- `BETWEEN`: Date is between two filter values
+
+### Geographic Operators
+
+- `IN_RADIUS`: Point is within the specified radius
+- `NOT_IN_RADIUS`: Point is outside the specified radius
+
+### Number Operators
+
+- `BETWEEN`: Number is between two values (inclusive)
+- `EQUALS`: Number equals the filter value
+- `GREATER`: Number is greater than the filter value
+- `GREATER_OR_EQUALS`: Number is greater than or equal to the filter value
+- `LESS`: Number is less than the filter value
+- `LESS_OR_EQUALS`: Number is less than or equal to the filter value
+
+### Text Operators
+
+- `CONTAINS`: Text contains the filter value
+- `ENDS_WITH`: Text ends with the filter value
+- `EQUALS`: Text equals the filter value
+- `IS_EMPTY`: Text is empty
+- `MATCHES_REGEX`: Text matches the regular expression pattern
+- `STARTS_WITH`: Text starts with the filter value
 
 ## Advanced Usage
 
@@ -102,7 +146,7 @@ const filter = {
 				{
 					type: 'ARRAY',
 					operator: 'EXACTLY_MATCHES',
-					source: ['tags'],
+					path: ['tags'],
 					value: { $path: ['requiredTags'] } // Compare tags with requiredTags
 				}
 			]
@@ -120,11 +164,18 @@ This feature is particularly useful when you need to:
 - Build dynamic filters based on object properties
 - Create relative comparisons between fields
 
-[Rest of the previous sections remain the same...]
-
 ## TypeScript Support
 
-[Previous TypeScript section remains the same...]
+Full TypeScript support is provided out of the box. The library exports all necessary types and interfaces:
+
+```typescript
+import FilterCriteria, { FilterCriteriaTypes } from 'use-filter-criteria';
+
+type FilterInput = FilterCriteriaTypes.FilterInput;
+type Filter = FilterCriteriaTypes.Filter;
+type Rule = FilterCriteriaTypes.Rule;
+type Criteria = FilterCriteriaTypes.Criteria;
+```
 
 ## Contributing
 

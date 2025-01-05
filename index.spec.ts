@@ -46,7 +46,7 @@ describe('/index', () => {
 								{
 									type: 'BOOLEAN',
 									operator: 'IS',
-									source: ['active'],
+									path: ['active'],
 									value: true
 								}
 							]
@@ -57,13 +57,13 @@ describe('/index', () => {
 								{
 									type: 'TEXT',
 									operator: 'CONTAINS',
-									source: ['name'],
+									path: ['name'],
 									value: 'John'
 								},
 								{
 									type: 'NUMBER',
 									operator: 'LESS',
-									source: ['age'],
+									path: ['age'],
 									value: 30
 								}
 							]
@@ -86,7 +86,7 @@ describe('/index', () => {
 								{
 									type: 'BOOLEAN',
 									operator: 'IS',
-									source: ['active'],
+									path: ['active'],
 									value: true
 								}
 							]
@@ -97,13 +97,13 @@ describe('/index', () => {
 								{
 									type: 'TEXT',
 									operator: 'CONTAINS',
-									source: ['name'],
+									path: ['name'],
 									value: 'John'
 								},
 								{
 									type: 'NUMBER',
 									operator: 'LESS',
-									source: ['age'],
+									path: ['age'],
 									value: 30
 								}
 							]
@@ -127,8 +127,8 @@ describe('/index', () => {
 							criteria: [
 								{
 									type: 'NUMBER',
-									operator: 'GREATER-EQUALS',
-									source: ['missing'],
+									operator: 'GREATER_OR_EQUALS',
+									path: ['missing'],
 									value: 30,
 									defaultValue: 40
 								}
@@ -150,8 +150,8 @@ describe('/index', () => {
 							criteria: [
 								{
 									type: 'NUMBER',
-									operator: 'GREATER-EQUALS',
-									source: ['missing'],
+									operator: 'GREATER_OR_EQUALS',
+									path: ['missing'],
 									value: 30
 								}
 							]
@@ -163,662 +163,904 @@ describe('/index', () => {
 				expect(res).toHaveLength(0);
 			});
 		});
+	});
 
-		describe('dynamic value ($path)', () => {
-			it('should handle filter with dynamic value', () => {
-				const filter: FilterCriteria.FilterInput = {
-					operator: 'AND',
-					rules: [
-						{
-							operator: 'AND',
-							criteria: [
-								{
-									type: 'ARRAY',
-									operator: 'EXACTLY_MATCHES',
-									source: ['tags'],
-									value: { $path: ['tags'] }
-								}
-							]
-						}
-					]
-				};
+	describe('applyMatch', () => {
+		it('should return with AND', () => {
+			const filter: FilterCriteria.FilterInput = {
+				operator: 'AND',
+				rules: _.times(2, () => {
+					return {
+						operator: 'OR',
+						criteria: [
+							{
+								type: 'TEXT',
+								operator: 'CONTAINS',
+								path: ['name'],
+								value: 'jo_hn'
+							},
+							{
+								type: 'TEXT',
+								operator: 'CONTAINS',
+								path: ['name'],
+								value: 'john'
+							}
+						]
+					};
+				})
+			};
 
-				const res = FilterCriteria.apply(testData, filter);
-				expect(res).toHaveLength(1);
-				expect(_.map(res, 'id').sort()).toEqual([1]);
+			const res = [FilterCriteria.applyMatch(testData[0], filter, false), FilterCriteria.applyMatch(testData[0], filter, true)];
+
+			expect(res[0]).toEqual(true);
+			expect(res[1]).toEqual({
+				level: 'match',
+				operator: 'AND',
+				passed: true,
+				reason: 'Match "AND" check PASSED',
+				results: _.times(2, () => {
+					return {
+						operator: 'OR',
+						passed: true,
+						reason: 'Rule "OR" check PASSED',
+						results: [
+							{
+								criteriaValue: 'jo_hn',
+								level: 'criteria',
+								operator: 'CONTAINS',
+								passed: false,
+								reason: 'Text "CONTAINS" check FAILED',
+								value: 'john-doe'
+							},
+							{
+								criteriaValue: 'john',
+								level: 'criteria',
+								operator: 'CONTAINS',
+								passed: true,
+								reason: 'Text "CONTAINS" check PASSED',
+								value: 'john-doe'
+							}
+						],
+						level: 'rule'
+					};
+				})
+			});
+		});
+
+		it('should return with OR', () => {
+			const filter: FilterCriteria.FilterInput = {
+				operator: 'OR',
+				rules: _.times(2, () => {
+					return {
+						operator: 'OR',
+						criteria: [
+							{
+								type: 'TEXT',
+								operator: 'CONTAINS',
+								path: ['name'],
+								value: 'jo_hn'
+							},
+							{
+								type: 'TEXT',
+								operator: 'CONTAINS',
+								path: ['name'],
+								value: 'john'
+							}
+						]
+					};
+				})
+			};
+
+			const res = [FilterCriteria.applyMatch(testData[0], filter, false), FilterCriteria.applyMatch(testData[0], filter, true)];
+
+			expect(res[0]).toEqual(true);
+			expect(res[1]).toEqual({
+				level: 'match',
+				operator: 'OR',
+				passed: true,
+				reason: 'Match "OR" check PASSED',
+				results: _.times(2, () => {
+					return {
+						operator: 'OR',
+						passed: true,
+						reason: 'Rule "OR" check PASSED',
+						results: [
+							{
+								criteriaValue: 'jo_hn',
+								level: 'criteria',
+								operator: 'CONTAINS',
+								passed: false,
+								reason: 'Text "CONTAINS" check FAILED',
+								value: 'john-doe'
+							},
+							{
+								criteriaValue: 'john',
+								level: 'criteria',
+								operator: 'CONTAINS',
+								passed: true,
+								reason: 'Text "CONTAINS" check PASSED',
+								value: 'john-doe'
+							}
+						],
+						level: 'rule'
+					};
+				})
 			});
 		});
 	});
 
-	describe('array filters', () => {
-		it('should handle EXACTLY_MATCHES operator', () => {
-			const filter: FilterCriteria.FilterInput = {
-				operator: 'AND',
-				rules: [
+	describe('applyRule', () => {
+		it('should return', () => {
+			const rule: FilterCriteria.RuleInput = {
+				operator: 'OR',
+				criteria: [
 					{
-						operator: 'AND',
-						criteria: [
-							{
-								type: 'ARRAY',
-								operator: 'EXACTLY_MATCHES',
-								source: ['tags'],
-								value: ['Develóper', 'JavaScript']
-							}
-						]
+						type: 'TEXT',
+						operator: 'CONTAINS',
+						path: ['name'],
+						value: 'jo_hn'
+					},
+					{
+						type: 'TEXT',
+						operator: 'CONTAINS',
+						path: ['name'],
+						value: 'john'
 					}
 				]
 			};
 
-			const res = FilterCriteria.apply(testData, filter);
-			expect(res).toHaveLength(1);
-			expect(_.map(res, 'id').sort()).toEqual([1]);
-		});
+			const res = [FilterCriteria.applyRule(testData[0], rule, false), FilterCriteria.applyRule(testData[0], rule, true)];
 
-		it('should handle EXACTLY_MATCHES operator without normalize', () => {
-			const filter: FilterCriteria.FilterInput = {
-				operator: 'AND',
-				rules: [
+			expect(res[0]).toEqual(false);
+			expect(res[1]).toEqual({
+				operator: 'OR',
+				passed: false,
+				reason: 'Rule "OR" check FAILED',
+				results: [
 					{
-						operator: 'AND',
-						criteria: [
-							{
-								type: 'ARRAY',
-								operator: 'EXACTLY_MATCHES',
-								normalize: false,
-								source: ['tags'],
-								value: ['Develóper', 'JavaScript']
-							}
-						]
-					}
-				]
-			};
-
-			const res = FilterCriteria.apply(testData, filter);
-			expect(res).toHaveLength(0);
-		});
-
-		it('should handle INCLUDES_ALL operator', () => {
-			const filter: FilterCriteria.FilterInput = {
-				operator: 'AND',
-				rules: [
+						criteriaValue: 'jo_hn',
+						level: 'criteria',
+						operator: 'CONTAINS',
+						passed: false,
+						reason: 'Text "CONTAINS" check FAILED',
+						value: 'John Doe'
+					},
 					{
-						operator: 'AND',
-						criteria: [
-							{
-								type: 'ARRAY',
-								operator: 'INCLUDES_ALL',
-								source: ['tags'],
-								value: ['developer', 'javascript']
-							}
-						]
+						criteriaValue: 'john',
+						level: 'criteria',
+						operator: 'CONTAINS',
+						passed: false,
+						reason: 'Text "CONTAINS" check FAILED',
+						value: 'John Doe'
 					}
-				]
-			};
-
-			const res = FilterCriteria.apply(testData, filter);
-
-			expect(res).toHaveLength(1);
-			expect(_.map(res, 'id').sort()).toEqual([1]);
-		});
-
-		it('should handle INCLUDES_ANY operator', () => {
-			const filter: FilterCriteria.FilterInput = {
-				operator: 'AND',
-				rules: [
-					{
-						operator: 'AND',
-						criteria: [
-							{
-								type: 'ARRAY',
-								operator: 'INCLUDES_ANY',
-								source: ['tags'],
-								value: ['developer', 'javascript']
-							}
-						]
-					}
-				]
-			};
-
-			const res = FilterCriteria.apply(testData, filter);
-			expect(res).toHaveLength(2);
-			expect(_.map(res, 'id').sort()).toEqual([1, 3]);
-		});
-
-		it('should handle IS_EMPTY operator', () => {
-			const filter: FilterCriteria.FilterInput = {
-				operator: 'AND',
-				rules: [
-					{
-						operator: 'AND',
-						criteria: [
-							{
-								type: 'ARRAY',
-								operator: 'IS_EMPTY',
-								source: ['tags'],
-								value: []
-							}
-						]
-					}
-				]
-			};
-
-			const res = FilterCriteria.apply(testData, filter);
-			expect(res).toHaveLength(0);
-		});
-
-		it('should handle IS_NOT_EMPTY operator', () => {
-			const filter: FilterCriteria.FilterInput = {
-				operator: 'AND',
-				rules: [
-					{
-						operator: 'AND',
-						criteria: [
-							{
-								type: 'ARRAY',
-								operator: 'IS_NOT_EMPTY',
-								source: ['tags'],
-								value: []
-							}
-						]
-					}
-				]
-			};
-
-			const res = FilterCriteria.apply(testData, filter);
-			expect(res).toHaveLength(3);
-			expect(_.map(res, 'id').sort()).toEqual([1, 2, 3]);
-		});
-
-		it('should handle NOT_INCLUDES_ALL operator', () => {
-			const filter: FilterCriteria.FilterInput = {
-				operator: 'AND',
-				rules: [
-					{
-						operator: 'AND',
-						criteria: [
-							{
-								type: 'ARRAY',
-								operator: 'NOT_INCLUDES_ALL',
-								source: ['tags'],
-								value: ['developer', 'javascript']
-							}
-						]
-					}
-				]
-			};
-
-			const res = FilterCriteria.apply(testData, filter);
-			expect(res).toHaveLength(2);
-			expect(_.map(res, 'id').sort()).toEqual([2, 3]);
-		});
-
-		it('should handle NOT_INCLUDES_ANY operator', () => {
-			const filter: FilterCriteria.FilterInput = {
-				operator: 'AND',
-				rules: [
-					{
-						operator: 'AND',
-						criteria: [
-							{
-								type: 'ARRAY',
-								operator: 'NOT_INCLUDES_ANY',
-								source: ['tags'],
-								value: ['developer', 'javascript']
-							}
-						]
-					}
-				]
-			};
-
-			const res = FilterCriteria.apply(testData, filter);
-			expect(res).toHaveLength(1);
-			expect(_.map(res, 'id').sort()).toEqual([2]);
+				],
+				level: 'rule'
+			});
 		});
 	});
 
-	describe('boolean filters', () => {
-		it('should filter by IS operator', () => {
-			const filter: FilterCriteria.FilterInput = {
-				operator: 'AND',
-				rules: [
-					{
-						operator: 'AND',
-						criteria: [
-							{
-								type: 'BOOLEAN',
-								operator: 'IS',
-								source: ['active'],
-								value: true
-							}
-						]
-					}
-				]
+	describe('applyCriteria', () => {
+		it('should handle undefined value', () => {
+			const criteria: FilterCriteria.CriteriaInput = {
+				type: 'TEXT',
+				operator: 'CONTAINS',
+				path: ['inexistent'],
+				value: 'value'
 			};
 
-			const res = FilterCriteria.apply(testData, filter);
-			expect(res).toHaveLength(2);
-			expect(_.map(res, 'id').sort()).toEqual([1, 3]);
+			const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+			expect(res[0]).toEqual(false);
+			expect(res[1]).toEqual({
+				criteriaValue: 'value',
+				level: 'criteria',
+				operator: 'CONTAINS',
+				passed: false,
+				reason: 'Value not found in path',
+				value: null
+			});
 		});
 
-		it('should filter by IS-NOT operator', () => {
-			const filter: FilterCriteria.FilterInput = {
-				operator: 'AND',
-				rules: [
-					{
-						operator: 'AND',
-						criteria: [
-							{
-								type: 'BOOLEAN',
-								operator: 'IS-NOT',
-								source: ['active'],
-								value: true
-							}
-						]
-					}
-				]
+		it('should handle dynamic value', () => {
+			const criteria: FilterCriteria.CriteriaInput = {
+				type: 'ARRAY',
+				operator: 'EXACTLY_MATCHES',
+				path: ['tags'],
+				value: { $path: ['tags'] }
 			};
 
-			const res = FilterCriteria.apply(testData, filter);
-			expect(res).toHaveLength(1);
-			expect(_.map(res, 'id').sort()).toEqual([2]);
-		});
-	});
-
-	describe('date filters', () => {
-		it('should filter by AFTER operator', () => {
-			const filter: FilterCriteria.FilterInput = {
-				operator: 'AND',
-				rules: [
-					{
-						operator: 'AND',
-						criteria: [
-							{
-								type: 'DATE',
-								operator: 'AFTER',
-								source: ['createdAt'],
-								value: '2023-01-01T12:00:00Z'
-							}
-						]
-					}
-				]
-			};
-
-			const res = FilterCriteria.apply(testData, filter);
-			expect(res).toHaveLength(2);
-			expect(_.map(res, 'id').sort()).toEqual([2, 3]);
+			const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+			expect(res[0]).toEqual(true);
+			expect(res[1]).toEqual({
+				criteriaValue: ['developer', 'javascript'],
+				level: 'criteria',
+				operator: 'EXACTLY_MATCHES',
+				passed: true,
+				reason: 'Array "EXACTLY_MATCHES" check PASSED',
+				value: ['developer', 'javascript']
+			});
 		});
 
-		it('should filter by BEFORE operator', () => {
-			const filter: FilterCriteria.FilterInput = {
-				operator: 'AND',
-				rules: [
-					{
-						operator: 'AND',
-						criteria: [
-							{
-								type: 'DATE',
-								operator: 'BEFORE',
-								source: ['createdAt'],
-								value: '2023-01-01T12:00:00Z'
-							}
-						]
-					}
-				]
+		it('should handle inexistent value', () => {
+			const criteria: FilterCriteria.CriteriaInput = {
+				// @ts-expect-error
+				type: 'INEXISTENT',
+				operator: 'CONTAINS',
+				path: ['name'],
+				value: 'John'
 			};
 
-			const res = FilterCriteria.apply(testData, filter);
-			expect(res).toHaveLength(1);
-			expect(_.map(res, 'id').sort()).toEqual([1]);
+			const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+			expect(res[0]).toEqual(false);
+			expect(res[1]).toEqual({
+				criteriaValue: null,
+				level: 'criteria',
+				operator: '',
+				passed: false,
+				reason: 'Unknown filter type',
+				value: 'John Doe'
+			});
 		});
 
-		it('should filter by BETWEEN operator', () => {
-			const filter: FilterCriteria.FilterInput = {
-				operator: 'AND',
-				rules: [
-					{
-						operator: 'AND',
-						criteria: [
-							{
-								type: 'DATE',
-								operator: 'BETWEEN',
-								source: ['createdAt'],
-								value: ['2023-01-01T12:00:00Z', '2023-03-01T00:00:00Z']
-							}
-						]
-					}
-				]
-			};
+		describe('array', () => {
+			it('should handle EXACTLY_MATCHES operator with normalize = true', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'ARRAY',
+					normalize: true,
+					operator: 'EXACTLY_MATCHES',
+					path: ['tags'],
+					value: ['Develóper', 'JavaScript']
+				};
 
-			const res = FilterCriteria.apply(testData, filter);
-			expect(res).toHaveLength(1);
-			expect(_.map(res, 'id').sort()).toEqual([2]);
-		});
-	});
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
 
-	describe('geo filters', () => {
-		it('should filter by IN-RADIUS operator', () => {
-			const filter: FilterCriteria.FilterInput = {
-				operator: 'AND',
-				rules: [
-					{
-						operator: 'AND',
-						criteria: [
-							{
-								type: 'GEO',
-								operator: 'IN-RADIUS',
-								source: ['location'],
-								value: { lat: 40.7128, lng: -74.006 }
-							}
-						]
-					}
-				]
-			};
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					criteriaValue: ['developer', 'javascript'],
+					level: 'criteria',
+					operator: 'EXACTLY_MATCHES',
+					passed: true,
+					reason: 'Array "EXACTLY_MATCHES" check PASSED',
+					value: ['developer', 'javascript']
+				});
+			});
 
-			const res = FilterCriteria.apply(testData, filter);
-			expect(res).toHaveLength(1);
-			expect(_.map(res, 'id').sort()).toEqual([1]);
-		});
-	});
+			it('should handle EXACTLY_MATCHES operator with normalize = false', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'ARRAY',
+					normalize: false,
+					operator: 'EXACTLY_MATCHES',
+					path: ['tags'],
+					value: ['Develóper', 'JavaScript']
+				};
 
-	describe('number filters', () => {
-		it('should filter by BETWEEN operator', () => {
-			const filter: FilterCriteria.FilterInput = {
-				operator: 'AND',
-				rules: [
-					{
-						operator: 'AND',
-						criteria: [
-							{
-								type: 'NUMBER',
-								operator: 'BETWEEN',
-								source: ['age'],
-								value: [25, 30]
-							}
-						]
-					}
-				]
-			};
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
 
-			const res = FilterCriteria.apply(testData, filter);
-			expect(res).toHaveLength(2);
-			expect(_.map(res, 'id').sort()).toEqual([1, 2]);
-		});
+				expect(res[0]).toEqual(false);
+				expect(res[1]).toEqual({
+					criteriaValue: ['Develóper', 'JavaScript'],
+					level: 'criteria',
+					operator: 'EXACTLY_MATCHES',
+					passed: false,
+					reason: 'Array "EXACTLY_MATCHES" check FAILED',
+					value: ['developer', 'javascript']
+				});
+			});
 
-		it('should filter by EQUALS operator', () => {
-			const filter: FilterCriteria.FilterInput = {
-				operator: 'AND',
-				rules: [
-					{
-						operator: 'AND',
-						criteria: [
-							{
-								type: 'NUMBER',
-								operator: 'EQUALS',
-								source: ['age'],
-								value: 30
-							}
-						]
-					}
-				]
-			};
+			it('should handle INCLUDES_ALL operator', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'ARRAY',
+					operator: 'INCLUDES_ALL',
+					path: ['tags'],
+					value: ['developer', 'javascript']
+				};
 
-			const res = FilterCriteria.apply(testData, filter);
-			expect(res).toHaveLength(1);
-			expect(_.map(res, 'id').sort()).toEqual([2]);
-		});
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
 
-		it('should filter by GREATER operator', () => {
-			const filter: FilterCriteria.FilterInput = {
-				operator: 'AND',
-				rules: [
-					{
-						operator: 'AND',
-						criteria: [
-							{
-								type: 'NUMBER',
-								operator: 'GREATER',
-								source: ['age'],
-								value: 30
-							}
-						]
-					}
-				]
-			};
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					criteriaValue: ['developer', 'javascript'],
+					level: 'criteria',
+					operator: 'INCLUDES_ALL',
+					passed: true,
+					reason: 'Array "INCLUDES_ALL" check PASSED',
+					value: ['developer', 'javascript']
+				});
+			});
 
-			const res = FilterCriteria.apply(testData, filter);
-			expect(res).toHaveLength(1);
-			expect(_.map(res, 'id').sort()).toEqual([3]);
-		});
+			it('should handle INCLUDES_ANY operator', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'ARRAY',
+					operator: 'INCLUDES_ANY',
+					path: ['tags'],
+					value: ['developer', 'javascript']
+				};
 
-		it('should filter by GREATER-EQUALS operator', () => {
-			const filter: FilterCriteria.FilterInput = {
-				operator: 'AND',
-				rules: [
-					{
-						operator: 'AND',
-						criteria: [
-							{
-								type: 'NUMBER',
-								operator: 'GREATER-EQUALS',
-								source: ['age'],
-								value: 30
-							}
-						]
-					}
-				]
-			};
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
 
-			const res = FilterCriteria.apply(testData, filter);
-			expect(res).toHaveLength(2);
-			expect(_.map(res, 'id').sort()).toEqual([2, 3]);
-		});
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					criteriaValue: ['developer', 'javascript'],
+					level: 'criteria',
+					operator: 'INCLUDES_ANY',
+					passed: true,
+					reason: 'Array "INCLUDES_ANY" check PASSED',
+					value: ['developer', 'javascript']
+				});
+			});
 
-		it('should filter by LESS operator', () => {
-			const filter: FilterCriteria.FilterInput = {
-				operator: 'AND',
-				rules: [
-					{
-						operator: 'AND',
-						criteria: [
-							{
-								type: 'NUMBER',
-								operator: 'LESS',
-								source: ['age'],
-								value: 30
-							}
-						]
-					}
-				]
-			};
+			it('should handle IS_EMPTY operator', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'ARRAY',
+					operator: 'IS_EMPTY',
+					path: ['tags'],
+					value: []
+				};
 
-			const res = FilterCriteria.apply(testData, filter);
-			expect(res).toHaveLength(1);
-			expect(_.map(res, 'id').sort()).toEqual([1]);
-		});
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
 
-		it('should filter by LESS-EQUALS operator', () => {
-			const filter: FilterCriteria.FilterInput = {
-				operator: 'AND',
-				rules: [
-					{
-						operator: 'AND',
-						criteria: [
-							{
-								type: 'NUMBER',
-								operator: 'LESS-EQUALS',
-								source: ['age'],
-								value: 30
-							}
-						]
-					}
-				]
-			};
+				expect(res[0]).toEqual(false);
+				expect(res[1]).toEqual({
+					criteriaValue: [],
+					level: 'criteria',
+					operator: 'IS_EMPTY',
+					passed: false,
+					reason: 'Array "IS_EMPTY" check FAILED',
+					value: ['developer', 'javascript']
+				});
+			});
 
-			const res = FilterCriteria.apply(testData, filter);
-			expect(res).toHaveLength(2);
-			expect(_.map(res, 'id').sort()).toEqual([1, 2]);
-		});
-	});
+			it('should handle IS_NOT_EMPTY operator', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'ARRAY',
+					operator: 'IS_NOT_EMPTY',
+					path: ['tags'],
+					value: []
+				};
 
-	describe('text filters', () => {
-		it('should filter by CONTAINS operator', () => {
-			const filter: FilterCriteria.FilterInput = {
-				operator: 'AND',
-				rules: [
-					{
-						operator: 'AND',
-						criteria: [
-							{
-								type: 'TEXT',
-								operator: 'CONTAINS',
-								source: ['name'],
-								value: 'smith'
-							}
-						]
-					}
-				]
-			};
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
 
-			const res = FilterCriteria.apply(testData, filter);
-			expect(res).toHaveLength(2);
-			expect(_.map(res, 'id').sort()).toEqual([2, 3]);
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					criteriaValue: [],
+					level: 'criteria',
+					operator: 'IS_NOT_EMPTY',
+					passed: true,
+					reason: 'Array "IS_NOT_EMPTY" check PASSED',
+					value: ['developer', 'javascript']
+				});
+			});
+
+			it('should handle NOT_INCLUDES_ALL operator', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'ARRAY',
+					operator: 'NOT_INCLUDES_ALL',
+					path: ['tags'],
+					value: ['developer', 'javascript']
+				};
+
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
+				expect(res[0]).toEqual(false);
+				expect(res[1]).toEqual({
+					criteriaValue: ['developer', 'javascript'],
+					level: 'criteria',
+					operator: 'NOT_INCLUDES_ALL',
+					passed: false,
+					reason: 'Array "NOT_INCLUDES_ALL" check FAILED',
+					value: ['developer', 'javascript']
+				});
+			});
+
+			it('should handle NOT_INCLUDES_ANY operator', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'ARRAY',
+					operator: 'NOT_INCLUDES_ANY',
+					path: ['tags'],
+					value: ['developer', 'javascript']
+				};
+
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
+				expect(res[0]).toEqual(false);
+				expect(res[1]).toEqual({
+					criteriaValue: ['developer', 'javascript'],
+					level: 'criteria',
+					operator: 'NOT_INCLUDES_ANY',
+					passed: false,
+					reason: 'Array "NOT_INCLUDES_ANY" check FAILED',
+					value: ['developer', 'javascript']
+				});
+			});
 		});
 
-		it('should filter by CONTAINS operator without normalize', () => {
-			const filter: FilterCriteria.FilterInput = {
-				operator: 'AND',
-				rules: [
-					{
-						operator: 'AND',
-						criteria: [
-							{
-								type: 'TEXT',
-								operator: 'CONTAINS',
-								normalize: false,
-								source: ['name'],
-								value: 'SMÍTH'
-							}
-						]
-					}
-				]
-			};
+		describe('boolean', () => {
+			it('should handle IS operator', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'BOOLEAN',
+					operator: 'IS',
+					path: ['active'],
+					value: true
+				};
 
-			const res = FilterCriteria.apply(testData, filter);
-			expect(res).toHaveLength(0);
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					criteriaValue: true,
+					level: 'criteria',
+					operator: 'IS',
+					passed: true,
+					reason: 'Boolean "IS" check PASSED',
+					value: true
+				});
+			});
+
+			it('should handle IS_NOT operator', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'BOOLEAN',
+					operator: 'IS_NOT',
+					path: ['active'],
+					value: true
+				};
+
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
+				expect(res[0]).toEqual(false);
+				expect(res[1]).toEqual({
+					criteriaValue: true,
+					level: 'criteria',
+					operator: 'IS_NOT',
+					passed: false,
+					reason: 'Boolean "IS_NOT" check FAILED',
+					value: true
+				});
+			});
 		});
 
-		it('should filter by ENDS-WITH operator', () => {
-			const filter: FilterCriteria.FilterInput = {
-				operator: 'AND',
-				rules: [
-					{
-						operator: 'AND',
-						criteria: [
-							{
-								type: 'TEXT',
-								operator: 'ENDS-WITH',
-								source: ['name'],
-								value: 'Smith'
-							}
-						]
-					}
-				]
-			};
+		describe('date', () => {
+			it('should handle AFTER operator', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'DATE',
+					operator: 'AFTER',
+					path: ['createdAt'],
+					value: '2023-01-01T00:00:00+00:01'
+				};
 
-			const res = FilterCriteria.apply(testData, filter);
-			expect(res).toHaveLength(2);
-			expect(_.map(res, 'id').sort()).toEqual([2, 3]);
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					criteriaValue: '2022-12-31T23:59:00.000Z',
+					level: 'criteria',
+					operator: 'AFTER',
+					passed: true,
+					reason: 'Date "AFTER" check PASSED',
+					value: '2023-01-01T00:00:00Z'
+				});
+			});
+
+			it('should handle AFTER_OR_EQUALS operator', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'DATE',
+					operator: 'AFTER_OR_EQUALS',
+					path: ['createdAt'],
+					value: '2023-01-01T00:00:00Z'
+				};
+
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					criteriaValue: '2023-01-01T00:00:00.000Z',
+					level: 'criteria',
+					operator: 'AFTER_OR_EQUALS',
+					passed: true,
+					reason: 'Date "AFTER_OR_EQUALS" check PASSED',
+					value: '2023-01-01T00:00:00Z'
+				});
+			});
+
+			it('should handle BEFORE operator', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'DATE',
+					operator: 'BEFORE',
+					path: ['createdAt'],
+					value: '2023-01-01T00:00:00-00:01'
+				};
+
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					criteriaValue: '2023-01-01T00:01:00.000Z',
+					level: 'criteria',
+					operator: 'BEFORE',
+					passed: true,
+					reason: 'Date "BEFORE" check PASSED',
+					value: '2023-01-01T00:00:00Z'
+				});
+			});
+
+			it('should handle BEFORE_OR_EQUALS operator', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'DATE',
+					operator: 'BEFORE_OR_EQUALS',
+					path: ['createdAt'],
+					value: '2023-01-01T00:00:00Z'
+				};
+
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
+				expect(res[0]).toEqual(true);
+			});
+
+			it('should handle BETWEEN operator', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'DATE',
+					operator: 'BETWEEN',
+					path: ['createdAt'],
+					value: ['2023-01-01T00:00:00Z', '2023-01-01T00:00:00Z']
+				};
+
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					criteriaValue: ['2023-01-01T00:00:00.000Z', '2023-01-01T00:00:00.000Z'],
+					level: 'criteria',
+					operator: 'BETWEEN',
+					passed: true,
+					reason: 'Date "BETWEEN" check PASSED',
+					value: '2023-01-01T00:00:00Z'
+				});
+			});
 		});
 
-		it('should filter by EQUALS operator', () => {
-			const filter: FilterCriteria.FilterInput = {
-				operator: 'AND',
-				rules: [
-					{
-						operator: 'AND',
-						criteria: [
-							{
-								type: 'TEXT',
-								operator: 'EQUALS',
-								source: ['name'],
-								value: 'John Smith'
-							}
-						]
-					}
-				]
-			};
+		describe('geo', () => {
+			it('should handle IN_RADIUS operator', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'GEO',
+					operator: 'IN_RADIUS',
+					path: ['location'],
+					value: { lat: 40.7128, lng: -74.006 }
+				};
 
-			const res = FilterCriteria.apply(testData, filter);
-			expect(res).toHaveLength(1);
-			expect(_.map(res, 'id').sort()).toEqual([3]);
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					criteriaValue: { lat: 40.7128, lng: -74.006 },
+					level: 'criteria',
+					operator: 'IN_RADIUS',
+					passed: true,
+					reason: 'Geo "IN_RADIUS" check PASSED',
+					value: { lat: 40.7128, lng: -74.006 }
+				});
+			});
+
+			it('should handle IN_RADIUS operator with getCoordinates', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'GEO',
+					getCoordinates: (item: any) => {
+						return [item.lat, item.lng];
+					},
+					operator: 'IN_RADIUS',
+					path: ['location'],
+					value: { lat: 40.7128, lng: -74.006 }
+				};
+
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					criteriaValue: { lat: 40.7128, lng: -74.006 },
+					level: 'criteria',
+					operator: 'IN_RADIUS',
+					passed: true,
+					reason: 'Geo "IN_RADIUS" check PASSED',
+					value: { lat: 40.7128, lng: -74.006 }
+				});
+			});
+
+			it('should handle NOT_IN_RADIUS operator', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'GEO',
+					operator: 'NOT_IN_RADIUS',
+					path: ['location'],
+					value: { lat: 40.7128, lng: -74.006 }
+				};
+
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
+				expect(res[0]).toEqual(false);
+				expect(res[1]).toEqual({
+					criteriaValue: { lat: 40.7128, lng: -74.006 },
+					level: 'criteria',
+					operator: 'NOT_IN_RADIUS',
+					passed: false,
+					reason: 'Geo "NOT_IN_RADIUS" check FAILED',
+					value: { lat: 40.7128, lng: -74.006 }
+				});
+			});
 		});
 
-		it('should filter by IS-EMPTY operator', () => {
-			const filter: FilterCriteria.FilterInput = {
-				operator: 'AND',
-				rules: [
-					{
-						operator: 'AND',
-						criteria: [
-							{
-								type: 'TEXT',
-								operator: 'IS-EMPTY',
-								source: ['name'],
-								value: []
-							}
-						]
-					}
-				]
-			};
+		describe('number', () => {
+			it('should handle BETWEEN operator', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'NUMBER',
+					operator: 'BETWEEN',
+					path: ['age'],
+					value: [25, 30]
+				};
 
-			const res = FilterCriteria.apply(testData, filter);
-			expect(res).toHaveLength(0);
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					criteriaValue: [25, 30],
+					level: 'criteria',
+					operator: 'BETWEEN',
+					passed: true,
+					reason: 'Number "BETWEEN" check PASSED',
+					value: 25
+				});
+			});
+
+			it('should handle EQUALS operator', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'NUMBER',
+					operator: 'EQUALS',
+					path: ['age'],
+					value: 25
+				};
+
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					criteriaValue: 25,
+					level: 'criteria',
+					operator: 'EQUALS',
+					passed: true,
+					reason: 'Number "EQUALS" check PASSED',
+					value: 25
+				});
+			});
+
+			it('should handle GREATER operator', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'NUMBER',
+					operator: 'GREATER',
+					path: ['age'],
+					value: 20
+				};
+
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					criteriaValue: 20,
+					level: 'criteria',
+					operator: 'GREATER',
+					passed: true,
+					reason: 'Number "GREATER" check PASSED',
+					value: 25
+				});
+			});
+
+			it('should handle GREATER_OR_EQUALS operator', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'NUMBER',
+					operator: 'GREATER_OR_EQUALS',
+					path: ['age'],
+					value: 25
+				};
+
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					criteriaValue: 25,
+					level: 'criteria',
+					operator: 'GREATER_OR_EQUALS',
+					passed: true,
+					reason: 'Number "GREATER_OR_EQUALS" check PASSED',
+					value: 25
+				});
+			});
+
+			it('should handle LESS operator', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'NUMBER',
+					operator: 'LESS',
+					path: ['age'],
+					value: 30
+				};
+
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					criteriaValue: 30,
+					level: 'criteria',
+					operator: 'LESS',
+					passed: true,
+					reason: 'Number "LESS" check PASSED',
+					value: 25
+				});
+			});
+
+			it('should handle LESS_OR_EQUALS operator', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'NUMBER',
+					operator: 'LESS_OR_EQUALS',
+					path: ['age'],
+					value: 30
+				};
+
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					criteriaValue: 30,
+					level: 'criteria',
+					operator: 'LESS_OR_EQUALS',
+					passed: true,
+					reason: 'Number "LESS_OR_EQUALS" check PASSED',
+					value: 25
+				});
+			});
 		});
 
-		it('should filter by MATCHES-REGEX operator', () => {
-			const filter: FilterCriteria.FilterInput = {
-				operator: 'AND',
-				rules: [
-					{
-						operator: 'AND',
-						criteria: [
-							{
-								type: 'TEXT',
-								operator: 'MATCHES-REGEX',
-								source: ['name'],
-								value: /john/i
-							}
-						]
-					}
-				]
-			};
+		describe('text', () => {
+			it('should handle CONTAINS operator with normalize = true', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'TEXT',
+					normalize: true,
+					operator: 'CONTAINS',
+					path: ['name'],
+					value: 'doe'
+				};
 
-			const res = FilterCriteria.apply(testData, filter);
-			expect(res).toHaveLength(2);
-			expect(_.map(res, 'id').sort()).toEqual([1, 3]);
-		});
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
 
-		it('should filter by STARTS-WITH operator', () => {
-			const filter: FilterCriteria.FilterInput = {
-				operator: 'AND',
-				rules: [
-					{
-						operator: 'AND',
-						criteria: [
-							{
-								type: 'TEXT',
-								operator: 'STARTS-WITH',
-								source: ['name'],
-								value: 'John'
-							}
-						]
-					}
-				]
-			};
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					criteriaValue: 'doe',
+					level: 'criteria',
+					operator: 'CONTAINS',
+					passed: true,
+					reason: 'Text "CONTAINS" check PASSED',
+					value: 'john-doe'
+				});
+			});
 
-			const res = FilterCriteria.apply(testData, filter);
-			expect(res).toHaveLength(2);
-			expect(_.map(res, 'id').sort()).toEqual([1, 3]);
+			it('should handle CONTAINS operator with normalize = false', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'TEXT',
+					normalize: false,
+					operator: 'CONTAINS',
+					path: ['name'],
+					value: 'doe'
+				};
+
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
+				expect(res[0]).toEqual(false);
+				expect(res[1]).toEqual({
+					criteriaValue: 'doe',
+					level: 'criteria',
+					operator: 'CONTAINS',
+					passed: false,
+					reason: 'Text "CONTAINS" check FAILED',
+					value: 'John Doe'
+				});
+			});
+
+			it('should handle ENDS_WITH operator', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'TEXT',
+					operator: 'ENDS_WITH',
+					path: ['name'],
+					value: 'Doe'
+				};
+
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					criteriaValue: 'Doe',
+					level: 'criteria',
+					operator: 'ENDS_WITH',
+					passed: true,
+					reason: 'Text "ENDS_WITH" check PASSED',
+					value: 'John Doe'
+				});
+			});
+
+			it('should handle EQUALS operator', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'TEXT',
+					operator: 'EQUALS',
+					path: ['name'],
+					value: 'John Doe'
+				};
+
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					criteriaValue: 'John Doe',
+					level: 'criteria',
+					operator: 'EQUALS',
+					passed: true,
+					reason: 'Text "EQUALS" check PASSED',
+					value: 'John Doe'
+				});
+			});
+
+			it('should handle IS_EMPTY operator', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'TEXT',
+					operator: 'IS_EMPTY',
+					path: ['name'],
+					value: []
+				};
+
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
+				expect(res[0]).toEqual(false);
+				expect(res[1]).toEqual({
+					criteriaValue: [],
+					level: 'criteria',
+					operator: 'IS_EMPTY',
+					passed: false,
+					reason: 'Text "IS_EMPTY" check FAILED',
+					value: 'John Doe'
+				});
+			});
+
+			it('should handle MATCHES_REGEX operator', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'TEXT',
+					operator: 'MATCHES_REGEX',
+					path: ['name'],
+					value: /john/i
+				};
+
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					criteriaValue: /john/i,
+					level: 'criteria',
+					operator: 'MATCHES_REGEX',
+					passed: true,
+					reason: 'Text "MATCHES_REGEX" check PASSED',
+					value: 'John Doe'
+				});
+			});
+
+			it('should handle STARTS_WITH operator', () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'TEXT',
+					operator: 'STARTS_WITH',
+					path: ['name'],
+					value: 'John'
+				};
+
+				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					criteriaValue: 'John',
+					level: 'criteria',
+					operator: 'STARTS_WITH',
+					passed: true,
+					reason: 'Text "STARTS_WITH" check PASSED',
+					value: 'John Doe'
+				});
+			});
 		});
 	});
 
