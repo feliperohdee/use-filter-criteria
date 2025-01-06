@@ -152,6 +152,12 @@ const results = FilterCriteria.apply(data, filter);
 - `MATCHES_REGEX`: Text matches the regular expression pattern
 - `STARTS_WITH`: Text starts with the filter value
 
+### Custom Operators
+
+- `CUSTOM`: Allows defining custom filter functions that receive the current item and return a boolean
+- The function can be synchronous or asynchronous (returning a boolean | Promise<boolean>)
+- Useful for complex filtering logic that can't be expressed with standard operators
+
 ## Advanced Usage
 
 ### Working with Sets and Maps

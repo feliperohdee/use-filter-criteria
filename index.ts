@@ -66,6 +66,14 @@ const filterCriteria = z.discriminatedUnion('type', [
 		value: filterValue(z.boolean())
 	}),
 	z.object({
+		operator: z.string().optional(),
+		type: z.literal('CUSTOM'),
+		value: z
+			.function()
+			.args(z.any())
+			.returns(z.union([z.boolean(), z.promise(z.boolean())]))
+	}),
+	z.object({
 		defaultValue: z
 			.string()
 			.datetime()
@@ -177,24 +185,18 @@ namespace FilterCriteria {
 }
 
 class FilterCriteria {
-	static filter(data: any[], input: FilterCriteria.FilterInput): any[] {
+	static async match(
+		data: any,
+		input: FilterCriteria.FilterInput,
+		detailed: boolean = false
+	): Promise<boolean | FilterCriteria.MatchResult> {
 		input = filter.parse(input);
 
-		return _.filter(data, item => {
-			const ruleResults = _.map(input.rules, rule => {
-				return this.applyRule(item, rule);
-			}) as boolean[];
-
-			return input.operator === 'AND' ? _.every(ruleResults, Boolean) : _.some(ruleResults, Boolean);
-		});
-	}
-
-	static match(data: any, input: FilterCriteria.FilterInput, detailed: boolean = false): boolean | FilterCriteria.MatchResult {
-		input = filter.parse(input);
-
-		const ruleResults = _.map(input.rules, rule => {
-			return this.applyRule(data, rule, detailed);
-		});
+		const ruleResults = await Promise.all(
+			_.map(input.rules, rule => {
+				return this.applyRule(data, rule, detailed);
+			})
+		);
 
 		const passed =
 			input.operator === 'AND'
@@ -218,10 +220,36 @@ class FilterCriteria {
 		return passed;
 	}
 
-	private static applyRule(item: any, rule: FilterCriteria.RuleInput, detailed: boolean = false): boolean | FilterCriteria.RuleResult {
-		const criteriaResults = _.map(rule.criteria, criteria => {
-			return this.applyCriteria(item, criteria, detailed);
-		});
+	static async matchMany(data: any[], input: FilterCriteria.FilterInput): Promise<any[]> {
+		input = filter.parse(input);
+
+		let results: any[] = [];
+
+		for await (const item of data) {
+			const ruleResults = await Promise.all(
+				_.map(input.rules, rule => {
+					return this.applyRule(item, rule);
+				}) as Promise<boolean>[]
+			);
+
+			if (input.operator === 'AND' ? _.every(ruleResults, Boolean) : _.some(ruleResults, Boolean)) {
+				results = [...results, item];
+			}
+		}
+
+		return results;
+	}
+
+	private static async applyRule(
+		item: any,
+		rule: FilterCriteria.RuleInput,
+		detailed: boolean = false
+	): Promise<boolean | FilterCriteria.RuleResult> {
+		const criteriaResults = await Promise.all(
+			_.map(rule.criteria, criteria => {
+				return this.applyCriteria(item, criteria, detailed);
+			})
+		);
 
 		const passed =
 			rule.operator === 'AND'
@@ -245,11 +273,26 @@ class FilterCriteria {
 		return passed;
 	}
 
-	private static applyCriteria(
+	private static async applyCriteria(
 		item: any,
 		criteria: FilterCriteria.CriteriaInput,
 		detailed: boolean = false
-	): boolean | FilterCriteria.CriteriaResult {
+	): Promise<boolean | FilterCriteria.CriteriaResult> {
+		if (criteria.type === 'CUSTOM') {
+			const result = await criteria.value(item);
+
+			return detailed
+				? {
+						criteriaValue: criteria.value,
+						level: 'criteria',
+						operator: criteria.operator || 'Function Operator',
+						passed: result,
+						reason: `Custom "${criteria.operator || 'Function Operator'}" check ${result ? 'PASSED' : 'FAILED'}`,
+						value: item
+					}
+				: result;
+		}
+
 		let value = _.get(item, criteria.path, criteria.defaultValue);
 
 		if (_.isUndefined(value)) {

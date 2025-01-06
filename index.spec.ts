@@ -40,139 +40,8 @@ const testData = [
 ];
 
 describe('/index', () => {
-	describe('filter', () => {
-		describe('complex filters', () => {
-			it('should handle nested AND/OR combinations', () => {
-				const filter: FilterCriteria.FilterInput = {
-					operator: 'AND',
-					rules: [
-						{
-							operator: 'AND',
-							criteria: [
-								{
-									type: 'BOOLEAN',
-									operator: 'IS',
-									path: ['active'],
-									value: true
-								}
-							]
-						},
-						{
-							operator: 'OR',
-							criteria: [
-								{
-									type: 'TEXT',
-									operator: 'CONTAINS',
-									path: ['name'],
-									value: 'John'
-								},
-								{
-									type: 'NUMBER',
-									operator: 'LESS',
-									path: ['age'],
-									value: 30
-								}
-							]
-						}
-					]
-				};
-
-				const res = FilterCriteria.filter(testData, filter);
-				expect(res).toHaveLength(2);
-				expect(_.map(res, 'id').sort()).toEqual([1, 3]);
-			});
-
-			it('should handle nested OR/AND combinations', () => {
-				const filter: FilterCriteria.FilterInput = {
-					operator: 'OR',
-					rules: [
-						{
-							operator: 'AND',
-							criteria: [
-								{
-									type: 'BOOLEAN',
-									operator: 'IS',
-									path: ['active'],
-									value: true
-								}
-							]
-						},
-						{
-							operator: 'OR',
-							criteria: [
-								{
-									type: 'TEXT',
-									operator: 'CONTAINS',
-									path: ['name'],
-									value: 'John'
-								},
-								{
-									type: 'NUMBER',
-									operator: 'LESS',
-									path: ['age'],
-									value: 30
-								}
-							]
-						}
-					]
-				};
-
-				const res = FilterCriteria.filter(testData, filter);
-				expect(res).toHaveLength(2);
-				expect(_.map(res, 'id').sort()).toEqual([1, 3]);
-			});
-		});
-
-		describe('default values', () => {
-			it('should use defaultValue when field is missing', () => {
-				const filter: FilterCriteria.FilterInput = {
-					operator: 'AND',
-					rules: [
-						{
-							operator: 'AND',
-							criteria: [
-								{
-									type: 'NUMBER',
-									operator: 'GREATER_OR_EQUALS',
-									path: ['missing'],
-									value: 30,
-									defaultValue: 40
-								}
-							]
-						}
-					]
-				};
-
-				const res = FilterCriteria.filter(testData, filter);
-				expect(res).toHaveLength(3);
-			});
-
-			it('should return false when field is missing and no defaultValue', () => {
-				const filter: FilterCriteria.FilterInput = {
-					operator: 'AND',
-					rules: [
-						{
-							operator: 'AND',
-							criteria: [
-								{
-									type: 'NUMBER',
-									operator: 'GREATER_OR_EQUALS',
-									path: ['missing'],
-									value: 30
-								}
-							]
-						}
-					]
-				};
-
-				const res = FilterCriteria.filter(testData, filter);
-				expect(res).toHaveLength(0);
-			});
-		});
-	});
-
 	describe('match', () => {
-		it('should return with AND', () => {
+		it('should return with AND', async () => {
 			const filter: FilterCriteria.FilterInput = {
 				operator: 'AND',
 				rules: _.times(2, () => {
@@ -196,7 +65,7 @@ describe('/index', () => {
 				})
 			};
 
-			const res = [FilterCriteria.match(testData[0], filter, false), FilterCriteria.match(testData[0], filter, true)];
+			const res = await Promise.all([FilterCriteria.match(testData[0], filter, false), FilterCriteria.match(testData[0], filter, true)]);
 
 			expect(res[0]).toEqual(true);
 			expect(res[1]).toEqual({
@@ -233,7 +102,7 @@ describe('/index', () => {
 			});
 		});
 
-		it('should return with OR', () => {
+		it('should return with OR', async () => {
 			const filter: FilterCriteria.FilterInput = {
 				operator: 'OR',
 				rules: _.times(2, () => {
@@ -257,7 +126,7 @@ describe('/index', () => {
 				})
 			};
 
-			const res = [FilterCriteria.match(testData[0], filter, false), FilterCriteria.match(testData[0], filter, true)];
+			const res = await Promise.all([FilterCriteria.match(testData[0], filter, false), FilterCriteria.match(testData[0], filter, true)]);
 
 			expect(res[0]).toEqual(true);
 			expect(res[1]).toEqual({
@@ -295,8 +164,139 @@ describe('/index', () => {
 		});
 	});
 
+	describe('matchMany', () => {
+		describe('complex filters', () => {
+			it('should handle nested AND/OR combinations', async () => {
+				const filter: FilterCriteria.FilterInput = {
+					operator: 'AND',
+					rules: [
+						{
+							operator: 'AND',
+							criteria: [
+								{
+									type: 'BOOLEAN',
+									operator: 'IS',
+									path: ['active'],
+									value: true
+								}
+							]
+						},
+						{
+							operator: 'OR',
+							criteria: [
+								{
+									type: 'TEXT',
+									operator: 'CONTAINS',
+									path: ['name'],
+									value: 'John'
+								},
+								{
+									type: 'NUMBER',
+									operator: 'LESS',
+									path: ['age'],
+									value: 30
+								}
+							]
+						}
+					]
+				};
+
+				const res = await FilterCriteria.matchMany(testData, filter);
+				expect(res).toHaveLength(2);
+				expect(_.map(res, 'id').sort()).toEqual([1, 3]);
+			});
+
+			it('should handle nested OR/AND combinations', async () => {
+				const filter: FilterCriteria.FilterInput = {
+					operator: 'OR',
+					rules: [
+						{
+							operator: 'AND',
+							criteria: [
+								{
+									type: 'BOOLEAN',
+									operator: 'IS',
+									path: ['active'],
+									value: true
+								}
+							]
+						},
+						{
+							operator: 'OR',
+							criteria: [
+								{
+									type: 'TEXT',
+									operator: 'CONTAINS',
+									path: ['name'],
+									value: 'John'
+								},
+								{
+									type: 'NUMBER',
+									operator: 'LESS',
+									path: ['age'],
+									value: 30
+								}
+							]
+						}
+					]
+				};
+
+				const res = await FilterCriteria.matchMany(testData, filter);
+				expect(res).toHaveLength(2);
+				expect(_.map(res, 'id').sort()).toEqual([1, 3]);
+			});
+		});
+
+		describe('default values', () => {
+			it('should use defaultValue when field is missing', async () => {
+				const filter: FilterCriteria.FilterInput = {
+					operator: 'AND',
+					rules: [
+						{
+							operator: 'AND',
+							criteria: [
+								{
+									type: 'NUMBER',
+									operator: 'GREATER_OR_EQUALS',
+									path: ['missing'],
+									value: 30,
+									defaultValue: 40
+								}
+							]
+						}
+					]
+				};
+
+				const res = await FilterCriteria.matchMany(testData, filter);
+				expect(res).toHaveLength(3);
+			});
+
+			it('should return false when field is missing and no defaultValue', async () => {
+				const filter: FilterCriteria.FilterInput = {
+					operator: 'AND',
+					rules: [
+						{
+							operator: 'AND',
+							criteria: [
+								{
+									type: 'NUMBER',
+									operator: 'GREATER_OR_EQUALS',
+									path: ['missing'],
+									value: 30
+								}
+							]
+						}
+					]
+				};
+
+				const res = await FilterCriteria.matchMany(testData, filter);
+				expect(res).toHaveLength(0);
+			});
+		});
+	});
+
 	describe('applyRule', () => {
-		it('should return', () => {
+		it('should return', async () => {
 			const rule: FilterCriteria.RuleInput = {
 				operator: 'OR',
 				criteria: [
@@ -315,8 +315,12 @@ describe('/index', () => {
 				]
 			};
 
-			// @ts-expect-error
-			const res = [FilterCriteria.applyRule(testData[0], rule, false), FilterCriteria.applyRule(testData[0], rule, true)];
+			const res = await Promise.all([
+				// @ts-expect-error
+				FilterCriteria.applyRule(testData[0], rule, false),
+				// @ts-expect-error
+				FilterCriteria.applyRule(testData[0], rule, true)
+			]);
 
 			expect(res[0]).toEqual(false);
 			expect(res[1]).toEqual({
@@ -347,7 +351,7 @@ describe('/index', () => {
 	});
 
 	describe('applyCriteria', () => {
-		it('should handle undefined value', () => {
+		it('should handle undefined value', async () => {
 			const criteria: FilterCriteria.CriteriaInput = {
 				type: 'TEXT',
 				operator: 'CONTAINS',
@@ -355,8 +359,12 @@ describe('/index', () => {
 				value: 'value'
 			};
 
-			// @ts-expect-error
-			const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+			const res = await Promise.all([
+				// @ts-expect-error
+				FilterCriteria.applyCriteria(testData[0], criteria),
+				// @ts-expect-error
+				FilterCriteria.applyCriteria(testData[0], criteria, true)
+			]);
 
 			expect(res[0]).toEqual(false);
 			expect(res[1]).toEqual({
@@ -369,7 +377,7 @@ describe('/index', () => {
 			});
 		});
 
-		it('should handle dynamic value', () => {
+		it('should handle dynamic value', async () => {
 			const criteria: FilterCriteria.CriteriaInput = {
 				type: 'ARRAY',
 				operator: 'EXACTLY_MATCHES',
@@ -377,8 +385,12 @@ describe('/index', () => {
 				value: { $path: ['tags'] }
 			};
 
-			// @ts-expect-error
-			const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+			const res = await Promise.all([
+				// @ts-expect-error
+				FilterCriteria.applyCriteria(testData[0], criteria),
+				// @ts-expect-error
+				FilterCriteria.applyCriteria(testData[0], criteria, true)
+			]);
 
 			expect(res[0]).toEqual(true);
 			expect(res[1]).toEqual({
@@ -391,7 +403,7 @@ describe('/index', () => {
 			});
 		});
 
-		it('should handle inexistent value', () => {
+		it('should handle inexistent value', async () => {
 			const criteria: FilterCriteria.CriteriaInput = {
 				// @ts-expect-error
 				type: 'INEXISTENT',
@@ -400,8 +412,12 @@ describe('/index', () => {
 				value: 'John'
 			};
 
-			// @ts-expect-error
-			const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+			const res = await Promise.all([
+				// @ts-expect-error
+				FilterCriteria.applyCriteria(testData[0], criteria),
+				// @ts-expect-error
+				FilterCriteria.applyCriteria(testData[0], criteria, true)
+			]);
 
 			expect(res[0]).toEqual(false);
 			expect(res[1]).toEqual({
@@ -415,7 +431,7 @@ describe('/index', () => {
 		});
 
 		describe('array', () => {
-			it('should handle EXACTLY_MATCHES operator with normalize = true', () => {
+			it('should handle EXACTLY_MATCHES operator with normalize = true', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'ARRAY',
 					normalize: true,
@@ -424,8 +440,12 @@ describe('/index', () => {
 					value: ['Develóper', 'JavaScript']
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
@@ -438,7 +458,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle EXACTLY_MATCHES operator with normalize = false', () => {
+			it('should handle EXACTLY_MATCHES operator with normalize = false', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'ARRAY',
 					normalize: false,
@@ -447,8 +467,12 @@ describe('/index', () => {
 					value: ['Develóper', 'JavaScript']
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(false);
 				expect(res[1]).toEqual({
@@ -461,7 +485,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle INCLUDES_ALL operator', () => {
+			it('should handle INCLUDES_ALL operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'ARRAY',
 					operator: 'INCLUDES_ALL',
@@ -469,8 +493,12 @@ describe('/index', () => {
 					value: ['developer', 'javascript']
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
@@ -483,7 +511,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle INCLUDES_ANY operator', () => {
+			it('should handle INCLUDES_ANY operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'ARRAY',
 					operator: 'INCLUDES_ANY',
@@ -491,8 +519,12 @@ describe('/index', () => {
 					value: ['developer', 'javascript']
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
@@ -505,7 +537,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle IS_EMPTY operator', () => {
+			it('should handle IS_EMPTY operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'ARRAY',
 					operator: 'IS_EMPTY',
@@ -513,8 +545,12 @@ describe('/index', () => {
 					value: []
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(false);
 				expect(res[1]).toEqual({
@@ -527,7 +563,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle IS_NOT_EMPTY operator', () => {
+			it('should handle IS_NOT_EMPTY operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'ARRAY',
 					operator: 'IS_NOT_EMPTY',
@@ -535,8 +571,12 @@ describe('/index', () => {
 					value: []
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
@@ -549,7 +589,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle NOT_INCLUDES_ALL operator', () => {
+			it('should handle NOT_INCLUDES_ALL operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'ARRAY',
 					operator: 'NOT_INCLUDES_ALL',
@@ -557,8 +597,12 @@ describe('/index', () => {
 					value: ['developer', 'javascript']
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(false);
 				expect(res[1]).toEqual({
@@ -571,7 +615,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle NOT_INCLUDES_ANY operator', () => {
+			it('should handle NOT_INCLUDES_ANY operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'ARRAY',
 					operator: 'NOT_INCLUDES_ANY',
@@ -579,8 +623,12 @@ describe('/index', () => {
 					value: ['developer', 'javascript']
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(false);
 				expect(res[1]).toEqual({
@@ -593,7 +641,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle SIZE_EQUALS operator', () => {
+			it('should handle SIZE_EQUALS operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'ARRAY',
 					operator: 'SIZE_EQUALS',
@@ -601,8 +649,12 @@ describe('/index', () => {
 					value: 2
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
@@ -615,7 +667,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle SIZE_GREATER operator', () => {
+			it('should handle SIZE_GREATER operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'ARRAY',
 					operator: 'SIZE_GREATER',
@@ -623,8 +675,12 @@ describe('/index', () => {
 					value: 1
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
@@ -637,7 +693,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle SIZE_GREATER_OR_EQUALS operator', () => {
+			it('should handle SIZE_GREATER_OR_EQUALS operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'ARRAY',
 					operator: 'SIZE_GREATER_OR_EQUALS',
@@ -645,8 +701,12 @@ describe('/index', () => {
 					value: 2
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
@@ -659,7 +719,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle SIZE_LESS operator', () => {
+			it('should handle SIZE_LESS operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'ARRAY',
 					operator: 'SIZE_LESS',
@@ -667,8 +727,12 @@ describe('/index', () => {
 					value: 3
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
@@ -681,7 +745,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle SIZE_LESS_OR_EQUALS operator', () => {
+			it('should handle SIZE_LESS_OR_EQUALS operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'ARRAY',
 					operator: 'SIZE_LESS_OR_EQUALS',
@@ -689,8 +753,12 @@ describe('/index', () => {
 					value: 2
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
@@ -705,7 +773,7 @@ describe('/index', () => {
 		});
 
 		describe('boolean', () => {
-			it('should handle IS operator', () => {
+			it('should handle IS operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'BOOLEAN',
 					operator: 'IS',
@@ -713,8 +781,12 @@ describe('/index', () => {
 					value: true
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
@@ -727,7 +799,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle IS_NOT operator', () => {
+			it('should handle IS_NOT operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'BOOLEAN',
 					operator: 'IS_NOT',
@@ -735,8 +807,12 @@ describe('/index', () => {
 					value: true
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(false);
 				expect(res[1]).toEqual({
@@ -750,8 +826,36 @@ describe('/index', () => {
 			});
 		});
 
+		describe('custom', () => {
+			it('should handle custom operator', async () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'CUSTOM',
+					value: async (item: any) => {
+						return _.startsWith(item.name, 'John');
+					}
+				};
+
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					criteriaValue: criteria.value,
+					level: 'criteria',
+					operator: 'Function Operator',
+					passed: true,
+					reason: 'Custom "Function Operator" check PASSED',
+					value: testData[0]
+				});
+			});
+		});
+
 		describe('date', () => {
-			it('should handle AFTER operator', () => {
+			it('should handle AFTER operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'DATE',
 					operator: 'AFTER',
@@ -759,8 +863,12 @@ describe('/index', () => {
 					value: '2023-01-01T00:00:00+00:01'
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
@@ -773,7 +881,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle AFTER_OR_EQUALS operator', () => {
+			it('should handle AFTER_OR_EQUALS operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'DATE',
 					operator: 'AFTER_OR_EQUALS',
@@ -781,8 +889,12 @@ describe('/index', () => {
 					value: '2023-01-01T00:00:00Z'
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
@@ -795,7 +907,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle BEFORE operator', () => {
+			it('should handle BEFORE operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'DATE',
 					operator: 'BEFORE',
@@ -803,8 +915,12 @@ describe('/index', () => {
 					value: '2023-01-01T00:00:00-00:01'
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
@@ -817,7 +933,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle BEFORE_OR_EQUALS operator', () => {
+			it('should handle BEFORE_OR_EQUALS operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'DATE',
 					operator: 'BEFORE_OR_EQUALS',
@@ -825,13 +941,17 @@ describe('/index', () => {
 					value: '2023-01-01T00:00:00Z'
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(true);
 			});
 
-			it('should handle BETWEEN operator', () => {
+			it('should handle BETWEEN operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'DATE',
 					operator: 'BETWEEN',
@@ -839,8 +959,12 @@ describe('/index', () => {
 					value: ['2023-01-01T00:00:00Z', '2023-01-01T00:00:00Z']
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
@@ -855,7 +979,7 @@ describe('/index', () => {
 		});
 
 		describe('geo', () => {
-			it('should handle IN_RADIUS operator with km unit', () => {
+			it('should handle IN_RADIUS operator with km unit', async () => {
 				// From New York
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'GEO',
@@ -879,10 +1003,18 @@ describe('/index', () => {
 					location: { lat: 40.7357, lng: -74.1724 }
 				};
 
-				// @ts-expect-error
-				const resLA = [FilterCriteria.applyCriteria(LAPoint, criteria), FilterCriteria.applyCriteria(LAPoint, criteria, true)];
-				// @ts-expect-error
-				const resNewark = [FilterCriteria.applyCriteria(newarkPoint, criteria), FilterCriteria.applyCriteria(newarkPoint, criteria, true)];
+				const resLA = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(LAPoint, criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(LAPoint, criteria, true)
+				]);
+				const resNewark = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(newarkPoint, criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(newarkPoint, criteria, true)
+				]);
 
 				expect(resLA[0]).toEqual(false);
 				expect(resLA[1]).toEqual({
@@ -915,7 +1047,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle IN_RADIUS operator with mi unit', () => {
+			it('should handle IN_RADIUS operator with mi unit', async () => {
 				// From New York
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'GEO',
@@ -939,14 +1071,18 @@ describe('/index', () => {
 					location: { lat: 40.7357, lng: -74.1724 }
 				};
 
-				// @ts-expect-error
-				const resLA = [FilterCriteria.applyCriteria(LAPoint, criteria), FilterCriteria.applyCriteria(LAPoint, criteria, true)];
-				const resNewark = [
+				const resLA = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(LAPoint, criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(LAPoint, criteria, true)
+				]);
+				const resNewark = await Promise.all([
 					// @ts-expect-error
 					FilterCriteria.applyCriteria(newarkPoint, criteria),
 					// @ts-expect-error
 					FilterCriteria.applyCriteria(newarkPoint, criteria, true)
-				];
+				]);
 
 				expect(resLA[0]).toEqual(false);
 				expect(resLA[1]).toEqual({
@@ -979,7 +1115,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle NOT_IN_RADIUS operator with different units', () => {
+			it('should handle NOT_IN_RADIUS operator with different units', async () => {
 				// From New York
 				const criteriaKm: FilterCriteria.CriteriaInput = {
 					type: 'GEO',
@@ -1011,10 +1147,18 @@ describe('/index', () => {
 					location: { lat: 34.0522, lng: -118.2437 }
 				};
 
-				// @ts-expect-error
-				const resKm = [FilterCriteria.applyCriteria(LAPoint, criteriaKm), FilterCriteria.applyCriteria(LAPoint, criteriaKm, true)];
-				// @ts-expect-error
-				const resMi = [FilterCriteria.applyCriteria(LAPoint, criteriaMi), FilterCriteria.applyCriteria(LAPoint, criteriaMi, true)];
+				const resKm = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(LAPoint, criteriaKm),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(LAPoint, criteriaKm, true)
+				]);
+				const resMi = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(LAPoint, criteriaMi),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(LAPoint, criteriaMi, true)
+				]);
 
 				// A distance is ~3936km or ~2445mi, so it should be outside the radius in both cases
 				expect(resKm[0]).toEqual(true);
@@ -1048,7 +1192,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should default to km when unit is not specified', () => {
+			it('should default to km when unit is not specified', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'GEO',
 					operator: 'IN_RADIUS',
@@ -1065,8 +1209,12 @@ describe('/index', () => {
 					location: { lat: 40.7357, lng: -74.1724 }
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(newarkPoint, criteria), FilterCriteria.applyCriteria(newarkPoint, criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(newarkPoint, criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(newarkPoint, criteria, true)
+				]);
 
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
@@ -1085,7 +1233,7 @@ describe('/index', () => {
 		});
 
 		describe('map', () => {
-			it('should handle HAS_KEY operator with normalize = true', () => {
+			it('should handle HAS_KEY operator with normalize = true', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'MAP',
 					normalize: true,
@@ -1094,12 +1242,12 @@ describe('/index', () => {
 					value: 'KÉY-1'
 				};
 
-				const res = [
+				const res = await Promise.all([
 					// @ts-expect-error
 					FilterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
 					FilterCriteria.applyCriteria(testData[0], criteria, true)
-				];
+				]);
 
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
@@ -1112,7 +1260,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle HAS_KEY operator with normalize = false', () => {
+			it('should handle HAS_KEY operator with normalize = false', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'MAP',
 					normalize: false,
@@ -1121,8 +1269,12 @@ describe('/index', () => {
 					value: 'KÉY-1'
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(false);
 				expect(res[1]).toEqual({
@@ -1135,7 +1287,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle HAS_VALUE operator', () => {
+			it('should handle HAS_VALUE operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'MAP',
 					operator: 'HAS_VALUE',
@@ -1143,13 +1295,17 @@ describe('/index', () => {
 					value: 'value-1'
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(true);
 			});
 
-			it('should handle IS_EMPTY operator', () => {
+			it('should handle IS_EMPTY operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'MAP',
 					operator: 'IS_EMPTY',
@@ -1157,8 +1313,12 @@ describe('/index', () => {
 					value: ''
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(false);
 				expect(res[1]).toEqual({
@@ -1171,7 +1331,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle IS_NOT_EMPTY operator', () => {
+			it('should handle IS_NOT_EMPTY operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'MAP',
 					operator: 'IS_NOT_EMPTY',
@@ -1179,8 +1339,12 @@ describe('/index', () => {
 					value: ''
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
@@ -1193,7 +1357,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle SIZE_EQUALS operator', () => {
+			it('should handle SIZE_EQUALS operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'MAP',
 					operator: 'SIZE_EQUALS',
@@ -1201,8 +1365,12 @@ describe('/index', () => {
 					value: 1
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
@@ -1215,7 +1383,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle SIZE_GREATER operator', () => {
+			it('should handle SIZE_GREATER operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'MAP',
 					operator: 'SIZE_GREATER',
@@ -1223,8 +1391,12 @@ describe('/index', () => {
 					value: 0
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
@@ -1237,7 +1409,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle SIZE_GREATER_OR_EQUALS operator', () => {
+			it('should handle SIZE_GREATER_OR_EQUALS operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'MAP',
 					operator: 'SIZE_GREATER_OR_EQUALS',
@@ -1245,8 +1417,12 @@ describe('/index', () => {
 					value: 1
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
@@ -1259,7 +1435,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle SIZE_LESS operator', () => {
+			it('should handle SIZE_LESS operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'MAP',
 					operator: 'SIZE_LESS',
@@ -1267,8 +1443,12 @@ describe('/index', () => {
 					value: 2
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
@@ -1281,7 +1461,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle SIZE_LESS_OR_EQUALS operator', () => {
+			it('should handle SIZE_LESS_OR_EQUALS operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'MAP',
 					operator: 'SIZE_LESS_OR_EQUALS',
@@ -1289,8 +1469,12 @@ describe('/index', () => {
 					value: 1
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
@@ -1305,7 +1489,7 @@ describe('/index', () => {
 		});
 
 		describe('number', () => {
-			it('should handle BETWEEN operator', () => {
+			it('should handle BETWEEN operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'NUMBER',
 					operator: 'BETWEEN',
@@ -1313,8 +1497,12 @@ describe('/index', () => {
 					value: [25, 30]
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
@@ -1327,7 +1515,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle EQUALS operator', () => {
+			it('should handle EQUALS operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'NUMBER',
 					operator: 'EQUALS',
@@ -1335,8 +1523,12 @@ describe('/index', () => {
 					value: 25
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
@@ -1349,7 +1541,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle GREATER operator', () => {
+			it('should handle GREATER operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'NUMBER',
 					operator: 'GREATER',
@@ -1357,8 +1549,12 @@ describe('/index', () => {
 					value: 20
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
@@ -1371,7 +1567,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle GREATER_OR_EQUALS operator', () => {
+			it('should handle GREATER_OR_EQUALS operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'NUMBER',
 					operator: 'GREATER_OR_EQUALS',
@@ -1379,8 +1575,12 @@ describe('/index', () => {
 					value: 25
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
@@ -1393,7 +1593,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle LESS operator', () => {
+			it('should handle LESS operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'NUMBER',
 					operator: 'LESS',
@@ -1401,8 +1601,12 @@ describe('/index', () => {
 					value: 30
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
@@ -1415,7 +1619,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle LESS_OR_EQUALS operator', () => {
+			it('should handle LESS_OR_EQUALS operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'NUMBER',
 					operator: 'LESS_OR_EQUALS',
@@ -1423,8 +1627,12 @@ describe('/index', () => {
 					value: 30
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
@@ -1439,7 +1647,7 @@ describe('/index', () => {
 		});
 
 		describe('set', () => {
-			it('should handle EXACTLY_MATCHES operator with normalize = true', () => {
+			it('should handle EXACTLY_MATCHES operator with normalize = true', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'SET',
 					normalize: true,
@@ -1448,12 +1656,12 @@ describe('/index', () => {
 					value: ['Develóper', 'JavaScript']
 				};
 
-				const res = [
+				const res = await Promise.all([
 					// @ts-expect-error
 					FilterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
 					FilterCriteria.applyCriteria(testData[0], criteria, true)
-				];
+				]);
 
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
@@ -1466,7 +1674,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle EXACTLY_MATCHES operator with normalize = false', () => {
+			it('should handle EXACTLY_MATCHES operator with normalize = false', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'SET',
 					normalize: false,
@@ -1475,8 +1683,12 @@ describe('/index', () => {
 					value: ['Develóper', 'JavaScript']
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(false);
 				expect(res[1]).toEqual({
@@ -1489,7 +1701,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle HAS operator', () => {
+			it('should handle HAS operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'SET',
 					operator: 'HAS',
@@ -1497,12 +1709,12 @@ describe('/index', () => {
 					value: 'developer'
 				};
 
-				const res = [
+				const res = await Promise.all([
 					// @ts-expect-error
 					FilterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
 					FilterCriteria.applyCriteria(testData[0], criteria, true)
-				];
+				]);
 
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
@@ -1515,7 +1727,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle INCLUDES_ALL operator', () => {
+			it('should handle INCLUDES_ALL operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'SET',
 					operator: 'INCLUDES_ALL',
@@ -1523,8 +1735,12 @@ describe('/index', () => {
 					value: ['developer', 'javascript']
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
@@ -1537,7 +1753,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle INCLUDES_ANY operator', () => {
+			it('should handle INCLUDES_ANY operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'SET',
 					operator: 'INCLUDES_ANY',
@@ -1545,8 +1761,12 @@ describe('/index', () => {
 					value: ['developer', 'javascript']
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
@@ -1559,7 +1779,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle IS_EMPTY operator', () => {
+			it('should handle IS_EMPTY operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'SET',
 					operator: 'IS_EMPTY',
@@ -1567,8 +1787,12 @@ describe('/index', () => {
 					value: []
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(false);
 				expect(res[1]).toEqual({
@@ -1581,7 +1805,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle IS_NOT_EMPTY operator', () => {
+			it('should handle IS_NOT_EMPTY operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'SET',
 					operator: 'IS_NOT_EMPTY',
@@ -1589,8 +1813,12 @@ describe('/index', () => {
 					value: []
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
@@ -1603,7 +1831,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle NOT_INCLUDES_ALL operator', () => {
+			it('should handle NOT_INCLUDES_ALL operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'SET',
 					operator: 'NOT_INCLUDES_ALL',
@@ -1611,8 +1839,12 @@ describe('/index', () => {
 					value: ['developer', 'javascript']
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(false);
 				expect(res[1]).toEqual({
@@ -1625,7 +1857,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle NOT_INCLUDES_ANY operator', () => {
+			it('should handle NOT_INCLUDES_ANY operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'SET',
 					operator: 'NOT_INCLUDES_ANY',
@@ -1633,8 +1865,12 @@ describe('/index', () => {
 					value: ['developer', 'javascript']
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(false);
 				expect(res[1]).toEqual({
@@ -1647,7 +1883,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle SIZE_EQUALS operator', () => {
+			it('should handle SIZE_EQUALS operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'SET',
 					operator: 'SIZE_EQUALS',
@@ -1655,8 +1891,12 @@ describe('/index', () => {
 					value: 2
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
@@ -1669,7 +1909,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle SIZE_GREATER operator', () => {
+			it('should handle SIZE_GREATER operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'SET',
 					operator: 'SIZE_GREATER',
@@ -1677,8 +1917,12 @@ describe('/index', () => {
 					value: 1
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
@@ -1691,7 +1935,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle SIZE_GREATER_OR_EQUALS operator', () => {
+			it('should handle SIZE_GREATER_OR_EQUALS operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'SET',
 					operator: 'SIZE_GREATER_OR_EQUALS',
@@ -1699,8 +1943,12 @@ describe('/index', () => {
 					value: 2
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
@@ -1713,7 +1961,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle SIZE_LESS operator', () => {
+			it('should handle SIZE_LESS operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'SET',
 					operator: 'SIZE_LESS',
@@ -1721,8 +1969,12 @@ describe('/index', () => {
 					value: 3
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
@@ -1735,7 +1987,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle SIZE_LESS_OR_EQUALS operator', () => {
+			it('should handle SIZE_LESS_OR_EQUALS operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'SET',
 					operator: 'SIZE_LESS_OR_EQUALS',
@@ -1743,8 +1995,12 @@ describe('/index', () => {
 					value: 2
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
@@ -1759,7 +2015,7 @@ describe('/index', () => {
 		});
 
 		describe('text', () => {
-			it('should handle CONTAINS operator with normalize = true', () => {
+			it('should handle CONTAINS operator with normalize = true', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'TEXT',
 					normalize: true,
@@ -1768,8 +2024,12 @@ describe('/index', () => {
 					value: 'doe'
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
@@ -1782,7 +2042,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle CONTAINS operator with normalize = false', () => {
+			it('should handle CONTAINS operator with normalize = false', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'TEXT',
 					normalize: false,
@@ -1791,8 +2051,12 @@ describe('/index', () => {
 					value: 'doe'
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(false);
 				expect(res[1]).toEqual({
@@ -1805,7 +2069,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle ENDS_WITH operator', () => {
+			it('should handle ENDS_WITH operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'TEXT',
 					operator: 'ENDS_WITH',
@@ -1813,8 +2077,12 @@ describe('/index', () => {
 					value: 'Doe'
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
@@ -1827,7 +2095,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle EQUALS operator', () => {
+			it('should handle EQUALS operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'TEXT',
 					operator: 'EQUALS',
@@ -1835,8 +2103,12 @@ describe('/index', () => {
 					value: 'John Doe'
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
@@ -1849,7 +2121,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle IS_EMPTY operator', () => {
+			it('should handle IS_EMPTY operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'TEXT',
 					operator: 'IS_EMPTY',
@@ -1857,8 +2129,12 @@ describe('/index', () => {
 					value: []
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(false);
 				expect(res[1]).toEqual({
@@ -1871,7 +2147,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle MATCHES_REGEX operator', () => {
+			it('should handle MATCHES_REGEX operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'TEXT',
 					operator: 'MATCHES_REGEX',
@@ -1879,8 +2155,12 @@ describe('/index', () => {
 					value: /john/i
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
@@ -1893,7 +2173,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle STARTS_WITH operator', () => {
+			it('should handle STARTS_WITH operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'TEXT',
 					operator: 'STARTS_WITH',
@@ -1901,8 +2181,12 @@ describe('/index', () => {
 					value: 'John'
 				};
 
-				// @ts-expect-error
-				const res = [FilterCriteria.applyCriteria(testData[0], criteria), FilterCriteria.applyCriteria(testData[0], criteria, true)];
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
 
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
