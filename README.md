@@ -17,6 +17,7 @@ A TypeScript-based filtering engine that provides a flexible, type-safe way to f
 - 📍 **Geospatial**: Built-in support for geographic radius searches
 - 🎛️ **Flexible**: Customizable default values and source path resolution
 - 🔄 **Dynamic Values**: Support for dynamic value resolution using `$path`
+- 📊 **Detailed Logging**: Optional detailed diagnostics for understanding filter results
 
 ## Installation
 
@@ -31,20 +32,24 @@ yarn add use-filter-criteria
 ```typescript
 import FilterCriteria from 'use-filter-criteria';
 
-const data = [
+// Example data
+const users = [
 	{
-		active: true,
-		age: 25,
+		id: 1,
 		name: 'John Doe',
-		tags: ['developer', 'javascript'],
+		age: 30,
 		skills: new Set(['typescript', 'react']),
+		roles: ['admin', 'developer'],
+		active: true,
+		lastLogin: '2024-01-01T00:00:00Z',
+		location: { lat: 40.7128, lng: -74.006 },
 		metadata: new Map([['level', 'senior']])
 	}
-	// ... more items
+	// ... more users
 ];
 
-// Create a filter
-const filter = {
+// Simple number comparison
+const ageFilter = {
 	operator: 'AND',
 	rules: [
 		{
@@ -54,21 +59,274 @@ const filter = {
 					type: 'NUMBER',
 					operator: 'GREATER',
 					path: ['age'],
-					value: 20
-				},
-				{
-					type: 'SET',
-					operator: 'INCLUDES_ANY',
-					path: ['skills'],
-					value: ['typescript']
+					value: 25
 				}
 			]
 		}
 	]
 };
 
-// Apply the filter
-const results = FilterCriteria.apply(data, filter);
+// Complex multi-criteria filter
+const complexFilter = {
+	operator: 'AND',
+	rules: [
+		{
+			operator: 'AND',
+			criteria: [
+				{
+					type: 'SET',
+					operator: 'INCLUDES_ANY',
+					path: ['skills'],
+					value: ['typescript', 'python']
+				},
+				{
+					type: 'BOOLEAN',
+					operator: 'IS',
+					path: ['active'],
+					value: true
+				}
+			]
+		},
+		{
+			operator: 'OR',
+			criteria: [
+				{
+					type: 'TEXT',
+					operator: 'CONTAINS',
+					path: ['name'],
+					value: 'john'
+				},
+				{
+					type: 'ARRAY',
+					operator: 'INCLUDES_ANY',
+					path: ['roles'],
+					value: ['admin']
+				}
+			]
+		}
+	]
+};
+
+// Basic usage
+const matchingUsers = await FilterCriteria.matchMany(users, complexFilter);
+console.log(matchingUsers);
+
+// With detailed logging
+const detailedResult = await FilterCriteria.match(users[0], complexFilter, true);
+console.log(detailedResult);
+```
+
+## Detailed Logging
+
+The `match` and `matchMany` functions support detailed logging that provides comprehensive information about why filters passed or failed. Enable detailed logging by passing `true` as the third parameter to `match`:
+
+```typescript
+const result = await FilterCriteria.match(data, filter, true);
+```
+
+The detailed output includes:
+
+- Match level information showing overall filter results
+- Rule level results showing how each rule was evaluated
+- Criteria level details showing:
+  - The actual value found at the specified path
+  - The criteria value being compared against
+  - The operator used
+  - Whether the check passed or failed
+  - A human-readable reason for the result
+
+This detailed output is invaluable for:
+
+- Debugging complex filters
+- Understanding why certain records were included/excluded
+- Validating filter logic
+- Troubleshooting unexpected results
+
+### Detailed Logging Examples
+
+Here are examples showing how to use detailed logging with different filter types:
+
+```typescript
+// Text filter with detailed logging
+const textFilter = {
+	operator: 'AND',
+	rules: [
+		{
+			operator: 'AND',
+			criteria: [
+				{
+					type: 'TEXT',
+					operator: 'CONTAINS',
+					path: ['name'],
+					value: 'john'
+				}
+			]
+		}
+	]
+};
+
+const textResult = await FilterCriteria.match(users[0], textFilter, true);
+/* Output:
+{
+  level: 'match',
+  operator: 'AND',
+  passed: true,
+  reason: 'Match "AND" check PASSED',
+  results: [{
+    level: 'rule',
+    operator: 'AND',
+    passed: true,
+    reason: 'Rule "AND" check PASSED',
+    results: [{
+      criteriaValue: 'john',
+      level: 'criteria',
+      operator: 'CONTAINS',
+      passed: true,
+      reason: 'Text "CONTAINS" check PASSED',
+      value: 'john-doe'
+    }]
+  }]
+}
+*/
+
+// Geographic filter with detailed logging
+const geoFilter = {
+	operator: 'AND',
+	rules: [
+		{
+			operator: 'AND',
+			criteria: [
+				{
+					type: 'GEO',
+					operator: 'IN_RADIUS',
+					path: ['location'],
+					value: {
+						lat: 40.7128,
+						lng: -74.006,
+						radius: 10,
+						unit: 'km'
+					}
+				}
+			]
+		}
+	]
+};
+
+const geoResult = await FilterCriteria.match(users[0], geoFilter, true);
+/* Output shows detailed radius check results:
+{
+  level: 'match',
+  operator: 'AND',
+  passed: true,
+  reason: 'Match "AND" check PASSED',
+  results: [{
+    level: 'rule',
+    operator: 'AND',
+    passed: true,
+    reason: 'Rule "AND" check PASSED',
+    results: [{
+      criteriaValue: {
+        lat: 40.7128,
+        lng: -74.006,
+        radius: 10,
+        unit: 'km'
+      },
+      level: 'criteria',
+      operator: 'IN_RADIUS',
+      passed: true,
+      reason: 'Geo "IN_RADIUS" check PASSED',
+      value: { lat: 40.7128, lng: -74.006 }
+    }]
+  }]
+}
+*/
+
+// Complex nested filter with detailed logging
+const nestedFilter = {
+	operator: 'OR',
+	rules: [
+		{
+			operator: 'AND',
+			criteria: [
+				{
+					type: 'NUMBER',
+					operator: 'GREATER',
+					path: ['age'],
+					value: 25
+				},
+				{
+					type: 'SET',
+					operator: 'INCLUDES_ALL',
+					path: ['skills'],
+					value: ['typescript']
+				}
+			]
+		},
+		{
+			operator: 'OR',
+			criteria: [
+				{
+					type: 'TEXT',
+					operator: 'MATCHES_REGEX',
+					path: ['name'],
+					value: /^john/i
+				}
+			]
+		}
+	]
+};
+
+const nestedResult = await FilterCriteria.match(users[0], nestedFilter, true);
+/* Output shows the complete evaluation tree:
+{
+  level: 'match',
+  operator: 'OR',
+  passed: true,
+  reason: 'Match "OR" check PASSED',
+  results: [
+    {
+      level: 'rule',
+      operator: 'AND',
+      passed: true,
+      reason: 'Rule "AND" check PASSED',
+      results: [
+        {
+          criteriaValue: 25,
+          level: 'criteria',
+          operator: 'GREATER',
+          passed: true,
+          reason: 'Number "GREATER" check PASSED',
+          value: 30
+        },
+        {
+          criteriaValue: ['typescript'],
+          level: 'criteria',
+          operator: 'INCLUDES_ALL',
+          passed: true,
+          reason: 'Set "INCLUDES_ALL" check PASSED',
+          value: Set(['typescript', 'react'])
+        }
+      ]
+    },
+    {
+      level: 'rule',
+      operator: 'OR',
+      passed: true,
+      reason: 'Rule "OR" check PASSED',
+      results: [
+        {
+          criteriaValue: /^john/i,
+          level: 'criteria',
+          operator: 'MATCHES_REGEX',
+          passed: true,
+          reason: 'Text "MATCHES_REGEX" check PASSED',
+          value: 'John Doe'
+        }
+      ]
+    }
+  ]
+}
+*/
 ```
 
 ## Supported Filter Types
@@ -157,6 +415,26 @@ const results = FilterCriteria.apply(data, filter);
 - `CUSTOM`: Allows defining custom filter functions that receive the current item and return a boolean
 - The function can be synchronous or asynchronous (returning a boolean | Promise<boolean>)
 - Useful for complex filtering logic that can't be expressed with standard operators
+
+```typescript
+const customFilter = {
+	operator: 'AND',
+	rules: [
+		{
+			operator: 'AND',
+			criteria: [
+				{
+					type: 'CUSTOM',
+					value: async item => {
+						// Your custom logic here
+						return item.someProperty > 10;
+					}
+				}
+			]
+		}
+	]
+};
+```
 
 ## Advanced Usage
 
