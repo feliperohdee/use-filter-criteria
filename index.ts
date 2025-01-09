@@ -1,8 +1,19 @@
 import _ from 'lodash';
 import z from 'zod';
 
-const filterLogicalOperator = z.enum(['AND', 'OR']);
-const filterOperatorArrayOrSet: [string, ...string[]] = [
+const filterValue = (...schemas: [z.ZodTypeAny, ...z.ZodTypeAny[]]) => {
+	const schemasWith = [
+		z.object({
+			$path: z.array(z.string())
+		}),
+		schemas[0],
+		...schemas.slice(1)
+	] as [z.ZodTypeAny, z.ZodTypeAny, ...z.ZodTypeAny[]];
+
+	return z.union(schemasWith);
+};
+
+const operatorArrayOrSet: [string, ...string[]] = [
 	'EXACTLY_MATCHES',
 	'INCLUDES_ALL',
 	'INCLUDES_ANY',
@@ -16,8 +27,10 @@ const filterOperatorArrayOrSet: [string, ...string[]] = [
 	'SIZE_LESS',
 	'SIZE_LESS_OR_EQUALS'
 ];
-const filterOperator = {
-	array: z.enum(filterOperatorArrayOrSet),
+
+const logicalOperator = z.enum(['AND', 'OR']);
+const operator = {
+	array: z.enum(operatorArrayOrSet),
 	boolean: z.enum(['IS', 'IS_NOT']),
 	date: z.enum(['AFTER', 'AFTER_OR_EQUALS', 'BEFORE', 'BEFORE_OR_EQUALS', 'BETWEEN']),
 	geo: z.enum(['IN_RADIUS', 'NOT_IN_RADIUS']),
@@ -33,46 +46,34 @@ const filterOperator = {
 		'SIZE_LESS_OR_EQUALS'
 	]),
 	number: z.enum(['BETWEEN', 'EQUALS', 'GREATER', 'GREATER_OR_EQUALS', 'LESS', 'LESS_OR_EQUALS']),
-	set: z.enum([...filterOperatorArrayOrSet, 'HAS']),
+	set: z.enum([...operatorArrayOrSet, 'HAS']),
 	string: z.enum(['CONTAINS', 'ENDS_WITH', 'EQUALS', 'IS_EMPTY', 'MATCHES_REGEX', 'STARTS_WITH'])
 };
 
-const filterValue = (...schemas: [z.ZodTypeAny, ...z.ZodTypeAny[]]) => {
-	const schemasWith = [
-		z.object({
-			$path: z.array(z.string())
-		}),
-		schemas[0],
-		...schemas.slice(1)
-	] as [z.ZodTypeAny, z.ZodTypeAny, ...z.ZodTypeAny[]];
-
-	return z.union(schemasWith);
-};
-
-const filterCriteriaCustomFunction = z
+const criteriaCustomFunction = z
 	.function()
 	.args(z.any())
 	.returns(z.union([z.boolean(), z.promise(z.boolean())]));
 
-const filterCriteria = z.discriminatedUnion('type', [
+const criteria = z.discriminatedUnion('type', [
 	z.object({
 		defaultValue: z.array(z.unknown()).default([]),
 		normalize: z.boolean().default(true),
-		operator: filterOperator.array,
+		operator: operator.array,
 		path: z.array(z.string()),
 		type: z.literal('ARRAY'),
 		value: filterValue(z.array(z.unknown()), z.number())
 	}),
 	z.object({
 		defaultValue: z.boolean().default(false),
-		operator: filterOperator.boolean,
+		operator: operator.boolean,
 		path: z.array(z.string()),
 		type: z.literal('BOOLEAN'),
 		value: filterValue(z.boolean())
 	}),
 	z.object({
 		type: z.literal('CUSTOM'),
-		value: z.union([z.string(), filterCriteriaCustomFunction])
+		value: z.union([z.string(), criteriaCustomFunction])
 	}),
 	z.object({
 		defaultValue: z
@@ -81,7 +82,7 @@ const filterCriteria = z.discriminatedUnion('type', [
 			.default(() => {
 				return new Date().toISOString();
 			}),
-		operator: filterOperator.date,
+		operator: operator.date,
 		path: z.array(z.string()),
 		type: z.literal('DATE'),
 		value: filterValue(z.string().datetime(), z.tuple([z.string().datetime(), z.string().datetime()]))
@@ -93,7 +94,7 @@ const filterCriteria = z.discriminatedUnion('type', [
 			.args(z.record(z.number()))
 			.returns(z.tuple([z.number(), z.number()]))
 			.optional(),
-		operator: filterOperator.geo,
+		operator: operator.geo,
 		path: z.array(z.string()),
 		type: z.literal('GEO'),
 		value: filterValue(
@@ -108,14 +109,14 @@ const filterCriteria = z.discriminatedUnion('type', [
 	z.object({
 		defaultValue: z.map(z.unknown(), z.unknown()).default(new Map()),
 		normalize: z.boolean().default(true),
-		operator: filterOperator.map,
+		operator: operator.map,
 		path: z.array(z.string()),
 		type: z.literal('MAP'),
 		value: filterValue(z.number(), z.string(), z.map(z.unknown(), z.unknown()))
 	}),
 	z.object({
 		defaultValue: z.number().default(0),
-		operator: filterOperator.number,
+		operator: operator.number,
 		path: z.array(z.string()),
 		type: z.literal('NUMBER'),
 		value: filterValue(z.union([z.number(), z.array(z.number())]))
@@ -123,7 +124,7 @@ const filterCriteria = z.discriminatedUnion('type', [
 	z.object({
 		defaultValue: z.set(z.unknown()).default(new Set()),
 		normalize: z.boolean().default(true),
-		operator: filterOperator.set,
+		operator: operator.set,
 		path: z.array(z.string()),
 		type: z.literal('SET'),
 		value: filterValue(z.number(), z.string(), z.set(z.unknown()))
@@ -131,46 +132,37 @@ const filterCriteria = z.discriminatedUnion('type', [
 	z.object({
 		defaultValue: z.string().default(''),
 		normalize: z.boolean().default(true),
-		operator: filterOperator.string,
+		operator: operator.string,
 		path: z.array(z.string()),
 		type: z.literal('STRING'),
 		value: z.union([z.string(), z.array(z.string()), z.instanceof(RegExp)])
 	})
 ]);
 
-const filterRule = z.object({
-	criteria: z.array(filterCriteria),
-	operator: filterLogicalOperator
+const rule = z.object({
+	criteria: z.array(criteria),
+	operator: logicalOperator
 });
 
 const filter = z.object({
-	operator: filterLogicalOperator,
-	rules: z.array(filterRule)
+	operator: logicalOperator,
+	rules: z.array(rule)
 });
 
-const filterMatchInput = z.union([filterCriteria, filterRule, filter]);
-
+const matchInput = z.union([criteria, rule, filter]);
 const schema = {
-	filter,
-	filterCriteria,
-	filterCriteriaCustomFunction,
-	filterLogicalOperator,
-	filterMatchInput,
-	filterRule
+    criteria,
+    criteriaCustomFunction,
+    filter,
+    logicalOperator,
+    matchInput,
+    rule
 };
 
 namespace FilterCriteria {
-	export type Criteria = z.infer<typeof filterCriteria>;
-	export type CriteriaInput = z.input<typeof filterCriteria>;
-	export type CriteriaCustomFunction = z.infer<typeof filterCriteriaCustomFunction>;
-	export type Filter = z.infer<typeof filter>;
-	export type FilterInput = z.input<typeof filter>;
-	export type FilterOperators = {
-		[K in keyof typeof filterOperator]: z.infer<(typeof filterOperator)[K]>;
-	};
-	export type LogicalOperator = z.infer<typeof filterLogicalOperator>;
-	export type Rule = z.infer<typeof filterRule>;
-	export type RuleInput = z.input<typeof filterRule>;
+	export type Criteria = z.infer<typeof criteria>;
+	export type CriteriaCustomFunction = z.infer<typeof criteriaCustomFunction>;
+	export type CriteriaInput = z.input<typeof criteria>;
 	export type CriteriaResult = {
 		criteriaValue: any;
 		level: 'criteria';
@@ -180,7 +172,11 @@ namespace FilterCriteria {
 		value: any;
 	};
 
-	export type MatchInput = z.input<typeof filterMatchInput>;
+	export type Filter = z.infer<typeof filter>;
+	export type FilterInput = z.input<typeof filter>;
+
+	export type LogicalOperator = z.infer<typeof logicalOperator>;
+	export type MatchInput = z.infer<typeof matchInput>;
 	export type MatchResult = {
 		level: 'match';
 		operator: LogicalOperator;
@@ -189,6 +185,12 @@ namespace FilterCriteria {
 		results: RuleResult[];
 	};
 
+	export type Operators = {
+		[K in keyof typeof operator]: z.infer<(typeof operator)[K]>;
+	};
+
+	export type Rule = z.infer<typeof rule>;
+	export type RuleInput = z.input<typeof rule>;
 	export type RuleResult = {
 		level: 'rule';
 		operator: LogicalOperator;
@@ -509,7 +511,7 @@ class FilterCriteria {
 		}
 	}
 
-	private static applyArrayFilter(value: any[], operator: FilterCriteria.FilterOperators['array'], filterValue: any): boolean {
+	private static applyArrayFilter(value: any[], operator: FilterCriteria.Operators['array'], filterValue: any): boolean {
 		switch (operator) {
 			case 'EXACTLY_MATCHES': {
 				return _.isEqual(_.sortBy(value), _.sortBy(filterValue));
@@ -572,7 +574,7 @@ class FilterCriteria {
 		}
 	}
 
-	private static applyBooleanFilter(value: boolean, operator: FilterCriteria.FilterOperators['boolean'], filterValue: boolean): boolean {
+	private static applyBooleanFilter(value: boolean, operator: FilterCriteria.Operators['boolean'], filterValue: boolean): boolean {
 		switch (operator) {
 			case 'IS': {
 				return value === filterValue;
@@ -589,7 +591,7 @@ class FilterCriteria {
 
 	private static applyDateFilter(
 		value: string,
-		operator: FilterCriteria.FilterOperators['date'],
+		operator: FilterCriteria.Operators['date'],
 		filterValue: string | [string, string]
 	): boolean {
 		const date = new Date(value);
@@ -630,7 +632,7 @@ class FilterCriteria {
 
 	private static applyGeoFilter(
 		value: { lat: number; lng: number },
-		operator: FilterCriteria.FilterOperators['geo'],
+		operator: FilterCriteria.Operators['geo'],
 		filterValue: { lat: number; lng: number; radius?: number; unit?: 'km' | 'mi' }
 	): boolean {
 		switch (operator) {
@@ -665,7 +667,7 @@ class FilterCriteria {
 		}
 	}
 
-	private static applyMapFilter(value: Map<any, any>, operator: FilterCriteria.FilterOperators['map'], filterValue: any): boolean {
+	private static applyMapFilter(value: Map<any, any>, operator: FilterCriteria.Operators['map'], filterValue: any): boolean {
 		switch (operator) {
 			case 'HAS_KEY': {
 				return value.has(filterValue);
@@ -708,7 +710,7 @@ class FilterCriteria {
 		}
 	}
 
-	private static applyNumberFilter(value: number, operator: FilterCriteria.FilterOperators['number'], filterValue: any): boolean {
+	private static applyNumberFilter(value: number, operator: FilterCriteria.Operators['number'], filterValue: any): boolean {
 		switch (operator) {
 			case 'EQUALS': {
 				return value === filterValue;
@@ -740,7 +742,7 @@ class FilterCriteria {
 		}
 	}
 
-	private static applySetFilter(value: Set<any>, operator: FilterCriteria.FilterOperators['set'], filterValue: any): boolean {
+	private static applySetFilter(value: Set<any>, operator: FilterCriteria.Operators['set'], filterValue: any): boolean {
 		switch (operator) {
 			case 'EXACTLY_MATCHES': {
 				return this.applyArrayFilter(Array.from(value), 'EXACTLY_MATCHES', filterValue);
@@ -799,7 +801,7 @@ class FilterCriteria {
 		}
 	}
 
-	private static applyStringFilter(value: string, operator: FilterCriteria.FilterOperators['string'], filterValue: any): boolean {
+	private static applyStringFilter(value: string, operator: FilterCriteria.Operators['string'], filterValue: any): boolean {
 		switch (operator) {
 			case 'CONTAINS': {
 				return _.includes(value, filterValue);
