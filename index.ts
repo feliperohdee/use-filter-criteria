@@ -71,7 +71,6 @@ const filterCriteria = z.discriminatedUnion('type', [
 		value: filterValue(z.boolean())
 	}),
 	z.object({
-		operator: z.string().optional(),
 		type: z.literal('CUSTOM'),
 		value: z.union([z.string(), filterCriteriaCustomFunction])
 	}),
@@ -149,11 +148,14 @@ const filter = z.object({
 	rules: z.array(filterRule)
 });
 
+const filterMatchInput = z.union([filterCriteria, filterRule, filter]);
+
 const schema = {
 	filter,
 	filterCriteria,
 	filterCriteriaCustomFunction,
 	filterLogicalOperator,
+	filterMatchInput,
 	filterRule
 };
 
@@ -178,7 +180,7 @@ namespace FilterCriteria {
 		value: any;
 	};
 
-	export type MatchInput = FilterInput | RuleInput | CriteriaInput;
+	export type MatchInput = z.input<typeof filterMatchInput>;
 	export type MatchResult = {
 		level: 'match';
 		operator: LogicalOperator;
