@@ -10,9 +10,9 @@ A TypeScript-based filtering engine that provides a flexible, type-safe way to f
 ## Features
 
 - 🎯 **Type-Safe**: Built with TypeScript and Zod for runtime type validation
-- 🔄 **Multiple Data Types**: Support for arrays, booleans, dates, geographic coordinates, maps, numbers, sets, and text
+- 🔄 **Multiple Data Types**: Support for arrays, booleans, dates, geographic coordinates, maps, numbers, sets, and strings
 - 🎨 **Rich Operators**: Comprehensive set of comparison and logical operators
-- 🌐 **Internationalization-Ready**: Built-in text normalization (accents, case, etc.)
+- 🌐 **Internationalization-Ready**: Built-in string normalization (accents, case, etc.)
 - 🔍 **Complex Queries**: Support for nested AND/OR logic combinations
 - 📍 **Geospatial**: Built-in support for geographic radius searches
 - 🎛️ **Flexible**: Customizable default values and source path resolution
@@ -91,7 +91,7 @@ const complexFilter = {
 			operator: 'OR',
 			criteria: [
 				{
-					type: 'TEXT',
+					type: 'STRING',
 					operator: 'CONTAINS',
 					path: ['name'],
 					value: 'john'
@@ -147,15 +147,15 @@ This detailed output is invaluable for:
 Here are examples showing how to use detailed logging with different filter types:
 
 ```typescript
-// Text filter with detailed logging
-const textFilter = {
+// String filter with detailed logging
+const stringFilter = {
 	operator: 'AND',
 	rules: [
 		{
 			operator: 'AND',
 			criteria: [
 				{
-					type: 'TEXT',
+					type: 'STRING',
 					operator: 'CONTAINS',
 					path: ['name'],
 					value: 'john'
@@ -165,7 +165,7 @@ const textFilter = {
 	]
 };
 
-const textResult = await FilterCriteria.match(users[0], textFilter, true);
+const stringResult = await FilterCriteria.match(users[0], stringFilter, true);
 /* Output:
 {
   level: 'match',
@@ -182,7 +182,7 @@ const textResult = await FilterCriteria.match(users[0], textFilter, true);
       level: 'criteria',
       operator: 'CONTAINS',
       passed: true,
-      reason: 'Text "CONTAINS" check PASSED',
+      reason: 'String "CONTAINS" check PASSED',
       value: 'john-doe'
     }]
   }]
@@ -266,7 +266,7 @@ const nestedFilter = {
 			operator: 'OR',
 			criteria: [
 				{
-					type: 'TEXT',
+					type: 'STRING',
 					operator: 'MATCHES_REGEX',
 					path: ['name'],
 					value: /^john/i
@@ -319,7 +319,7 @@ const nestedResult = await FilterCriteria.match(users[0], nestedFilter, true);
           level: 'criteria',
           operator: 'MATCHES_REGEX',
           passed: true,
-          reason: 'Text "MATCHES_REGEX" check PASSED',
+          reason: 'String "MATCHES_REGEX" check PASSED',
           value: 'John Doe'
         }
       ]
@@ -401,14 +401,14 @@ const nestedResult = await FilterCriteria.match(users[0], nestedFilter, true);
 - `SIZE_LESS`: Set size is less than the filter value
 - `SIZE_LESS_OR_EQUALS`: Set size is less than or equal to the filter value
 
-### Text Operators
+### String Operators
 
-- `CONTAINS`: Text contains the filter value
-- `ENDS_WITH`: Text ends with the filter value
-- `EQUALS`: Text equals the filter value
-- `IS_EMPTY`: Text is empty
-- `MATCHES_REGEX`: Text matches the regular expression pattern
-- `STARTS_WITH`: Text starts with the filter value
+- `CONTAINS`: String contains the filter value
+- `ENDS_WITH`: String ends with the filter value
+- `EQUALS`: String equals the filter value
+- `IS_EMPTY`: String is empty
+- `MATCHES_REGEX`: String matches the regular expression pattern
+- `STARTS_WITH`: String starts with the filter value
 
 ### Custom Operators
 
@@ -503,7 +503,7 @@ const setFilter = {
 					operator: 'INCLUDES_ALL',
 					path: ['skills'],
 					value: ['typescript', 'react'],
-					normalize: true // Optional: normalize text values
+					normalize: true // Optional: normalize string values
 				}
 			]
 		}

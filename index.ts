@@ -34,7 +34,7 @@ const filterOperator = {
 	]),
 	number: z.enum(['BETWEEN', 'EQUALS', 'GREATER', 'GREATER_OR_EQUALS', 'LESS', 'LESS_OR_EQUALS']),
 	set: z.enum([...filterOperatorArrayOrSet, 'HAS']),
-	text: z.enum(['CONTAINS', 'ENDS_WITH', 'EQUALS', 'IS_EMPTY', 'MATCHES_REGEX', 'STARTS_WITH'])
+	string: z.enum(['CONTAINS', 'ENDS_WITH', 'EQUALS', 'IS_EMPTY', 'MATCHES_REGEX', 'STARTS_WITH'])
 };
 
 const filterValue = (...schemas: [z.ZodTypeAny, ...z.ZodTypeAny[]]) => {
@@ -132,9 +132,9 @@ const filterCriteria = z.discriminatedUnion('type', [
 	z.object({
 		defaultValue: z.string().default(''),
 		normalize: z.boolean().default(true),
-		operator: filterOperator.text,
+		operator: filterOperator.string,
 		path: z.array(z.string()),
-		type: z.literal('TEXT'),
+		type: z.literal('STRING'),
 		value: z.union([z.string(), z.array(z.string()), z.instanceof(RegExp)])
 	})
 ]);
@@ -473,8 +473,8 @@ class FilterCriteria {
 				return result;
 			}
 
-			case 'TEXT': {
-				const result = this.applyTextFilter(value, criteria.operator, criteria.value);
+			case 'STRING': {
+				const result = this.applyStringFilter(value, criteria.operator, criteria.value);
 
 				if (detailed) {
 					return {
@@ -482,7 +482,7 @@ class FilterCriteria {
 						level: 'criteria',
 						operator: criteria.operator,
 						passed: result,
-						reason: `Text "${criteria.operator}" check ${result ? 'PASSED' : 'FAILED'}`,
+						reason: `String "${criteria.operator}" check ${result ? 'PASSED' : 'FAILED'}`,
 						value
 					};
 				}
@@ -797,7 +797,7 @@ class FilterCriteria {
 		}
 	}
 
-	private static applyTextFilter(value: string, operator: FilterCriteria.FilterOperators['text'], filterValue: any): boolean {
+	private static applyStringFilter(value: string, operator: FilterCriteria.FilterOperators['string'], filterValue: any): boolean {
 		switch (operator) {
 			case 'CONTAINS': {
 				return _.includes(value, filterValue);
@@ -875,13 +875,13 @@ class FilterCriteria {
 		}
 
 		if (_.isString(value)) {
-			return this.normalizeText(value);
+			return this.normalizeString(value);
 		}
 
 		return value;
 	});
 
-	private static normalizeText = _.memoize((value: string): string => {
+	private static normalizeString = _.memoize((value: string): string => {
 		value = _.trim(value);
 		value = _.toLower(value);
 		value = _.deburr(value);

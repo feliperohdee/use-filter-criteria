@@ -53,13 +53,13 @@ describe('/index', () => {
 						operator: 'OR',
 						criteria: [
 							{
-								type: 'TEXT',
+								type: 'STRING',
 								operator: 'CONTAINS',
 								path: ['name'],
 								value: 'jo_hn'
 							},
 							{
-								type: 'TEXT',
+								type: 'STRING',
 								operator: 'CONTAINS',
 								path: ['name'],
 								value: 'john'
@@ -88,7 +88,7 @@ describe('/index', () => {
 								level: 'criteria',
 								operator: 'CONTAINS',
 								passed: false,
-								reason: 'Text "CONTAINS" check FAILED',
+								reason: 'String "CONTAINS" check FAILED',
 								value: 'john-doe'
 							},
 							{
@@ -96,7 +96,7 @@ describe('/index', () => {
 								level: 'criteria',
 								operator: 'CONTAINS',
 								passed: true,
-								reason: 'Text "CONTAINS" check PASSED',
+								reason: 'String "CONTAINS" check PASSED',
 								value: 'john-doe'
 							}
 						],
@@ -114,13 +114,13 @@ describe('/index', () => {
 						operator: 'OR',
 						criteria: [
 							{
-								type: 'TEXT',
+								type: 'STRING',
 								operator: 'CONTAINS',
 								path: ['name'],
 								value: 'jo_hn'
 							},
 							{
-								type: 'TEXT',
+								type: 'STRING',
 								operator: 'CONTAINS',
 								path: ['name'],
 								value: 'john'
@@ -149,7 +149,7 @@ describe('/index', () => {
 								level: 'criteria',
 								operator: 'CONTAINS',
 								passed: false,
-								reason: 'Text "CONTAINS" check FAILED',
+								reason: 'String "CONTAINS" check FAILED',
 								value: 'john-doe'
 							},
 							{
@@ -157,7 +157,7 @@ describe('/index', () => {
 								level: 'criteria',
 								operator: 'CONTAINS',
 								passed: true,
-								reason: 'Text "CONTAINS" check PASSED',
+								reason: 'String "CONTAINS" check PASSED',
 								value: 'john-doe'
 							}
 						],
@@ -189,7 +189,7 @@ describe('/index', () => {
 							operator: 'OR',
 							criteria: [
 								{
-									type: 'TEXT',
+									type: 'STRING',
 									operator: 'CONTAINS',
 									path: ['name'],
 									value: 'John'
@@ -229,7 +229,7 @@ describe('/index', () => {
 							operator: 'OR',
 							criteria: [
 								{
-									type: 'TEXT',
+									type: 'STRING',
 									operator: 'CONTAINS',
 									path: ['name'],
 									value: 'John'
@@ -305,13 +305,13 @@ describe('/index', () => {
 				operator: 'OR',
 				criteria: [
 					{
-						type: 'TEXT',
+						type: 'STRING',
 						operator: 'CONTAINS',
 						path: ['name'],
 						value: 'jo_hn'
 					},
 					{
-						type: 'TEXT',
+						type: 'STRING',
 						operator: 'CONTAINS',
 						path: ['name'],
 						value: 'john'
@@ -337,7 +337,7 @@ describe('/index', () => {
 						level: 'criteria',
 						operator: 'CONTAINS',
 						passed: false,
-						reason: 'Text "CONTAINS" check FAILED',
+						reason: 'String "CONTAINS" check FAILED',
 						value: 'John Doe'
 					},
 					{
@@ -345,7 +345,7 @@ describe('/index', () => {
 						level: 'criteria',
 						operator: 'CONTAINS',
 						passed: false,
-						reason: 'Text "CONTAINS" check FAILED',
+						reason: 'String "CONTAINS" check FAILED',
 						value: 'John Doe'
 					}
 				],
@@ -357,7 +357,7 @@ describe('/index', () => {
 	describe('applyCriteria', () => {
 		it('should handle undefined value', async () => {
 			const criteria: FilterCriteria.CriteriaInput = {
-				type: 'TEXT',
+				type: 'STRING',
 				operator: 'CONTAINS',
 				path: ['inexistent'],
 				value: 'value'
@@ -2072,10 +2072,10 @@ describe('/index', () => {
 			});
 		});
 
-		describe('text', () => {
+		describe('STRING', () => {
 			it('should handle CONTAINS operator with normalize = true', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
-					type: 'TEXT',
+					type: 'STRING',
 					normalize: true,
 					operator: 'CONTAINS',
 					path: ['name'],
@@ -2095,14 +2095,14 @@ describe('/index', () => {
 					level: 'criteria',
 					operator: 'CONTAINS',
 					passed: true,
-					reason: 'Text "CONTAINS" check PASSED',
+					reason: 'String "CONTAINS" check PASSED',
 					value: 'john-doe'
 				});
 			});
 
 			it('should handle CONTAINS operator with normalize = false', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
-					type: 'TEXT',
+					type: 'STRING',
 					normalize: false,
 					operator: 'CONTAINS',
 					path: ['name'],
@@ -2122,14 +2122,14 @@ describe('/index', () => {
 					level: 'criteria',
 					operator: 'CONTAINS',
 					passed: false,
-					reason: 'Text "CONTAINS" check FAILED',
+					reason: 'String "CONTAINS" check FAILED',
 					value: 'John Doe'
 				});
 			});
 
 			it('should handle ENDS_WITH operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
-					type: 'TEXT',
+					type: 'STRING',
 					operator: 'ENDS_WITH',
 					path: ['name'],
 					value: 'Doe'
@@ -2148,14 +2148,14 @@ describe('/index', () => {
 					level: 'criteria',
 					operator: 'ENDS_WITH',
 					passed: true,
-					reason: 'Text "ENDS_WITH" check PASSED',
+					reason: 'String "ENDS_WITH" check PASSED',
 					value: 'John Doe'
 				});
 			});
 
 			it('should handle EQUALS operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
-					type: 'TEXT',
+					type: 'STRING',
 					operator: 'EQUALS',
 					path: ['name'],
 					value: 'John Doe'
@@ -2174,14 +2174,14 @@ describe('/index', () => {
 					level: 'criteria',
 					operator: 'EQUALS',
 					passed: true,
-					reason: 'Text "EQUALS" check PASSED',
+					reason: 'String "EQUALS" check PASSED',
 					value: 'John Doe'
 				});
 			});
 
 			it('should handle IS_EMPTY operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
-					type: 'TEXT',
+					type: 'STRING',
 					operator: 'IS_EMPTY',
 					path: ['name'],
 					value: []
@@ -2200,14 +2200,14 @@ describe('/index', () => {
 					level: 'criteria',
 					operator: 'IS_EMPTY',
 					passed: false,
-					reason: 'Text "IS_EMPTY" check FAILED',
+					reason: 'String "IS_EMPTY" check FAILED',
 					value: 'John Doe'
 				});
 			});
 
 			it('should handle MATCHES_REGEX operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
-					type: 'TEXT',
+					type: 'STRING',
 					operator: 'MATCHES_REGEX',
 					path: ['name'],
 					value: /john/i
@@ -2226,14 +2226,14 @@ describe('/index', () => {
 					level: 'criteria',
 					operator: 'MATCHES_REGEX',
 					passed: true,
-					reason: 'Text "MATCHES_REGEX" check PASSED',
+					reason: 'String "MATCHES_REGEX" check PASSED',
 					value: 'John Doe'
 				});
 			});
 
 			it('should handle STARTS_WITH operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
-					type: 'TEXT',
+					type: 'STRING',
 					operator: 'STARTS_WITH',
 					path: ['name'],
 					value: 'John'
@@ -2252,7 +2252,7 @@ describe('/index', () => {
 					level: 'criteria',
 					operator: 'STARTS_WITH',
 					passed: true,
-					reason: 'Text "STARTS_WITH" check PASSED',
+					reason: 'String "STARTS_WITH" check PASSED',
 					value: 'John Doe'
 				});
 			});
@@ -2335,7 +2335,7 @@ describe('/index', () => {
 			expect(FilterCriteria.normalize(new Set(['1', 'Develóper']))).toEqual(new Set(['1', 'developer']));
 		});
 
-		it('should normalize text', () => {
+		it('should normalize string', () => {
 			// @ts-expect-error
 			expect(FilterCriteria.normalize('Develóper')).toEqual('developer');
 		});
@@ -2346,12 +2346,12 @@ describe('/index', () => {
 		});
 	});
 
-	describe('normalizeText', () => {
-		it('should normalize text', () => {
+	describe('normalizeString', () => {
+		it('should normalize string', () => {
 			// @ts-expect-error
-			expect(FilterCriteria.normalizeText('Develóper')).toEqual('developer');
+			expect(FilterCriteria.normalizeString('Develóper')).toEqual('developer');
 			// @ts-expect-error
-			expect(FilterCriteria.normalizeText('Devel  óper')).toEqual('devel-oper');
+			expect(FilterCriteria.normalizeString('Devel  óper')).toEqual('devel-oper');
 		});
 	});
 
