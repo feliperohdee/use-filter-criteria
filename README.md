@@ -116,6 +116,99 @@ const detailedResult = await FilterCriteria.match(users[0], complexFilter, true)
 console.log(detailedResult);
 ```
 
+## Input Formats
+
+The library supports three levels of filter complexity to match your needs:
+
+### 1. Simple Criteria Input
+
+For basic, single-condition filtering:
+
+```typescript
+const simpleCriteria = {
+	type: 'NUMBER',
+	operator: 'GREATER',
+	path: ['age'],
+	value: 25
+};
+
+const result = await FilterCriteria.matchCriteria(data, simpleCriteria);
+```
+
+### 2. Rule Input
+
+For grouping multiple criteria with a logical operator:
+
+```typescript
+const ruleInput = {
+	operator: 'AND',
+	criteria: [
+		{
+			type: 'NUMBER',
+			operator: 'GREATER',
+			path: ['age'],
+			value: 25
+		},
+		{
+			type: 'STRING',
+			operator: 'CONTAINS',
+			path: ['name'],
+			value: 'john'
+		}
+	]
+};
+
+const result = await FilterCriteria.matchRule(data, ruleInput);
+```
+
+### 3. Complete Filter Input
+
+For complex filtering with multiple rules and nested logic:
+
+```typescript
+const filterInput = {
+	operator: 'OR',
+	rules: [
+		{
+			operator: 'AND',
+			criteria: [
+				{
+					type: 'NUMBER',
+					operator: 'GREATER',
+					path: ['age'],
+					value: 25
+				},
+				{
+					type: 'SET',
+					operator: 'INCLUDES_ALL',
+					path: ['skills'],
+					value: ['typescript']
+				}
+			]
+		},
+		{
+			operator: 'OR',
+			criteria: [
+				{
+					type: 'STRING',
+					operator: 'MATCHES_REGEX',
+					path: ['name'],
+					value: /^john/i
+				}
+			]
+		}
+	]
+};
+
+const result = await FilterCriteria.match(data, filterInput);
+```
+
+Each input format supports all the filter types and operators described in the "Supported Filter Types" section. The choice between them depends on your filtering complexity needs:
+
+- Use **Criteria Input** for simple, single-condition checks
+- Use **Rule Input** when you need to combine multiple criteria with AND/OR logic
+- Use **Filter Input** for complex scenarios requiring multiple rules and nested logic combinations
+
 ## Detailed Logging
 
 The `match` and `matchMany` functions support detailed logging that provides comprehensive information about why filters passed or failed. Enable detailed logging by passing `true` as the third parameter to `match`:

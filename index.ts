@@ -178,6 +178,7 @@ namespace FilterCriteria {
 		value: any;
 	};
 
+	export type MatchInput = FilterInput | RuleInput | CriteriaInput;
 	export type MatchResult = {
 		level: 'match';
 		operator: LogicalOperator;
@@ -201,19 +202,19 @@ class FilterCriteria {
 
 	static async match(
 		data: any,
-		input: FilterCriteria.FilterInput,
+		input: FilterCriteria.MatchInput,
 		detailed: boolean = false
 	): Promise<boolean | FilterCriteria.MatchResult> {
-		input = filter.parse(input);
+		const args = filter.parse(this.convertToFilterInput(input));
 
 		const ruleResults = await Promise.all(
-			_.map(input.rules, rule => {
+			_.map(args.rules, rule => {
 				return this.applyRule(data, rule, detailed);
 			})
 		);
 
 		const passed =
-			input.operator === 'AND'
+			args.operator === 'AND'
 				? _.every(ruleResults, r => {
 						return _.isBoolean(r) ? r : r.passed;
 					})
@@ -224,9 +225,9 @@ class FilterCriteria {
 		if (detailed) {
 			return {
 				level: 'match',
-				operator: input.operator,
+				operator: args.operator,
 				passed,
-				reason: `Match "${input.operator}" check ${passed ? 'PASSED' : 'FAILED'}`,
+				reason: `Match "${args.operator}" check ${passed ? 'PASSED' : 'FAILED'}`,
 				results: ruleResults as FilterCriteria.RuleResult[]
 			};
 		}
@@ -234,19 +235,18 @@ class FilterCriteria {
 		return passed;
 	}
 
-	static async matchMany(data: any[], input: FilterCriteria.FilterInput): Promise<any[]> {
-		input = filter.parse(input);
-
+	static async matchMany(data: any[], input: FilterCriteria.MatchInput): Promise<any[]> {
+		let args = filter.parse(this.convertToFilterInput(input));
 		let results: any[] = [];
 
 		for await (const item of data) {
 			const ruleResults = await Promise.all(
-				_.map(input.rules, rule => {
+				_.map(args.rules, rule => {
 					return this.applyRule(item, rule);
 				}) as Promise<boolean>[]
 			);
 
-			if (input.operator === 'AND' ? _.every(ruleResults, Boolean) : _.some(ruleResults, Boolean)) {
+			if (args.operator === 'AND' ? _.every(ruleResults, Boolean) : _.some(ruleResults, Boolean)) {
 				results = [...results, item];
 			}
 		}
@@ -843,6 +843,37 @@ class FilterCriteria {
 		const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
 		const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 		return R * c;
+	}
+
+	private static convertToFilterInput(
+		input: FilterCriteria.FilterInput | FilterCriteria.RuleInput | FilterCriteria.CriteriaInput
+	): FilterCriteria.FilterInput {
+		// Convert input to FilterInput format
+		let filterInput: FilterCriteria.FilterInput;
+
+		if ('type' in input) {
+			// Handle CriteriaInput
+			filterInput = {
+				operator: 'AND',
+				rules: [
+					{
+						operator: 'AND',
+						criteria: [input]
+					}
+				]
+			};
+		} else if ('criteria' in input) {
+			// Handle RuleInput
+			filterInput = {
+				operator: 'AND',
+				rules: [input]
+			};
+		} else {
+			// Handle FilterInput
+			filterInput = input;
+		}
+
+		return filterInput;
 	}
 
 	private static normalize = _.memoize((value: any): any => {

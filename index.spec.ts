@@ -2259,6 +2259,59 @@ describe('/index', () => {
 		});
 	});
 
+	describe('convertToFilterInput', () => {
+		it('should convert CriteriaInput to FilterInput', () => {
+			const criteria: FilterCriteria.CriteriaInput = {
+				type: 'STRING',
+				operator: 'EQUALS',
+				path: ['name'],
+				value: 'John Doe'
+			};
+
+			// @ts-expect-error
+			const filterInput = FilterCriteria.convertToFilterInput(criteria);
+			expect(filterInput).toEqual({
+				operator: 'AND',
+				rules: [{ operator: 'AND', criteria: [criteria] }]
+			});
+		});
+
+		it('should convert RuleInput to FilterInput', () => {
+			const criteria: FilterCriteria.CriteriaInput = {
+				type: 'STRING',
+				operator: 'EQUALS',
+				path: ['name'],
+				value: 'John Doe'
+			};
+
+			const rule: FilterCriteria.RuleInput = {
+				operator: 'AND',
+				criteria: [criteria]
+			};
+
+			// @ts-expect-error
+			const filterInput = FilterCriteria.convertToFilterInput(rule);
+			expect(filterInput).toEqual({ operator: 'AND', rules: [rule] });
+		});
+
+		it('should convert FilterInput to FilterInput', () => {
+			const criteria: FilterCriteria.CriteriaInput = {
+				type: 'STRING',
+				operator: 'EQUALS',
+				path: ['name'],
+				value: 'John Doe'
+			};
+
+			const filterInput: FilterCriteria.FilterInput = {
+				operator: 'AND',
+				rules: [{ operator: 'AND', criteria: [criteria] }]
+			};
+
+			// @ts-expect-error
+			expect(FilterCriteria.convertToFilterInput(filterInput)).toEqual(filterInput);
+		});
+	});
+
 	describe('normalize', () => {
 		it('should normalize array', () => {
 			// @ts-expect-error
