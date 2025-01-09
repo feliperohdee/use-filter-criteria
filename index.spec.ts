@@ -45,8 +45,8 @@ describe('/index', () => {
 	});
 
 	describe('match', () => {
-		it('should return with AND', async () => {
-			const filter: FilterCriteria.FilterInput = {
+		it('should return by filter with AND', async () => {
+			const filter: FilterCriteria.MatchInput = {
 				operator: 'AND',
 				rules: _.times(2, () => {
 					return {
@@ -73,10 +73,10 @@ describe('/index', () => {
 
 			expect(res[0]).toEqual(true);
 			expect(res[1]).toEqual({
-				level: 'match',
+				level: 'filter',
 				operator: 'AND',
 				passed: true,
-				reason: 'Match "AND" check PASSED',
+				reason: 'Filter "AND" check PASSED',
 				results: _.times(2, () => {
 					return {
 						operator: 'OR',
@@ -106,8 +106,8 @@ describe('/index', () => {
 			});
 		});
 
-		it('should return with OR', async () => {
-			const filter: FilterCriteria.FilterInput = {
+		it('should return by filter with OR', async () => {
+			const filter: FilterCriteria.MatchInput = {
 				operator: 'OR',
 				rules: _.times(2, () => {
 					return {
@@ -134,10 +134,10 @@ describe('/index', () => {
 
 			expect(res[0]).toEqual(true);
 			expect(res[1]).toEqual({
-				level: 'match',
+				level: 'filter',
 				operator: 'OR',
 				passed: true,
-				reason: 'Match "OR" check PASSED',
+				reason: 'Filter "OR" check PASSED',
 				results: _.times(2, () => {
 					return {
 						operator: 'OR',
@@ -164,6 +164,78 @@ describe('/index', () => {
 						level: 'rule'
 					};
 				})
+			});
+		});
+
+		it('should return by rule', async () => {
+			const rule: FilterCriteria.MatchInput = {
+				operator: 'OR',
+				criteria: [
+					{
+						type: 'STRING',
+						operator: 'CONTAINS',
+						path: ['name'],
+						value: 'jo_hn'
+					},
+					{
+						type: 'STRING',
+						operator: 'CONTAINS',
+						path: ['name'],
+						value: 'john'
+					}
+				]
+			};
+
+			const res = await Promise.all([FilterCriteria.match(testData[0], rule, false), FilterCriteria.match(testData[0], rule, true)]);
+
+			expect(res[0]).toEqual(true);
+			expect(res[1]).toEqual({
+				operator: 'OR',
+				passed: true,
+				reason: 'Rule "OR" check PASSED',
+				results: [
+					{
+						criteriaValue: 'jo_hn',
+						level: 'criteria',
+						operator: 'CONTAINS',
+						passed: false,
+						reason: 'String "CONTAINS" check FAILED',
+						value: 'john-doe'
+					},
+					{
+						criteriaValue: 'john',
+						level: 'criteria',
+						operator: 'CONTAINS',
+						passed: true,
+						reason: 'String "CONTAINS" check PASSED',
+						value: 'john-doe'
+					}
+				],
+				level: 'rule'
+			});
+		});
+
+		it('should return by criteria', async () => {
+			const criteria: FilterCriteria.MatchInput = {
+				type: 'STRING',
+				operator: 'CONTAINS',
+				path: ['name'],
+				value: 'john'
+			};
+
+			const res = await Promise.all([
+				FilterCriteria.match(testData[0], criteria, false),
+				FilterCriteria.match(testData[0], criteria, true)
+			]);
+
+			expect(res[0]).toEqual(true);
+			expect(res[1]).toEqual({
+				criteriaValue: 'john',
+				level: 'criteria',
+				operator: 'CONTAINS',
+				passed: true,
+				reason: 'String "CONTAINS" check PASSED',
+				value: 'john-doe'
 			});
 		});
 	});
@@ -171,7 +243,7 @@ describe('/index', () => {
 	describe('matchMany', () => {
 		describe('complex filters', () => {
 			it('should handle nested AND/OR combinations', async () => {
-				const filter: FilterCriteria.FilterInput = {
+				const filter: FilterCriteria.MatchInput = {
 					operator: 'AND',
 					rules: [
 						{
@@ -211,7 +283,7 @@ describe('/index', () => {
 			});
 
 			it('should handle nested OR/AND combinations', async () => {
-				const filter: FilterCriteria.FilterInput = {
+				const filter: FilterCriteria.MatchInput = {
 					operator: 'OR',
 					rules: [
 						{
@@ -253,7 +325,7 @@ describe('/index', () => {
 
 		describe('default values', () => {
 			it('should use defaultValue when field is missing', async () => {
-				const filter: FilterCriteria.FilterInput = {
+				const filter: FilterCriteria.MatchInput = {
 					operator: 'AND',
 					rules: [
 						{
@@ -276,7 +348,7 @@ describe('/index', () => {
 			});
 
 			it('should return false when field is missing and no defaultValue', async () => {
-				const filter: FilterCriteria.FilterInput = {
+				const filter: FilterCriteria.MatchInput = {
 					operator: 'AND',
 					rules: [
 						{
@@ -2270,9 +2342,13 @@ describe('/index', () => {
 
 			// @ts-expect-error
 			const filterInput = FilterCriteria.convertToFilterInput(criteria);
+
 			expect(filterInput).toEqual({
-				operator: 'AND',
-				rules: [{ operator: 'AND', criteria: [criteria] }]
+				input: {
+					operator: 'AND',
+					rules: [{ operator: 'AND', criteria: [criteria] }]
+				},
+				level: 'criteria'
 			});
 		});
 
@@ -2291,7 +2367,10 @@ describe('/index', () => {
 
 			// @ts-expect-error
 			const filterInput = FilterCriteria.convertToFilterInput(rule);
-			expect(filterInput).toEqual({ operator: 'AND', rules: [rule] });
+			expect(filterInput).toEqual({
+				input: { operator: 'AND', rules: [rule] },
+				level: 'rule'
+			});
 		});
 
 		it('should convert FilterInput to FilterInput', () => {
@@ -2302,13 +2381,16 @@ describe('/index', () => {
 				value: 'John Doe'
 			};
 
-			const filterInput: FilterCriteria.FilterInput = {
+			const filterInput = {
 				operator: 'AND',
 				rules: [{ operator: 'AND', criteria: [criteria] }]
 			};
 
 			// @ts-expect-error
-			expect(FilterCriteria.convertToFilterInput(filterInput)).toEqual(filterInput);
+			expect(FilterCriteria.convertToFilterInput(filterInput)).toEqual({
+				input: filterInput,
+				level: 'filter'
+			});
 		});
 	});
 

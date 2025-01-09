@@ -151,12 +151,12 @@ const filter = z.object({
 
 const matchInput = z.union([criteria, rule, filter]);
 const schema = {
-    criteria,
-    criteriaCustomFunction,
-    filter,
-    logicalOperator,
-    matchInput,
-    rule
+	criteria,
+	criteriaCustomFunction,
+	filter,
+	logicalOperator,
+	matchInput,
+	rule
 };
 
 namespace FilterCriteria {
@@ -174,16 +174,17 @@ namespace FilterCriteria {
 
 	export type Filter = z.infer<typeof filter>;
 	export type FilterInput = z.input<typeof filter>;
-
-	export type LogicalOperator = z.infer<typeof logicalOperator>;
-	export type MatchInput = z.infer<typeof matchInput>;
-	export type MatchResult = {
-		level: 'match';
+	export type FilterResult = {
+		level: 'filter';
 		operator: LogicalOperator;
 		passed: boolean;
 		reason: string;
 		results: RuleResult[];
 	};
+
+	export type LogicalOperator = z.infer<typeof logicalOperator>;
+	export type MatchInput = z.input<typeof matchInput>;
+	export type MatchDetailedResult = CriteriaResult | RuleResult | FilterResult;
 
 	export type Operators = {
 		[K in keyof typeof operator]: z.infer<(typeof operator)[K]>;
@@ -208,9 +209,9 @@ class FilterCriteria {
 		data: any,
 		input: FilterCriteria.MatchInput,
 		detailed: boolean = false
-	): Promise<boolean | FilterCriteria.MatchResult> {
-		const args = filter.parse(this.convertToFilterInput(input));
-
+	): Promise<boolean | FilterCriteria.MatchDetailedResult> {
+		const converted = this.convertToFilterInput(input);
+		const args = filter.parse(converted.input);
 		const ruleResults = await Promise.all(
 			_.map(args.rules, rule => {
 				return this.applyRule(data, rule, detailed);
@@ -227,11 +228,19 @@ class FilterCriteria {
 					});
 
 		if (detailed) {
+			if (converted.level === 'criteria') {
+				return (ruleResults[0] as FilterCriteria.RuleResult).results[0];
+			}
+
+			if (converted.level === 'rule') {
+				return ruleResults[0] as FilterCriteria.RuleResult;
+			}
+
 			return {
-				level: 'match',
+				level: 'filter',
 				operator: args.operator,
 				passed,
-				reason: `Match "${args.operator}" check ${passed ? 'PASSED' : 'FAILED'}`,
+				reason: `Filter "${args.operator}" check ${passed ? 'PASSED' : 'FAILED'}`,
 				results: ruleResults as FilterCriteria.RuleResult[]
 			};
 		}
@@ -240,7 +249,9 @@ class FilterCriteria {
 	}
 
 	static async matchMany(data: any[], input: FilterCriteria.MatchInput): Promise<any[]> {
-		let args = filter.parse(this.convertToFilterInput(input));
+		const converted = this.convertToFilterInput(input);
+		const args = filter.parse(converted.input);
+
 		let results: any[] = [];
 
 		for await (const item of data) {
@@ -849,35 +860,47 @@ class FilterCriteria {
 		return R * c;
 	}
 
-	private static convertToFilterInput(
-		input: FilterCriteria.FilterInput | FilterCriteria.RuleInput | FilterCriteria.CriteriaInput
-	): FilterCriteria.FilterInput {
-		// Convert input to FilterInput format
-		let filterInput: FilterCriteria.FilterInput;
+	private static convertToFilterInput(input: FilterCriteria.MatchInput): {
+		input: FilterCriteria.FilterInput;
+		level: 'filter' | 'rule' | 'criteria';
+	} {
+		let result: {
+			input: FilterCriteria.FilterInput;
+			level: 'filter' | 'rule' | 'criteria';
+		};
 
 		if ('type' in input) {
 			// Handle CriteriaInput
-			filterInput = {
-				operator: 'AND',
-				rules: [
-					{
-						operator: 'AND',
-						criteria: [input]
-					}
-				]
+			result = {
+				input: {
+					operator: 'AND',
+					rules: [
+						{
+							operator: 'AND',
+							criteria: [input]
+						}
+					]
+				},
+				level: 'criteria'
 			};
 		} else if ('criteria' in input) {
 			// Handle RuleInput
-			filterInput = {
-				operator: 'AND',
-				rules: [input]
+			result = {
+				input: {
+					operator: 'AND',
+					rules: [input]
+				},
+				level: 'rule'
 			};
 		} else {
 			// Handle FilterInput
-			filterInput = input;
+			result = {
+				input,
+				level: 'filter'
+			};
 		}
 
-		return filterInput;
+		return result;
 	}
 
 	private static normalize = _.memoize((value: any): any => {
