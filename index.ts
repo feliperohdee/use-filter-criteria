@@ -149,6 +149,14 @@ const filter = z.object({
 	rules: z.array(filterRule)
 });
 
+const schema = {
+	filter,
+	filterCriteria,
+	filterCriteriaCustomFunction,
+	filterLogicalOperator,
+	filterRule
+};
+
 namespace FilterCriteria {
 	export type Criteria = z.infer<typeof filterCriteria>;
 	export type CriteriaInput = z.input<typeof filterCriteria>;
@@ -189,6 +197,7 @@ namespace FilterCriteria {
 
 class FilterCriteria {
 	static customCriteria: Map<string, FilterCriteria.CriteriaCustomFunction> = new Map();
+	static schema = schema;
 
 	static async match(
 		data: any,
