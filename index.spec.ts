@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import FilterCriteria from './index';
 
@@ -40,6 +40,10 @@ const testData = [
 ];
 
 describe('/index', () => {
+	beforeEach(() => {
+		FilterCriteria.customCriteria.clear();
+	});
+
 	describe('match', () => {
 		it('should return with AND', async () => {
 			const filter: FilterCriteria.FilterInput = {
@@ -827,7 +831,7 @@ describe('/index', () => {
 		});
 
 		describe('custom', () => {
-			it('should handle custom operator', async () => {
+			it('should handle', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'CUSTOM',
 					value: async (item: any) => {
@@ -844,11 +848,65 @@ describe('/index', () => {
 
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
-					criteriaValue: criteria.value,
+					criteriaValue: 'Custom Criteria Function',
 					level: 'criteria',
-					operator: 'Function Operator',
+					operator: 'Custom Criteria Operator',
 					passed: true,
-					reason: 'Custom "Function Operator" check PASSED',
+					reason: 'Custom check PASSED',
+					value: testData[0]
+				});
+			});
+		});
+
+		describe('custom registered', () => {
+			it('should handle', async () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'CUSTOM',
+					value: 'custom-criteria'
+				};
+
+				FilterCriteria.registerCustomCriteria('custom-criteria', async (item: any) => {
+					return _.startsWith(item.name, 'John');
+				});
+
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					criteriaValue: 'custom-criteria',
+					level: 'criteria',
+					operator: 'Custom Criteria Operator',
+					passed: true,
+					reason: 'Custom "custom-criteria" check PASSED',
+					value: testData[0]
+				});
+			});
+
+			it('should handle inexistent', async () => {
+				const criteria: FilterCriteria.CriteriaInput = {
+					type: 'CUSTOM',
+					value: 'inexistent'
+				};
+
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
+
+				expect(res[0]).toEqual(false);
+				expect(res[1]).toEqual({
+					criteriaValue: 'inexistent',
+					level: 'criteria',
+					operator: 'Custom Criteria Operator',
+					passed: false,
+					reason: 'Custom criteria not found',
 					value: testData[0]
 				});
 			});
@@ -2294,6 +2352,19 @@ describe('/index', () => {
 			expect(FilterCriteria.normalizeText('Develóper')).toEqual('developer');
 			// @ts-expect-error
 			expect(FilterCriteria.normalizeText('Devel  óper')).toEqual('devel-oper');
+		});
+	});
+
+	describe('registerCustomCriteria / unregisterCustomCriteria', () => {
+		it('should register custom criteria', () => {
+			FilterCriteria.registerCustomCriteria('custom', () => true);
+			expect(FilterCriteria.customCriteria.size).toEqual(1);
+
+			FilterCriteria.unregisterCustomCriteria('inexistent');
+			expect(FilterCriteria.customCriteria.size).toEqual(1);
+
+			FilterCriteria.unregisterCustomCriteria('custom');
+			expect(FilterCriteria.customCriteria.size).toEqual(0);
 		});
 	});
 });

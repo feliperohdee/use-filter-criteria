@@ -49,6 +49,11 @@ const filterValue = (...schemas: [z.ZodTypeAny, ...z.ZodTypeAny[]]) => {
 	return z.union(schemasWith);
 };
 
+const filterCustomFunction = z
+	.function()
+	.args(z.any())
+	.returns(z.union([z.boolean(), z.promise(z.boolean())]));
+
 const filterCriteria = z.discriminatedUnion('type', [
 	z.object({
 		defaultValue: z.array(z.unknown()).default([]),
@@ -68,10 +73,7 @@ const filterCriteria = z.discriminatedUnion('type', [
 	z.object({
 		operator: z.string().optional(),
 		type: z.literal('CUSTOM'),
-		value: z
-			.function()
-			.args(z.any())
-			.returns(z.union([z.boolean(), z.promise(z.boolean())]))
+		value: z.union([z.string(), filterCustomFunction])
 	}),
 	z.object({
 		defaultValue: z
@@ -150,6 +152,7 @@ const filter = z.object({
 namespace FilterCriteria {
 	export type Criteria = z.infer<typeof filterCriteria>;
 	export type CriteriaInput = z.input<typeof filterCriteria>;
+	export type CustomFunction = z.infer<typeof filterCustomFunction>;
 	export type Filter = z.infer<typeof filter>;
 	export type FilterInput = z.input<typeof filter>;
 	export type FilterOperators = {
@@ -185,6 +188,8 @@ namespace FilterCriteria {
 }
 
 class FilterCriteria {
+	static customCriteria: Map<string, FilterCriteria.CustomFunction> = new Map();
+
 	static async match(
 		data: any,
 		input: FilterCriteria.FilterInput,
@@ -279,15 +284,32 @@ class FilterCriteria {
 		detailed: boolean = false
 	): Promise<boolean | FilterCriteria.CriteriaResult> {
 		if (criteria.type === 'CUSTOM') {
-			const result = await criteria.value(item);
+			const fn = _.isString(criteria.value) ? this.customCriteria.get(criteria.value) : criteria.value;
+
+			if (!fn) {
+				return detailed
+					? {
+							criteriaValue: _.isString(criteria.value) ? criteria.value : 'Custom Criteria Function',
+							level: 'criteria',
+							operator: 'Custom Criteria Operator',
+							passed: false,
+							reason: 'Custom criteria not found',
+							value: item
+						}
+					: false;
+			}
+
+			const result = await fn(item);
 
 			return detailed
 				? {
-						criteriaValue: criteria.value,
+						criteriaValue: _.isString(criteria.value) ? criteria.value : 'Custom Criteria Function',
 						level: 'criteria',
-						operator: criteria.operator || 'Function Operator',
+						operator: 'Custom Criteria Operator',
 						passed: result,
-						reason: `Custom "${criteria.operator || 'Function Operator'}" check ${result ? 'PASSED' : 'FAILED'}`,
+						reason: _.isString(criteria.value)
+							? `Custom "${criteria.value}" check ${result ? 'PASSED' : 'FAILED'}`
+							: `Custom check ${result ? 'PASSED' : 'FAILED'}`,
 						value: item
 					}
 				: result;
@@ -861,6 +883,14 @@ class FilterCriteria {
 
 		return value;
 	});
+
+	static registerCustomCriteria(name: string, fn: FilterCriteria.CustomFunction): void {
+		this.customCriteria.set(name, fn);
+	}
+
+	static unregisterCustomCriteria(name: string): void {
+		this.customCriteria.delete(name);
+	}
 
 	private static toRad(value: number): number {
 		return (value * Math.PI) / 180;

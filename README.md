@@ -412,9 +412,11 @@ const nestedResult = await FilterCriteria.match(users[0], nestedFilter, true);
 
 ### Custom Operators
 
-- `CUSTOM`: Allows defining custom filter functions that receive the current item and return a boolean
-- The function can be synchronous or asynchronous (returning a boolean | Promise<boolean>)
-- Useful for complex filtering logic that can't be expressed with standard operators
+There are two ways to use custom criteria: inline functions and registered criteria.
+
+#### 1. Inline Custom Functions
+
+You can define custom filter functions directly in your criteria:
 
 ```typescript
 const customFilter = {
@@ -435,6 +437,43 @@ const customFilter = {
 	]
 };
 ```
+
+#### 2. Registered Custom Criteria
+
+You can register reusable custom criteria that can be referenced by name:
+
+```typescript
+// Register a custom criteria
+FilterCriteria.registerCustomCriteria('isHighValueUser', async item => {
+	return item.purchases > 1000 && item.membershipLevel === 'premium';
+});
+
+// Use the registered criteria by name
+const registeredFilter = {
+	operator: 'AND',
+	rules: [
+		{
+			operator: 'AND',
+			criteria: [
+				{
+					type: 'CUSTOM',
+					value: 'isHighValueUser' // Reference the registered criteria by name
+				}
+			]
+		}
+	]
+};
+
+// Remove a custom criteria when no longer needed
+FilterCriteria.unregisterCustomCriteria('isHighValueUser');
+```
+
+Custom criteria can be:
+
+- Synchronous or asynchronous (returning `boolean | Promise<boolean>`)
+- Used for complex filtering logic that can't be expressed with standard operators
+- Registered once and reused across multiple filters
+- Managed with `registerCustomCriteria` and `unregisterCustomCriteria` methods
 
 ## Advanced Usage
 
