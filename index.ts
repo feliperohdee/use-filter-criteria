@@ -49,7 +49,7 @@ const filterValue = (...schemas: [z.ZodTypeAny, ...z.ZodTypeAny[]]) => {
 	return z.union(schemasWith);
 };
 
-const filterCustomFunction = z
+const filterCriteriaCustomFunction = z
 	.function()
 	.args(z.any())
 	.returns(z.union([z.boolean(), z.promise(z.boolean())]));
@@ -73,7 +73,7 @@ const filterCriteria = z.discriminatedUnion('type', [
 	z.object({
 		operator: z.string().optional(),
 		type: z.literal('CUSTOM'),
-		value: z.union([z.string(), filterCustomFunction])
+		value: z.union([z.string(), filterCriteriaCustomFunction])
 	}),
 	z.object({
 		defaultValue: z
@@ -152,7 +152,7 @@ const filter = z.object({
 namespace FilterCriteria {
 	export type Criteria = z.infer<typeof filterCriteria>;
 	export type CriteriaInput = z.input<typeof filterCriteria>;
-	export type CustomFunction = z.infer<typeof filterCustomFunction>;
+	export type CriteriaCustomFunction = z.infer<typeof filterCriteriaCustomFunction>;
 	export type Filter = z.infer<typeof filter>;
 	export type FilterInput = z.input<typeof filter>;
 	export type FilterOperators = {
@@ -188,7 +188,7 @@ namespace FilterCriteria {
 }
 
 class FilterCriteria {
-	static customCriteria: Map<string, FilterCriteria.CustomFunction> = new Map();
+	static customCriteria: Map<string, FilterCriteria.CriteriaCustomFunction> = new Map();
 
 	static async match(
 		data: any,
@@ -884,7 +884,7 @@ class FilterCriteria {
 		return value;
 	});
 
-	static registerCustomCriteria(name: string, fn: FilterCriteria.CustomFunction): void {
+	static registerCustomCriteria(name: string, fn: FilterCriteria.CriteriaCustomFunction): void {
 		this.customCriteria.set(name, fn);
 	}
 
