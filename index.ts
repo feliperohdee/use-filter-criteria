@@ -73,7 +73,7 @@ const criteria = z.discriminatedUnion('type', [
 	}),
 	z.object({
 		type: z.literal('CUSTOM'),
-		value: z.union([z.string(), criteriaCustomFunction])
+		value: filterValue(z.string(), criteriaCustomFunction)
 	}),
 	z.object({
 		defaultValue: z
@@ -135,7 +135,7 @@ const criteria = z.discriminatedUnion('type', [
 		operator: operator.string,
 		path: z.array(z.string()),
 		type: z.literal('STRING'),
-		value: z.union([z.string(), z.array(z.string()), z.instanceof(RegExp)])
+		value: filterValue(z.string(), z.array(z.string()), z.instanceof(RegExp))
 	})
 ]);
 
