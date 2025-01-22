@@ -333,7 +333,7 @@ describe('/index', () => {
 							criteria: [
 								{
 									type: 'NUMBER',
-									operator: 'GREATER_OR_EQUALS',
+									operator: 'GREATER-OR-EQUALS',
 									path: ['missing'],
 									value: 30,
 									defaultValue: 40
@@ -356,7 +356,7 @@ describe('/index', () => {
 							criteria: [
 								{
 									type: 'NUMBER',
-									operator: 'GREATER_OR_EQUALS',
+									operator: 'GREATER-OR-EQUALS',
 									path: ['missing'],
 									value: 30
 								}
@@ -456,7 +456,7 @@ describe('/index', () => {
 		it('should handle dynamic value', async () => {
 			const criteria: FilterCriteria.CriteriaInput = {
 				type: 'ARRAY',
-				operator: 'EXACTLY_MATCHES',
+				operator: 'EXACTLY-MATCHES',
 				path: ['tags'],
 				value: { $path: ['tags'] }
 			};
@@ -472,9 +472,9 @@ describe('/index', () => {
 			expect(res[1]).toEqual({
 				criteriaValue: ['developer', 'javascript'],
 				level: 'criteria',
-				operator: 'EXACTLY_MATCHES',
+				operator: 'EXACTLY-MATCHES',
 				passed: true,
-				reason: 'Array "EXACTLY_MATCHES" check PASSED',
+				reason: 'Array "EXACTLY-MATCHES" check PASSED',
 				value: ['developer', 'javascript']
 			});
 		});
@@ -507,11 +507,11 @@ describe('/index', () => {
 		});
 
 		describe('array', () => {
-			it('should handle EXACTLY_MATCHES operator with normalize = true', async () => {
+			it('should handle EXACTLY-MATCHES operator with normalize = true', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'ARRAY',
 					normalize: true,
-					operator: 'EXACTLY_MATCHES',
+					operator: 'EXACTLY-MATCHES',
 					path: ['tags'],
 					value: ['Develóper', 'JavaScript']
 				};
@@ -527,18 +527,18 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					criteriaValue: ['developer', 'javascript'],
 					level: 'criteria',
-					operator: 'EXACTLY_MATCHES',
+					operator: 'EXACTLY-MATCHES',
 					passed: true,
-					reason: 'Array "EXACTLY_MATCHES" check PASSED',
+					reason: 'Array "EXACTLY-MATCHES" check PASSED',
 					value: ['developer', 'javascript']
 				});
 			});
 
-			it('should handle EXACTLY_MATCHES operator with normalize = false', async () => {
+			it('should handle EXACTLY-MATCHES operator with normalize = false', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'ARRAY',
 					normalize: false,
-					operator: 'EXACTLY_MATCHES',
+					operator: 'EXACTLY-MATCHES',
 					path: ['tags'],
 					value: ['Develóper', 'JavaScript']
 				};
@@ -554,17 +554,17 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					criteriaValue: ['Develóper', 'JavaScript'],
 					level: 'criteria',
-					operator: 'EXACTLY_MATCHES',
+					operator: 'EXACTLY-MATCHES',
 					passed: false,
-					reason: 'Array "EXACTLY_MATCHES" check FAILED',
+					reason: 'Array "EXACTLY-MATCHES" check FAILED',
 					value: ['developer', 'javascript']
 				});
 			});
 
-			it('should handle INCLUDES_ALL operator', async () => {
+			it('should handle INCLUDES-ALL operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'ARRAY',
-					operator: 'INCLUDES_ALL',
+					operator: 'INCLUDES-ALL',
 					path: ['tags'],
 					value: ['developer', 'javascript']
 				};
@@ -580,17 +580,17 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					criteriaValue: ['developer', 'javascript'],
 					level: 'criteria',
-					operator: 'INCLUDES_ALL',
+					operator: 'INCLUDES-ALL',
 					passed: true,
-					reason: 'Array "INCLUDES_ALL" check PASSED',
+					reason: 'Array "INCLUDES-ALL" check PASSED',
 					value: ['developer', 'javascript']
 				});
 			});
 
-			it('should handle INCLUDES_ANY operator', async () => {
+			it('should handle INCLUDES-ANY operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'ARRAY',
-					operator: 'INCLUDES_ANY',
+					operator: 'INCLUDES-ANY',
 					path: ['tags'],
 					value: ['developer', 'javascript']
 				};
@@ -606,17 +606,17 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					criteriaValue: ['developer', 'javascript'],
 					level: 'criteria',
-					operator: 'INCLUDES_ANY',
+					operator: 'INCLUDES-ANY',
 					passed: true,
-					reason: 'Array "INCLUDES_ANY" check PASSED',
+					reason: 'Array "INCLUDES-ANY" check PASSED',
 					value: ['developer', 'javascript']
 				});
 			});
 
-			it('should handle IS_EMPTY operator', async () => {
+			it('should handle IS-EMPTY operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'ARRAY',
-					operator: 'IS_EMPTY',
+					operator: 'IS-EMPTY',
 					path: ['tags'],
 					value: []
 				};
@@ -632,17 +632,17 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					criteriaValue: [],
 					level: 'criteria',
-					operator: 'IS_EMPTY',
+					operator: 'IS-EMPTY',
 					passed: false,
-					reason: 'Array "IS_EMPTY" check FAILED',
+					reason: 'Array "IS-EMPTY" check FAILED',
 					value: ['developer', 'javascript']
 				});
 			});
 
-			it('should handle IS_NOT_EMPTY operator', async () => {
+			it('should handle IS-NOT-EMPTY operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'ARRAY',
-					operator: 'IS_NOT_EMPTY',
+					operator: 'IS-NOT-EMPTY',
 					path: ['tags'],
 					value: []
 				};
@@ -658,17 +658,17 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					criteriaValue: [],
 					level: 'criteria',
-					operator: 'IS_NOT_EMPTY',
+					operator: 'IS-NOT-EMPTY',
 					passed: true,
-					reason: 'Array "IS_NOT_EMPTY" check PASSED',
+					reason: 'Array "IS-NOT-EMPTY" check PASSED',
 					value: ['developer', 'javascript']
 				});
 			});
 
-			it('should handle NOT_INCLUDES_ALL operator', async () => {
+			it('should handle NOT-INCLUDES-ALL operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'ARRAY',
-					operator: 'NOT_INCLUDES_ALL',
+					operator: 'NOT-INCLUDES-ALL',
 					path: ['tags'],
 					value: ['developer', 'javascript']
 				};
@@ -684,17 +684,17 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					criteriaValue: ['developer', 'javascript'],
 					level: 'criteria',
-					operator: 'NOT_INCLUDES_ALL',
+					operator: 'NOT-INCLUDES-ALL',
 					passed: false,
-					reason: 'Array "NOT_INCLUDES_ALL" check FAILED',
+					reason: 'Array "NOT-INCLUDES-ALL" check FAILED',
 					value: ['developer', 'javascript']
 				});
 			});
 
-			it('should handle NOT_INCLUDES_ANY operator', async () => {
+			it('should handle NOT-INCLUDES-ANY operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'ARRAY',
-					operator: 'NOT_INCLUDES_ANY',
+					operator: 'NOT-INCLUDES-ANY',
 					path: ['tags'],
 					value: ['developer', 'javascript']
 				};
@@ -710,17 +710,17 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					criteriaValue: ['developer', 'javascript'],
 					level: 'criteria',
-					operator: 'NOT_INCLUDES_ANY',
+					operator: 'NOT-INCLUDES-ANY',
 					passed: false,
-					reason: 'Array "NOT_INCLUDES_ANY" check FAILED',
+					reason: 'Array "NOT-INCLUDES-ANY" check FAILED',
 					value: ['developer', 'javascript']
 				});
 			});
 
-			it('should handle SIZE_EQUALS operator', async () => {
+			it('should handle SIZE-EQUALS operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'ARRAY',
-					operator: 'SIZE_EQUALS',
+					operator: 'SIZE-EQUALS',
 					path: ['tags'],
 					value: 2
 				};
@@ -736,17 +736,17 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					criteriaValue: 2,
 					level: 'criteria',
-					operator: 'SIZE_EQUALS',
+					operator: 'SIZE-EQUALS',
 					passed: true,
-					reason: 'Array "SIZE_EQUALS" check PASSED',
+					reason: 'Array "SIZE-EQUALS" check PASSED',
 					value: ['developer', 'javascript']
 				});
 			});
 
-			it('should handle SIZE_GREATER operator', async () => {
+			it('should handle SIZE-GREATER operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'ARRAY',
-					operator: 'SIZE_GREATER',
+					operator: 'SIZE-GREATER',
 					path: ['tags'],
 					value: 1
 				};
@@ -762,17 +762,17 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					criteriaValue: 1,
 					level: 'criteria',
-					operator: 'SIZE_GREATER',
+					operator: 'SIZE-GREATER',
 					passed: true,
-					reason: 'Array "SIZE_GREATER" check PASSED',
+					reason: 'Array "SIZE-GREATER" check PASSED',
 					value: ['developer', 'javascript']
 				});
 			});
 
-			it('should handle SIZE_GREATER_OR_EQUALS operator', async () => {
+			it('should handle SIZE-GREATER-OR-EQUALS operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'ARRAY',
-					operator: 'SIZE_GREATER_OR_EQUALS',
+					operator: 'SIZE-GREATER-OR-EQUALS',
 					path: ['tags'],
 					value: 2
 				};
@@ -788,17 +788,17 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					criteriaValue: 2,
 					level: 'criteria',
-					operator: 'SIZE_GREATER_OR_EQUALS',
+					operator: 'SIZE-GREATER-OR-EQUALS',
 					passed: true,
-					reason: 'Array "SIZE_GREATER_OR_EQUALS" check PASSED',
+					reason: 'Array "SIZE-GREATER-OR-EQUALS" check PASSED',
 					value: ['developer', 'javascript']
 				});
 			});
 
-			it('should handle SIZE_LESS operator', async () => {
+			it('should handle SIZE-LESS operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'ARRAY',
-					operator: 'SIZE_LESS',
+					operator: 'SIZE-LESS',
 					path: ['tags'],
 					value: 3
 				};
@@ -814,17 +814,17 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					criteriaValue: 3,
 					level: 'criteria',
-					operator: 'SIZE_LESS',
+					operator: 'SIZE-LESS',
 					passed: true,
-					reason: 'Array "SIZE_LESS" check PASSED',
+					reason: 'Array "SIZE-LESS" check PASSED',
 					value: ['developer', 'javascript']
 				});
 			});
 
-			it('should handle SIZE_LESS_OR_EQUALS operator', async () => {
+			it('should handle SIZE-LESS-OR-EQUALS operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'ARRAY',
-					operator: 'SIZE_LESS_OR_EQUALS',
+					operator: 'SIZE-LESS-OR-EQUALS',
 					path: ['tags'],
 					value: 2
 				};
@@ -840,9 +840,9 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					criteriaValue: 2,
 					level: 'criteria',
-					operator: 'SIZE_LESS_OR_EQUALS',
+					operator: 'SIZE-LESS-OR-EQUALS',
 					passed: true,
-					reason: 'Array "SIZE_LESS_OR_EQUALS" check PASSED',
+					reason: 'Array "SIZE-LESS-OR-EQUALS" check PASSED',
 					value: ['developer', 'javascript']
 				});
 			});
@@ -875,10 +875,10 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle IS_NOT operator', async () => {
+			it('should handle IS-NOT operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'BOOLEAN',
-					operator: 'IS_NOT',
+					operator: 'IS-NOT',
 					path: ['active'],
 					value: true
 				};
@@ -894,9 +894,9 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					criteriaValue: true,
 					level: 'criteria',
-					operator: 'IS_NOT',
+					operator: 'IS-NOT',
 					passed: false,
-					reason: 'Boolean "IS_NOT" check FAILED',
+					reason: 'Boolean "IS-NOT" check FAILED',
 					value: true
 				});
 			});
@@ -1011,10 +1011,10 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle AFTER_OR_EQUALS operator', async () => {
+			it('should handle AFTER-OR-EQUALS operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'DATE',
-					operator: 'AFTER_OR_EQUALS',
+					operator: 'AFTER-OR-EQUALS',
 					path: ['createdAt'],
 					value: '2023-01-01T00:00:00Z'
 				};
@@ -1030,9 +1030,9 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					criteriaValue: '2023-01-01T00:00:00.000Z',
 					level: 'criteria',
-					operator: 'AFTER_OR_EQUALS',
+					operator: 'AFTER-OR-EQUALS',
 					passed: true,
-					reason: 'Date "AFTER_OR_EQUALS" check PASSED',
+					reason: 'Date "AFTER-OR-EQUALS" check PASSED',
 					value: '2023-01-01T00:00:00Z'
 				});
 			});
@@ -1063,10 +1063,10 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle BEFORE_OR_EQUALS operator', async () => {
+			it('should handle BEFORE-OR-EQUALS operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'DATE',
-					operator: 'BEFORE_OR_EQUALS',
+					operator: 'BEFORE-OR-EQUALS',
 					path: ['createdAt'],
 					value: '2023-01-01T00:00:00Z'
 				};
@@ -1109,11 +1109,11 @@ describe('/index', () => {
 		});
 
 		describe('geo', () => {
-			it('should handle IN_RADIUS operator with km unit', async () => {
+			it('should handle IN-RADIUS operator with km unit', async () => {
 				// From New York
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'GEO',
-					operator: 'IN_RADIUS',
+					operator: 'IN-RADIUS',
 					path: ['location'],
 					value: {
 						lat: 40.7128,
@@ -1155,9 +1155,9 @@ describe('/index', () => {
 						unit: 'km'
 					},
 					level: 'criteria',
-					operator: 'IN_RADIUS',
+					operator: 'IN-RADIUS',
 					passed: false,
-					reason: 'Geo "IN_RADIUS" check FAILED',
+					reason: 'Geo "IN-RADIUS" check FAILED',
 					value: { lat: 34.0522, lng: -118.2437 }
 				});
 
@@ -1170,18 +1170,18 @@ describe('/index', () => {
 						unit: 'km'
 					},
 					level: 'criteria',
-					operator: 'IN_RADIUS',
+					operator: 'IN-RADIUS',
 					passed: true,
-					reason: 'Geo "IN_RADIUS" check PASSED',
+					reason: 'Geo "IN-RADIUS" check PASSED',
 					value: { lat: 40.7357, lng: -74.1724 }
 				});
 			});
 
-			it('should handle IN_RADIUS operator with mi unit', async () => {
+			it('should handle IN-RADIUS operator with mi unit', async () => {
 				// From New York
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'GEO',
-					operator: 'IN_RADIUS',
+					operator: 'IN-RADIUS',
 					path: ['location'],
 					value: {
 						lat: 40.7128,
@@ -1223,9 +1223,9 @@ describe('/index', () => {
 						unit: 'mi'
 					},
 					level: 'criteria',
-					operator: 'IN_RADIUS',
+					operator: 'IN-RADIUS',
 					passed: false,
-					reason: 'Geo "IN_RADIUS" check FAILED',
+					reason: 'Geo "IN-RADIUS" check FAILED',
 					value: { lat: 34.0522, lng: -118.2437 }
 				});
 
@@ -1238,18 +1238,18 @@ describe('/index', () => {
 						unit: 'mi'
 					},
 					level: 'criteria',
-					operator: 'IN_RADIUS',
+					operator: 'IN-RADIUS',
 					passed: true,
-					reason: 'Geo "IN_RADIUS" check PASSED',
+					reason: 'Geo "IN-RADIUS" check PASSED',
 					value: { lat: 40.7357, lng: -74.1724 }
 				});
 			});
 
-			it('should handle NOT_IN_RADIUS operator with different units', async () => {
+			it('should handle NOT-IN-RADIUS operator with different units', async () => {
 				// From New York
 				const criteriaKm: FilterCriteria.CriteriaInput = {
 					type: 'GEO',
-					operator: 'NOT_IN_RADIUS',
+					operator: 'NOT-IN-RADIUS',
 					path: ['location'],
 					value: {
 						lat: 40.7128,
@@ -1262,7 +1262,7 @@ describe('/index', () => {
 				// From New York
 				const criteriaMi: FilterCriteria.CriteriaInput = {
 					type: 'GEO',
-					operator: 'NOT_IN_RADIUS',
+					operator: 'NOT-IN-RADIUS',
 					path: ['location'],
 					value: {
 						lat: 40.7128,
@@ -1300,9 +1300,9 @@ describe('/index', () => {
 						unit: 'km'
 					},
 					level: 'criteria',
-					operator: 'NOT_IN_RADIUS',
+					operator: 'NOT-IN-RADIUS',
 					passed: true,
-					reason: 'Geo "NOT_IN_RADIUS" check PASSED',
+					reason: 'Geo "NOT-IN-RADIUS" check PASSED',
 					value: { lat: 34.0522, lng: -118.2437 }
 				});
 
@@ -1315,9 +1315,9 @@ describe('/index', () => {
 						unit: 'mi'
 					},
 					level: 'criteria',
-					operator: 'NOT_IN_RADIUS',
+					operator: 'NOT-IN-RADIUS',
 					passed: true,
-					reason: 'Geo "NOT_IN_RADIUS" check PASSED',
+					reason: 'Geo "NOT-IN-RADIUS" check PASSED',
 					value: { lat: 34.0522, lng: -118.2437 }
 				});
 			});
@@ -1325,7 +1325,7 @@ describe('/index', () => {
 			it('should default to km when unit is not specified', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'GEO',
-					operator: 'IN_RADIUS',
+					operator: 'IN-RADIUS',
 					path: ['location'],
 					value: {
 						lat: 40.7128,
@@ -1354,20 +1354,20 @@ describe('/index', () => {
 						radius: 100
 					},
 					level: 'criteria',
-					operator: 'IN_RADIUS',
+					operator: 'IN-RADIUS',
 					passed: true,
-					reason: 'Geo "IN_RADIUS" check PASSED',
+					reason: 'Geo "IN-RADIUS" check PASSED',
 					value: { lat: 40.7357, lng: -74.1724 }
 				});
 			});
 		});
 
 		describe('map', () => {
-			it('should handle HAS_KEY operator with normalize = true', async () => {
+			it('should handle HAS-KEY operator with normalize = true', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'MAP',
 					normalize: true,
-					operator: 'HAS_KEY',
+					operator: 'HAS-KEY',
 					path: ['map'],
 					value: 'KÉY-1'
 				};
@@ -1383,18 +1383,18 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					criteriaValue: 'key-1',
 					level: 'criteria',
-					operator: 'HAS_KEY',
+					operator: 'HAS-KEY',
 					passed: true,
-					reason: 'Map "HAS_KEY" check PASSED',
+					reason: 'Map "HAS-KEY" check PASSED',
 					value: new Map([['key-1', 'value-1']])
 				});
 			});
 
-			it('should handle HAS_KEY operator with normalize = false', async () => {
+			it('should handle HAS-KEY operator with normalize = false', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'MAP',
 					normalize: false,
-					operator: 'HAS_KEY',
+					operator: 'HAS-KEY',
 					path: ['map'],
 					value: 'KÉY-1'
 				};
@@ -1410,17 +1410,17 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					criteriaValue: 'KÉY-1',
 					level: 'criteria',
-					operator: 'HAS_KEY',
+					operator: 'HAS-KEY',
 					passed: false,
-					reason: 'Map "HAS_KEY" check FAILED',
+					reason: 'Map "HAS-KEY" check FAILED',
 					value: new Map([['key-1', 'value-1']])
 				});
 			});
 
-			it('should handle HAS_VALUE operator', async () => {
+			it('should handle HAS-VALUE operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'MAP',
-					operator: 'HAS_VALUE',
+					operator: 'HAS-VALUE',
 					path: ['map'],
 					value: 'value-1'
 				};
@@ -1435,10 +1435,10 @@ describe('/index', () => {
 				expect(res[0]).toEqual(true);
 			});
 
-			it('should handle IS_EMPTY operator', async () => {
+			it('should handle IS-EMPTY operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'MAP',
-					operator: 'IS_EMPTY',
+					operator: 'IS-EMPTY',
 					path: ['map'],
 					value: ''
 				};
@@ -1454,17 +1454,17 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					criteriaValue: '',
 					level: 'criteria',
-					operator: 'IS_EMPTY',
+					operator: 'IS-EMPTY',
 					passed: false,
-					reason: 'Map "IS_EMPTY" check FAILED',
+					reason: 'Map "IS-EMPTY" check FAILED',
 					value: new Map([['key-1', 'value-1']])
 				});
 			});
 
-			it('should handle IS_NOT_EMPTY operator', async () => {
+			it('should handle IS-NOT-EMPTY operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'MAP',
-					operator: 'IS_NOT_EMPTY',
+					operator: 'IS-NOT-EMPTY',
 					path: ['map'],
 					value: ''
 				};
@@ -1480,17 +1480,17 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					criteriaValue: '',
 					level: 'criteria',
-					operator: 'IS_NOT_EMPTY',
+					operator: 'IS-NOT-EMPTY',
 					passed: true,
-					reason: 'Map "IS_NOT_EMPTY" check PASSED',
+					reason: 'Map "IS-NOT-EMPTY" check PASSED',
 					value: new Map([['key-1', 'value-1']])
 				});
 			});
 
-			it('should handle SIZE_EQUALS operator', async () => {
+			it('should handle SIZE-EQUALS operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'MAP',
-					operator: 'SIZE_EQUALS',
+					operator: 'SIZE-EQUALS',
 					path: ['map'],
 					value: 1
 				};
@@ -1506,17 +1506,17 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					criteriaValue: 1,
 					level: 'criteria',
-					operator: 'SIZE_EQUALS',
+					operator: 'SIZE-EQUALS',
 					passed: true,
-					reason: 'Map "SIZE_EQUALS" check PASSED',
+					reason: 'Map "SIZE-EQUALS" check PASSED',
 					value: new Map([['key-1', 'value-1']])
 				});
 			});
 
-			it('should handle SIZE_GREATER operator', async () => {
+			it('should handle SIZE-GREATER operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'MAP',
-					operator: 'SIZE_GREATER',
+					operator: 'SIZE-GREATER',
 					path: ['map'],
 					value: 0
 				};
@@ -1532,17 +1532,17 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					criteriaValue: 0,
 					level: 'criteria',
-					operator: 'SIZE_GREATER',
+					operator: 'SIZE-GREATER',
 					passed: true,
-					reason: 'Map "SIZE_GREATER" check PASSED',
+					reason: 'Map "SIZE-GREATER" check PASSED',
 					value: new Map([['key-1', 'value-1']])
 				});
 			});
 
-			it('should handle SIZE_GREATER_OR_EQUALS operator', async () => {
+			it('should handle SIZE-GREATER-OR-EQUALS operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'MAP',
-					operator: 'SIZE_GREATER_OR_EQUALS',
+					operator: 'SIZE-GREATER-OR-EQUALS',
 					path: ['map'],
 					value: 1
 				};
@@ -1558,17 +1558,17 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					criteriaValue: 1,
 					level: 'criteria',
-					operator: 'SIZE_GREATER_OR_EQUALS',
+					operator: 'SIZE-GREATER-OR-EQUALS',
 					passed: true,
-					reason: 'Map "SIZE_GREATER_OR_EQUALS" check PASSED',
+					reason: 'Map "SIZE-GREATER-OR-EQUALS" check PASSED',
 					value: new Map([['key-1', 'value-1']])
 				});
 			});
 
-			it('should handle SIZE_LESS operator', async () => {
+			it('should handle SIZE-LESS operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'MAP',
-					operator: 'SIZE_LESS',
+					operator: 'SIZE-LESS',
 					path: ['map'],
 					value: 2
 				};
@@ -1584,17 +1584,17 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					criteriaValue: 2,
 					level: 'criteria',
-					operator: 'SIZE_LESS',
+					operator: 'SIZE-LESS',
 					passed: true,
-					reason: 'Map "SIZE_LESS" check PASSED',
+					reason: 'Map "SIZE-LESS" check PASSED',
 					value: new Map([['key-1', 'value-1']])
 				});
 			});
 
-			it('should handle SIZE_LESS_OR_EQUALS operator', async () => {
+			it('should handle SIZE-LESS-OR-EQUALS operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'MAP',
-					operator: 'SIZE_LESS_OR_EQUALS',
+					operator: 'SIZE-LESS-OR-EQUALS',
 					path: ['map'],
 					value: 1
 				};
@@ -1610,9 +1610,9 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					criteriaValue: 1,
 					level: 'criteria',
-					operator: 'SIZE_LESS_OR_EQUALS',
+					operator: 'SIZE-LESS-OR-EQUALS',
 					passed: true,
-					reason: 'Map "SIZE_LESS_OR_EQUALS" check PASSED',
+					reason: 'Map "SIZE-LESS-OR-EQUALS" check PASSED',
 					value: new Map([['key-1', 'value-1']])
 				});
 			});
@@ -1697,10 +1697,10 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle GREATER_OR_EQUALS operator', async () => {
+			it('should handle GREATER-OR-EQUALS operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'NUMBER',
-					operator: 'GREATER_OR_EQUALS',
+					operator: 'GREATER-OR-EQUALS',
 					path: ['age'],
 					value: 25
 				};
@@ -1716,9 +1716,9 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					criteriaValue: 25,
 					level: 'criteria',
-					operator: 'GREATER_OR_EQUALS',
+					operator: 'GREATER-OR-EQUALS',
 					passed: true,
-					reason: 'Number "GREATER_OR_EQUALS" check PASSED',
+					reason: 'Number "GREATER-OR-EQUALS" check PASSED',
 					value: 25
 				});
 			});
@@ -1749,10 +1749,10 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle LESS_OR_EQUALS operator', async () => {
+			it('should handle LESS-OR-EQUALS operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'NUMBER',
-					operator: 'LESS_OR_EQUALS',
+					operator: 'LESS-OR-EQUALS',
 					path: ['age'],
 					value: 30
 				};
@@ -1768,20 +1768,20 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					criteriaValue: 30,
 					level: 'criteria',
-					operator: 'LESS_OR_EQUALS',
+					operator: 'LESS-OR-EQUALS',
 					passed: true,
-					reason: 'Number "LESS_OR_EQUALS" check PASSED',
+					reason: 'Number "LESS-OR-EQUALS" check PASSED',
 					value: 25
 				});
 			});
 		});
 
 		describe('set', () => {
-			it('should handle EXACTLY_MATCHES operator with normalize = true', async () => {
+			it('should handle EXACTLY-MATCHES operator with normalize = true', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'SET',
 					normalize: true,
-					operator: 'EXACTLY_MATCHES',
+					operator: 'EXACTLY-MATCHES',
 					path: ['tagsSet'],
 					value: ['Develóper', 'JavaScript']
 				};
@@ -1797,18 +1797,18 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					criteriaValue: ['developer', 'javascript'],
 					level: 'criteria',
-					operator: 'EXACTLY_MATCHES',
+					operator: 'EXACTLY-MATCHES',
 					passed: true,
-					reason: 'Set "EXACTLY_MATCHES" check PASSED',
+					reason: 'Set "EXACTLY-MATCHES" check PASSED',
 					value: new Set(['developer', 'javascript'])
 				});
 			});
 
-			it('should handle EXACTLY_MATCHES operator with normalize = false', async () => {
+			it('should handle EXACTLY-MATCHES operator with normalize = false', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'SET',
 					normalize: false,
-					operator: 'EXACTLY_MATCHES',
+					operator: 'EXACTLY-MATCHES',
 					path: ['tagsSet'],
 					value: ['Develóper', 'JavaScript']
 				};
@@ -1824,9 +1824,9 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					criteriaValue: ['Develóper', 'JavaScript'],
 					level: 'criteria',
-					operator: 'EXACTLY_MATCHES',
+					operator: 'EXACTLY-MATCHES',
 					passed: false,
-					reason: 'Set "EXACTLY_MATCHES" check FAILED',
+					reason: 'Set "EXACTLY-MATCHES" check FAILED',
 					value: new Set(['developer', 'javascript'])
 				});
 			});
@@ -1857,10 +1857,10 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle INCLUDES_ALL operator', async () => {
+			it('should handle INCLUDES-ALL operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'SET',
-					operator: 'INCLUDES_ALL',
+					operator: 'INCLUDES-ALL',
 					path: ['tagsSet'],
 					value: ['developer', 'javascript']
 				};
@@ -1876,17 +1876,17 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					criteriaValue: ['developer', 'javascript'],
 					level: 'criteria',
-					operator: 'INCLUDES_ALL',
+					operator: 'INCLUDES-ALL',
 					passed: true,
-					reason: 'Set "INCLUDES_ALL" check PASSED',
+					reason: 'Set "INCLUDES-ALL" check PASSED',
 					value: new Set(['developer', 'javascript'])
 				});
 			});
 
-			it('should handle INCLUDES_ANY operator', async () => {
+			it('should handle INCLUDES-ANY operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'SET',
-					operator: 'INCLUDES_ANY',
+					operator: 'INCLUDES-ANY',
 					path: ['tagsSet'],
 					value: ['developer', 'javascript']
 				};
@@ -1902,17 +1902,17 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					criteriaValue: ['developer', 'javascript'],
 					level: 'criteria',
-					operator: 'INCLUDES_ANY',
+					operator: 'INCLUDES-ANY',
 					passed: true,
-					reason: 'Set "INCLUDES_ANY" check PASSED',
+					reason: 'Set "INCLUDES-ANY" check PASSED',
 					value: new Set(['developer', 'javascript'])
 				});
 			});
 
-			it('should handle IS_EMPTY operator', async () => {
+			it('should handle IS-EMPTY operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'SET',
-					operator: 'IS_EMPTY',
+					operator: 'IS-EMPTY',
 					path: ['tagsSet'],
 					value: []
 				};
@@ -1928,17 +1928,17 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					criteriaValue: [],
 					level: 'criteria',
-					operator: 'IS_EMPTY',
+					operator: 'IS-EMPTY',
 					passed: false,
-					reason: 'Set "IS_EMPTY" check FAILED',
+					reason: 'Set "IS-EMPTY" check FAILED',
 					value: new Set(['developer', 'javascript'])
 				});
 			});
 
-			it('should handle IS_NOT_EMPTY operator', async () => {
+			it('should handle IS-NOT-EMPTY operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'SET',
-					operator: 'IS_NOT_EMPTY',
+					operator: 'IS-NOT-EMPTY',
 					path: ['tagsSet'],
 					value: []
 				};
@@ -1954,17 +1954,17 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					criteriaValue: [],
 					level: 'criteria',
-					operator: 'IS_NOT_EMPTY',
+					operator: 'IS-NOT-EMPTY',
 					passed: true,
-					reason: 'Set "IS_NOT_EMPTY" check PASSED',
+					reason: 'Set "IS-NOT-EMPTY" check PASSED',
 					value: new Set(['developer', 'javascript'])
 				});
 			});
 
-			it('should handle NOT_INCLUDES_ALL operator', async () => {
+			it('should handle NOT-INCLUDES-ALL operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'SET',
-					operator: 'NOT_INCLUDES_ALL',
+					operator: 'NOT-INCLUDES-ALL',
 					path: ['tagsSet'],
 					value: ['developer', 'javascript']
 				};
@@ -1980,17 +1980,17 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					criteriaValue: ['developer', 'javascript'],
 					level: 'criteria',
-					operator: 'NOT_INCLUDES_ALL',
+					operator: 'NOT-INCLUDES-ALL',
 					passed: false,
-					reason: 'Set "NOT_INCLUDES_ALL" check FAILED',
+					reason: 'Set "NOT-INCLUDES-ALL" check FAILED',
 					value: new Set(['developer', 'javascript'])
 				});
 			});
 
-			it('should handle NOT_INCLUDES_ANY operator', async () => {
+			it('should handle NOT-INCLUDES-ANY operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'SET',
-					operator: 'NOT_INCLUDES_ANY',
+					operator: 'NOT-INCLUDES-ANY',
 					path: ['tagsSet'],
 					value: ['developer', 'javascript']
 				};
@@ -2006,17 +2006,17 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					criteriaValue: ['developer', 'javascript'],
 					level: 'criteria',
-					operator: 'NOT_INCLUDES_ANY',
+					operator: 'NOT-INCLUDES-ANY',
 					passed: false,
-					reason: 'Set "NOT_INCLUDES_ANY" check FAILED',
+					reason: 'Set "NOT-INCLUDES-ANY" check FAILED',
 					value: new Set(['developer', 'javascript'])
 				});
 			});
 
-			it('should handle SIZE_EQUALS operator', async () => {
+			it('should handle SIZE-EQUALS operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'SET',
-					operator: 'SIZE_EQUALS',
+					operator: 'SIZE-EQUALS',
 					path: ['tagsSet'],
 					value: 2
 				};
@@ -2032,17 +2032,17 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					criteriaValue: 2,
 					level: 'criteria',
-					operator: 'SIZE_EQUALS',
+					operator: 'SIZE-EQUALS',
 					passed: true,
-					reason: 'Set "SIZE_EQUALS" check PASSED',
+					reason: 'Set "SIZE-EQUALS" check PASSED',
 					value: new Set(['developer', 'javascript'])
 				});
 			});
 
-			it('should handle SIZE_GREATER operator', async () => {
+			it('should handle SIZE-GREATER operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'SET',
-					operator: 'SIZE_GREATER',
+					operator: 'SIZE-GREATER',
 					path: ['tagsSet'],
 					value: 1
 				};
@@ -2058,17 +2058,17 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					criteriaValue: 1,
 					level: 'criteria',
-					operator: 'SIZE_GREATER',
+					operator: 'SIZE-GREATER',
 					passed: true,
-					reason: 'Set "SIZE_GREATER" check PASSED',
+					reason: 'Set "SIZE-GREATER" check PASSED',
 					value: new Set(['developer', 'javascript'])
 				});
 			});
 
-			it('should handle SIZE_GREATER_OR_EQUALS operator', async () => {
+			it('should handle SIZE-GREATER-OR-EQUALS operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'SET',
-					operator: 'SIZE_GREATER_OR_EQUALS',
+					operator: 'SIZE-GREATER-OR-EQUALS',
 					path: ['tagsSet'],
 					value: 2
 				};
@@ -2084,17 +2084,17 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					criteriaValue: 2,
 					level: 'criteria',
-					operator: 'SIZE_GREATER_OR_EQUALS',
+					operator: 'SIZE-GREATER-OR-EQUALS',
 					passed: true,
-					reason: 'Set "SIZE_GREATER_OR_EQUALS" check PASSED',
+					reason: 'Set "SIZE-GREATER-OR-EQUALS" check PASSED',
 					value: new Set(['developer', 'javascript'])
 				});
 			});
 
-			it('should handle SIZE_LESS operator', async () => {
+			it('should handle SIZE-LESS operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'SET',
-					operator: 'SIZE_LESS',
+					operator: 'SIZE-LESS',
 					path: ['tagsSet'],
 					value: 3
 				};
@@ -2110,17 +2110,17 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					criteriaValue: 3,
 					level: 'criteria',
-					operator: 'SIZE_LESS',
+					operator: 'SIZE-LESS',
 					passed: true,
-					reason: 'Set "SIZE_LESS" check PASSED',
+					reason: 'Set "SIZE-LESS" check PASSED',
 					value: new Set(['developer', 'javascript'])
 				});
 			});
 
-			it('should handle SIZE_LESS_OR_EQUALS operator', async () => {
+			it('should handle SIZE-LESS-OR-EQUALS operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'SET',
-					operator: 'SIZE_LESS_OR_EQUALS',
+					operator: 'SIZE-LESS-OR-EQUALS',
 					path: ['tagsSet'],
 					value: 2
 				};
@@ -2136,9 +2136,9 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					criteriaValue: 2,
 					level: 'criteria',
-					operator: 'SIZE_LESS_OR_EQUALS',
+					operator: 'SIZE-LESS-OR-EQUALS',
 					passed: true,
-					reason: 'Set "SIZE_LESS_OR_EQUALS" check PASSED',
+					reason: 'Set "SIZE-LESS-OR-EQUALS" check PASSED',
 					value: new Set(['developer', 'javascript'])
 				});
 			});
@@ -2199,10 +2199,10 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle ENDS_WITH operator', async () => {
+			it('should handle ENDS-WITH operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'STRING',
-					operator: 'ENDS_WITH',
+					operator: 'ENDS-WITH',
 					path: ['name'],
 					value: 'Doe'
 				};
@@ -2218,9 +2218,9 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					criteriaValue: 'Doe',
 					level: 'criteria',
-					operator: 'ENDS_WITH',
+					operator: 'ENDS-WITH',
 					passed: true,
-					reason: 'String "ENDS_WITH" check PASSED',
+					reason: 'String "ENDS-WITH" check PASSED',
 					value: 'John Doe'
 				});
 			});
@@ -2251,10 +2251,10 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle IS_EMPTY operator', async () => {
+			it('should handle IS-EMPTY operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'STRING',
-					operator: 'IS_EMPTY',
+					operator: 'IS-EMPTY',
 					path: ['name'],
 					value: []
 				};
@@ -2270,17 +2270,17 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					criteriaValue: [],
 					level: 'criteria',
-					operator: 'IS_EMPTY',
+					operator: 'IS-EMPTY',
 					passed: false,
-					reason: 'String "IS_EMPTY" check FAILED',
+					reason: 'String "IS-EMPTY" check FAILED',
 					value: 'John Doe'
 				});
 			});
 
-			it('should handle MATCHES_REGEX operator', async () => {
+			it('should handle MATCHES-REGEX operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'STRING',
-					operator: 'MATCHES_REGEX',
+					operator: 'MATCHES-REGEX',
 					path: ['name'],
 					value: /john/i
 				};
@@ -2296,17 +2296,17 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					criteriaValue: /john/i,
 					level: 'criteria',
-					operator: 'MATCHES_REGEX',
+					operator: 'MATCHES-REGEX',
 					passed: true,
-					reason: 'String "MATCHES_REGEX" check PASSED',
+					reason: 'String "MATCHES-REGEX" check PASSED',
 					value: 'John Doe'
 				});
 			});
 
-			it('should handle STARTS_WITH operator', async () => {
+			it('should handle STARTS-WITH operator', async () => {
 				const criteria: FilterCriteria.CriteriaInput = {
 					type: 'STRING',
-					operator: 'STARTS_WITH',
+					operator: 'STARTS-WITH',
 					path: ['name'],
 					value: 'John'
 				};
@@ -2322,9 +2322,9 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					criteriaValue: 'John',
 					level: 'criteria',
-					operator: 'STARTS_WITH',
+					operator: 'STARTS-WITH',
 					passed: true,
-					reason: 'String "STARTS_WITH" check PASSED',
+					reason: 'String "STARTS-WITH" check PASSED',
 					value: 'John Doe'
 				});
 			});

@@ -14,40 +14,40 @@ const filterValue = (...schemas: [z.ZodTypeAny, ...z.ZodTypeAny[]]) => {
 };
 
 const operatorArrayOrSet: [string, ...string[]] = [
-	'EXACTLY_MATCHES',
-	'INCLUDES_ALL',
-	'INCLUDES_ANY',
-	'IS_EMPTY',
-	'IS_NOT_EMPTY',
-	'NOT_INCLUDES_ALL',
-	'NOT_INCLUDES_ANY',
-	'SIZE_EQUALS',
-	'SIZE_GREATER',
-	'SIZE_GREATER_OR_EQUALS',
-	'SIZE_LESS',
-	'SIZE_LESS_OR_EQUALS'
+	'EXACTLY-MATCHES',
+	'INCLUDES-ALL',
+	'INCLUDES-ANY',
+	'IS-EMPTY',
+	'IS-NOT-EMPTY',
+	'NOT-INCLUDES-ALL',
+	'NOT-INCLUDES-ANY',
+	'SIZE-EQUALS',
+	'SIZE-GREATER',
+	'SIZE-GREATER-OR-EQUALS',
+	'SIZE-LESS',
+	'SIZE-LESS-OR-EQUALS'
 ];
 
 const logicalOperator = z.enum(['AND', 'OR']);
 const operator = {
 	array: z.enum(operatorArrayOrSet),
-	boolean: z.enum(['IS', 'IS_NOT']),
-	date: z.enum(['AFTER', 'AFTER_OR_EQUALS', 'BEFORE', 'BEFORE_OR_EQUALS', 'BETWEEN']),
-	geo: z.enum(['IN_RADIUS', 'NOT_IN_RADIUS']),
+	boolean: z.enum(['IS', 'IS-NOT']),
+	date: z.enum(['AFTER', 'AFTER-OR-EQUALS', 'BEFORE', 'BEFORE-OR-EQUALS', 'BETWEEN']),
+	geo: z.enum(['IN-RADIUS', 'NOT-IN-RADIUS']),
 	map: z.enum([
-		'HAS_KEY',
-		'HAS_VALUE',
-		'IS_EMPTY',
-		'IS_NOT_EMPTY',
-		'SIZE_EQUALS',
-		'SIZE_GREATER',
-		'SIZE_GREATER_OR_EQUALS',
-		'SIZE_LESS',
-		'SIZE_LESS_OR_EQUALS'
+		'HAS-KEY',
+		'HAS-VALUE',
+		'IS-EMPTY',
+		'IS-NOT-EMPTY',
+		'SIZE-EQUALS',
+		'SIZE-GREATER',
+		'SIZE-GREATER-OR-EQUALS',
+		'SIZE-LESS',
+		'SIZE-LESS-OR-EQUALS'
 	]),
-	number: z.enum(['BETWEEN', 'EQUALS', 'GREATER', 'GREATER_OR_EQUALS', 'LESS', 'LESS_OR_EQUALS']),
+	number: z.enum(['BETWEEN', 'EQUALS', 'GREATER', 'GREATER-OR-EQUALS', 'LESS', 'LESS-OR-EQUALS']),
 	set: z.enum([...operatorArrayOrSet, 'HAS']),
-	string: z.enum(['CONTAINS', 'ENDS_WITH', 'EQUALS', 'IS_EMPTY', 'MATCHES_REGEX', 'STARTS_WITH'])
+	string: z.enum(['CONTAINS', 'ENDS-WITH', 'EQUALS', 'IS-EMPTY', 'MATCHES-REGEX', 'STARTS-WITH'])
 };
 
 const criteriaCustomFunction = z
@@ -524,59 +524,59 @@ class FilterCriteria {
 
 	private static applyArrayFilter(value: any[], operator: FilterCriteria.Operators['array'], filterValue: any): boolean {
 		switch (operator) {
-			case 'EXACTLY_MATCHES': {
+			case 'EXACTLY-MATCHES': {
 				return _.isEqual(_.sortBy(value), _.sortBy(filterValue));
 			}
 
-			case 'INCLUDES_ALL': {
+			case 'INCLUDES-ALL': {
 				return _.every(filterValue, v => {
 					return _.includes(value, v);
 				});
 			}
 
-			case 'INCLUDES_ANY': {
+			case 'INCLUDES-ANY': {
 				return _.some(filterValue, v => {
 					return _.includes(value, v);
 				});
 			}
 
-			case 'IS_EMPTY': {
+			case 'IS-EMPTY': {
 				return _.size(value) === 0;
 			}
 
-			case 'IS_NOT_EMPTY': {
+			case 'IS-NOT-EMPTY': {
 				return _.size(value) > 0;
 			}
 
-			case 'NOT_INCLUDES_ALL': {
+			case 'NOT-INCLUDES-ALL': {
 				return !_.every(filterValue, v => {
 					return _.includes(value, v);
 				});
 			}
 
-			case 'NOT_INCLUDES_ANY': {
+			case 'NOT-INCLUDES-ANY': {
 				return !_.some(filterValue, v => {
 					return _.includes(value, v);
 				});
 			}
 
-			case 'SIZE_EQUALS': {
+			case 'SIZE-EQUALS': {
 				return _.size(value) === filterValue;
 			}
 
-			case 'SIZE_GREATER': {
+			case 'SIZE-GREATER': {
 				return _.size(value) > filterValue;
 			}
 
-			case 'SIZE_GREATER_OR_EQUALS': {
+			case 'SIZE-GREATER-OR-EQUALS': {
 				return _.size(value) >= filterValue;
 			}
 
-			case 'SIZE_LESS': {
+			case 'SIZE-LESS': {
 				return _.size(value) < filterValue;
 			}
 
-			case 'SIZE_LESS_OR_EQUALS': {
+			case 'SIZE-LESS-OR-EQUALS': {
 				return _.size(value) <= filterValue;
 			}
 
@@ -591,7 +591,7 @@ class FilterCriteria {
 				return value === filterValue;
 			}
 
-			case 'IS_NOT': {
+			case 'IS-NOT': {
 				return value !== filterValue;
 			}
 
@@ -620,7 +620,7 @@ class FilterCriteria {
 				return date > start;
 			}
 
-			case 'AFTER_OR_EQUALS': {
+			case 'AFTER-OR-EQUALS': {
 				return date >= start;
 			}
 
@@ -628,7 +628,7 @@ class FilterCriteria {
 				return date < start;
 			}
 
-			case 'BEFORE_OR_EQUALS': {
+			case 'BEFORE-OR-EQUALS': {
 				return date <= start;
 			}
 
@@ -647,7 +647,7 @@ class FilterCriteria {
 		filterValue: { lat: number; lng: number; radius?: number; unit?: 'km' | 'mi' }
 	): boolean {
 		switch (operator) {
-			case 'IN_RADIUS': {
+			case 'IN-RADIUS': {
 				return (
 					this.calculateDistance(
 						value,
@@ -660,7 +660,7 @@ class FilterCriteria {
 				);
 			}
 
-			case 'NOT_IN_RADIUS': {
+			case 'NOT-IN-RADIUS': {
 				return (
 					this.calculateDistance(
 						value,
@@ -680,39 +680,39 @@ class FilterCriteria {
 
 	private static applyMapFilter(value: Map<any, any>, operator: FilterCriteria.Operators['map'], filterValue: any): boolean {
 		switch (operator) {
-			case 'HAS_KEY': {
+			case 'HAS-KEY': {
 				return value.has(filterValue);
 			}
 
-			case 'HAS_VALUE': {
+			case 'HAS-VALUE': {
 				return Array.from(value.values()).includes(filterValue);
 			}
 
-			case 'IS_EMPTY': {
+			case 'IS-EMPTY': {
 				return value.size === 0;
 			}
 
-			case 'IS_NOT_EMPTY': {
+			case 'IS-NOT-EMPTY': {
 				return value.size > 0;
 			}
 
-			case 'SIZE_EQUALS': {
+			case 'SIZE-EQUALS': {
 				return value.size === filterValue;
 			}
 
-			case 'SIZE_GREATER': {
+			case 'SIZE-GREATER': {
 				return value.size > filterValue;
 			}
 
-			case 'SIZE_GREATER_OR_EQUALS': {
+			case 'SIZE-GREATER-OR-EQUALS': {
 				return value.size >= filterValue;
 			}
 
-			case 'SIZE_LESS': {
+			case 'SIZE-LESS': {
 				return value.size < filterValue;
 			}
 
-			case 'SIZE_LESS_OR_EQUALS': {
+			case 'SIZE-LESS-OR-EQUALS': {
 				return value.size <= filterValue;
 			}
 
@@ -731,7 +731,7 @@ class FilterCriteria {
 				return value > filterValue;
 			}
 
-			case 'GREATER_OR_EQUALS': {
+			case 'GREATER-OR-EQUALS': {
 				return value >= filterValue;
 			}
 
@@ -739,7 +739,7 @@ class FilterCriteria {
 				return value < filterValue;
 			}
 
-			case 'LESS_OR_EQUALS': {
+			case 'LESS-OR-EQUALS': {
 				return value <= filterValue;
 			}
 
@@ -755,55 +755,55 @@ class FilterCriteria {
 
 	private static applySetFilter(value: Set<any>, operator: FilterCriteria.Operators['set'], filterValue: any): boolean {
 		switch (operator) {
-			case 'EXACTLY_MATCHES': {
-				return this.applyArrayFilter(Array.from(value), 'EXACTLY_MATCHES', filterValue);
+			case 'EXACTLY-MATCHES': {
+				return this.applyArrayFilter(Array.from(value), 'EXACTLY-MATCHES', filterValue);
 			}
 
 			case 'HAS': {
 				return value.has(filterValue);
 			}
 
-			case 'INCLUDES_ALL': {
-				return this.applyArrayFilter(Array.from(value), 'INCLUDES_ALL', filterValue);
+			case 'INCLUDES-ALL': {
+				return this.applyArrayFilter(Array.from(value), 'INCLUDES-ALL', filterValue);
 			}
 
-			case 'INCLUDES_ANY': {
-				return this.applyArrayFilter(Array.from(value), 'INCLUDES_ANY', filterValue);
+			case 'INCLUDES-ANY': {
+				return this.applyArrayFilter(Array.from(value), 'INCLUDES-ANY', filterValue);
 			}
 
-			case 'IS_EMPTY': {
+			case 'IS-EMPTY': {
 				return value.size === 0;
 			}
 
-			case 'IS_NOT_EMPTY': {
+			case 'IS-NOT-EMPTY': {
 				return value.size > 0;
 			}
 
-			case 'NOT_INCLUDES_ALL': {
-				return this.applyArrayFilter(Array.from(value), 'NOT_INCLUDES_ALL', filterValue);
+			case 'NOT-INCLUDES-ALL': {
+				return this.applyArrayFilter(Array.from(value), 'NOT-INCLUDES-ALL', filterValue);
 			}
 
-			case 'NOT_INCLUDES_ANY': {
-				return this.applyArrayFilter(Array.from(value), 'NOT_INCLUDES_ANY', filterValue);
+			case 'NOT-INCLUDES-ANY': {
+				return this.applyArrayFilter(Array.from(value), 'NOT-INCLUDES-ANY', filterValue);
 			}
 
-			case 'SIZE_EQUALS': {
+			case 'SIZE-EQUALS': {
 				return value.size === filterValue;
 			}
 
-			case 'SIZE_GREATER': {
+			case 'SIZE-GREATER': {
 				return value.size > filterValue;
 			}
 
-			case 'SIZE_GREATER_OR_EQUALS': {
+			case 'SIZE-GREATER-OR-EQUALS': {
 				return value.size >= filterValue;
 			}
 
-			case 'SIZE_LESS': {
+			case 'SIZE-LESS': {
 				return value.size < filterValue;
 			}
 
-			case 'SIZE_LESS_OR_EQUALS': {
+			case 'SIZE-LESS-OR-EQUALS': {
 				return value.size <= filterValue;
 			}
 
@@ -822,19 +822,19 @@ class FilterCriteria {
 				return value === filterValue;
 			}
 
-			case 'ENDS_WITH': {
+			case 'ENDS-WITH': {
 				return _.endsWith(value, filterValue);
 			}
 
-			case 'IS_EMPTY': {
+			case 'IS-EMPTY': {
 				return _.isEmpty(value);
 			}
 
-			case 'MATCHES_REGEX': {
+			case 'MATCHES-REGEX': {
 				return new RegExp(filterValue).test(value);
 			}
 
-			case 'STARTS_WITH': {
+			case 'STARTS-WITH': {
 				return _.startsWith(value, filterValue);
 			}
 

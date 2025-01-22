@@ -75,7 +75,7 @@ const complexFilter = {
 			criteria: [
 				{
 					type: 'SET',
-					operator: 'INCLUDES_ANY',
+					operator: 'INCLUDES-ANY',
 					path: ['skills'],
 					value: ['typescript', 'python']
 				},
@@ -98,7 +98,7 @@ const complexFilter = {
 				},
 				{
 					type: 'ARRAY',
-					operator: 'INCLUDES_ANY',
+					operator: 'INCLUDES-ANY',
 					path: ['roles'],
 					value: ['admin']
 				}
@@ -180,7 +180,7 @@ const filterInput = {
 				},
 				{
 					type: 'SET',
-					operator: 'INCLUDES_ALL',
+					operator: 'INCLUDES-ALL',
 					path: ['skills'],
 					value: ['typescript']
 				}
@@ -191,7 +191,7 @@ const filterInput = {
 			criteria: [
 				{
 					type: 'STRING',
-					operator: 'MATCHES_REGEX',
+					operator: 'MATCHES-REGEX',
 					path: ['name'],
 					value: /^john/i
 				}
@@ -291,7 +291,7 @@ const geoFilter = {
 			criteria: [
 				{
 					type: 'GEO',
-					operator: 'IN_RADIUS',
+					operator: 'IN-RADIUS',
 					path: ['location'],
 					value: {
 						lat: 40.7128,
@@ -325,9 +325,9 @@ const geoResult = await FilterCriteria.match(users[0], geoFilter, true);
         unit: 'km'
       },
       level: 'criteria',
-      operator: 'IN_RADIUS',
+      operator: 'IN-RADIUS',
       passed: true,
-      reason: 'Geo "IN_RADIUS" check PASSED',
+      reason: 'Geo "IN-RADIUS" check PASSED',
       value: { lat: 40.7128, lng: -74.006 }
     }]
   }]
@@ -349,7 +349,7 @@ const nestedFilter = {
 				},
 				{
 					type: 'SET',
-					operator: 'INCLUDES_ALL',
+					operator: 'INCLUDES-ALL',
 					path: ['skills'],
 					value: ['typescript']
 				}
@@ -360,7 +360,7 @@ const nestedFilter = {
 			criteria: [
 				{
 					type: 'STRING',
-					operator: 'MATCHES_REGEX',
+					operator: 'MATCHES-REGEX',
 					path: ['name'],
 					value: /^john/i
 				}
@@ -394,9 +394,9 @@ const nestedResult = await FilterCriteria.match(users[0], nestedFilter, true);
         {
           criteriaValue: ['typescript'],
           level: 'criteria',
-          operator: 'INCLUDES_ALL',
+          operator: 'INCLUDES-ALL',
           passed: true,
-          reason: 'Set "INCLUDES_ALL" check PASSED',
+          reason: 'Set "INCLUDES-ALL" check PASSED',
           value: Set(['typescript', 'react'])
         }
       ]
@@ -410,9 +410,9 @@ const nestedResult = await FilterCriteria.match(users[0], nestedFilter, true);
         {
           criteriaValue: /^john/i,
           level: 'criteria',
-          operator: 'MATCHES_REGEX',
+          operator: 'MATCHES-REGEX',
           passed: true,
-          reason: 'String "MATCHES_REGEX" check PASSED',
+          reason: 'String "MATCHES-REGEX" check PASSED',
           value: 'John Doe'
         }
       ]
@@ -426,82 +426,82 @@ const nestedResult = await FilterCriteria.match(users[0], nestedFilter, true);
 
 ### Array Operators
 
-- `EXACTLY_MATCHES`: Arrays contain the same elements (order independent)
-- `INCLUDES_ALL`: Array contains ALL filter values
-- `INCLUDES_ANY`: Array contains AT LEAST ONE filter value
-- `IS_EMPTY`: Array is empty
-- `IS_NOT_EMPTY`: Array is not empty
-- `NOT_INCLUDES_ALL`: Array is missing AT LEAST ONE filter value
-- `NOT_INCLUDES_ANY`: Array contains NONE of the filter values
-- `SIZE_EQUALS`: Array size equals the filter value
-- `SIZE_GREATER`: Array size is greater than the filter value
-- `SIZE_GREATER_OR_EQUALS`: Array size is greater than or equal to the filter value
-- `SIZE_LESS`: Array size is less than the filter value
-- `SIZE_LESS_OR_EQUALS`: Array size is less than or equal to the filter value
+- `EXACTLY-MATCHES`: Arrays contain the same elements (order independent)
+- `INCLUDES-ALL`: Array contains ALL filter values
+- `INCLUDES-ANY`: Array contains AT LEAST ONE filter value
+- `IS-EMPTY`: Array is empty
+- `IS-NOT-EMPTY`: Array is not empty
+- `NOT-INCLUDES-ALL`: Array is missing AT LEAST ONE filter value
+- `NOT-INCLUDES-ANY`: Array contains NONE of the filter values
+- `SIZE-EQUALS`: Array size equals the filter value
+- `SIZE-GREATER`: Array size is greater than the filter value
+- `SIZE-GREATER-OR-EQUALS`: Array size is greater than or equal to the filter value
+- `SIZE-LESS`: Array size is less than the filter value
+- `SIZE-LESS-OR-EQUALS`: Array size is less than or equal to the filter value
 
 ### Boolean Operators
 
 - `IS`: Value equals the filter value
-- `IS_NOT`: Value does not equal the filter value
+- `IS-NOT`: Value does not equal the filter value
 
 ### Date Operators
 
 - `AFTER`: Date is after the filter value
-- `AFTER_OR_EQUALS`: Date is after or equal to the filter value
+- `AFTER-OR-EQUALS`: Date is after or equal to the filter value
 - `BEFORE`: Date is before the filter value
-- `BEFORE_OR_EQUALS`: Date is before or equal to the filter value
+- `BEFORE-OR-EQUALS`: Date is before or equal to the filter value
 - `BETWEEN`: Date is between two filter values
 
 ### Geographic Operators
 
-- `IN_RADIUS`: Point is within the specified radius
-- `NOT_IN_RADIUS`: Point is outside the specified radius
+- `IN-RADIUS`: Point is within the specified radius
+- `NOT-IN-RADIUS`: Point is outside the specified radius
 
 ### Map Operators
 
-- `HAS_KEY`: Map contains the specified key
-- `HAS_VALUE`: Map contains the specified value
-- `IS_EMPTY`: Map is empty
-- `IS_NOT_EMPTY`: Map is not empty
-- `SIZE_EQUALS`: Map size equals the filter value
-- `SIZE_GREATER`: Map size is greater than the filter value
-- `SIZE_GREATER_OR_EQUALS`: Map size is greater than or equal to the filter value
-- `SIZE_LESS`: Map size is less than the filter value
-- `SIZE_LESS_OR_EQUALS`: Map size is less than or equal to the filter value
+- `HAS-KEY`: Map contains the specified key
+- `HAS-VALUE`: Map contains the specified value
+- `IS-EMPTY`: Map is empty
+- `IS-NOT-EMPTY`: Map is not empty
+- `SIZE-EQUALS`: Map size equals the filter value
+- `SIZE-GREATER`: Map size is greater than the filter value
+- `SIZE-GREATER-OR-EQUALS`: Map size is greater than or equal to the filter value
+- `SIZE-LESS`: Map size is less than the filter value
+- `SIZE-LESS-OR-EQUALS`: Map size is less than or equal to the filter value
 
 ### Number Operators
 
 - `BETWEEN`: Number is between two values (inclusive)
 - `EQUALS`: Number equals the filter value
 - `GREATER`: Number is greater than the filter value
-- `GREATER_OR_EQUALS`: Number is greater than or equal to the filter value
+- `GREATER-OR-EQUALS`: Number is greater than or equal to the filter value
 - `LESS`: Number is less than the filter value
-- `LESS_OR_EQUALS`: Number is less than or equal to the filter value
+- `LESS-OR-EQUALS`: Number is less than or equal to the filter value
 
 ### Set Operators
 
-- `EXACTLY_MATCHES`: Set contains the exact same elements
+- `EXACTLY-MATCHES`: Set contains the exact same elements
 - `HAS`: Set contains the specific element
-- `INCLUDES_ALL`: Set contains ALL filter values
-- `INCLUDES_ANY`: Set contains AT LEAST ONE filter value
-- `IS_EMPTY`: Set is empty
-- `IS_NOT_EMPTY`: Set is not empty
-- `NOT_INCLUDES_ALL`: Set is missing AT LEAST ONE filter value
-- `NOT_INCLUDES_ANY`: Set contains NONE of the filter values
-- `SIZE_EQUALS`: Set size equals the filter value
-- `SIZE_GREATER`: Set size is greater than the filter value
-- `SIZE_GREATER_OR_EQUALS`: Set size is greater than or equal to the filter value
-- `SIZE_LESS`: Set size is less than the filter value
-- `SIZE_LESS_OR_EQUALS`: Set size is less than or equal to the filter value
+- `INCLUDES-ALL`: Set contains ALL filter values
+- `INCLUDES-ANY`: Set contains AT LEAST ONE filter value
+- `IS-EMPTY`: Set is empty
+- `IS-NOT-EMPTY`: Set is not empty
+- `NOT-INCLUDES-ALL`: Set is missing AT LEAST ONE filter value
+- `NOT-INCLUDES-ANY`: Set contains NONE of the filter values
+- `SIZE-EQUALS`: Set size equals the filter value
+- `SIZE-GREATER`: Set size is greater than the filter value
+- `SIZE-GREATER-OR-EQUALS`: Set size is greater than or equal to the filter value
+- `SIZE-LESS`: Set size is less than the filter value
+- `SIZE-LESS-OR-EQUALS`: Set size is less than or equal to the filter value
 
 ### String Operators
 
 - `CONTAINS`: String contains the filter value
-- `ENDS_WITH`: String ends with the filter value
+- `ENDS-WITH`: String ends with the filter value
 - `EQUALS`: String equals the filter value
-- `IS_EMPTY`: String is empty
-- `MATCHES_REGEX`: String matches the regular expression pattern
-- `STARTS_WITH`: String starts with the filter value
+- `IS-EMPTY`: String is empty
+- `MATCHES-REGEX`: String matches the regular expression pattern
+- `STARTS-WITH`: String starts with the filter value
 
 ### Custom Operators
 
@@ -593,7 +593,7 @@ const setFilter = {
 			criteria: [
 				{
 					type: 'SET',
-					operator: 'INCLUDES_ALL',
+					operator: 'INCLUDES-ALL',
 					path: ['skills'],
 					value: ['typescript', 'react'],
 					normalize: true // Optional: normalize string values
@@ -612,7 +612,7 @@ const mapFilter = {
 			criteria: [
 				{
 					type: 'MAP',
-					operator: 'HAS_KEY',
+					operator: 'HAS-KEY',
 					path: ['metadata'],
 					value: 'level'
 				}
@@ -641,7 +641,7 @@ const filter = {
 			criteria: [
 				{
 					type: 'SET',
-					operator: 'INCLUDES_ALL',
+					operator: 'INCLUDES-ALL',
 					path: ['actualSkills'],
 					value: { $path: ['requiredSkills'] } // Compare actualSkills with requiredSkills
 				}
