@@ -994,7 +994,14 @@ wrap-ansi@^8.1.0:
     string-width "^5.0.1"
     strip-ansi "^7.0.1"
 
-zod@^3.24.1:
+zod-default-instance@^1.0.17:
+  version "1.0.17"
+  resolved "https://registry.yarnpkg.com/zod-default-instance/-/zod-default-instance-1.0.17.tgz#f1d5eec5a0347c8414c3b8c14f789443e8b60621"
+  integrity sha512-kAddNDq7YTJzEswbYb7HJYWvKY5QY5EVxNMRSgSsKFSkeaeJft1gGbginQsnKaA/K3yCJP2Ts6tJgjiq/jhSkQ==
+  dependencies:
+    zod "^3.23.8"
+
+zod@^3.23.8, zod@^3.24.1:
   version "3.24.1"
   resolved "https://registry.yarnpkg.com/zod/-/zod-3.24.1.tgz#27445c912738c8ad1e9de1bea0359fa44d9d35ee"
   integrity sha512-muH7gBL9sI1nciMZV67X5fTKKBLtwpZ5VBp1vsOQzj1MhrBZ4wlVCm3gedKZWLp0Oyel8sIGfeiz54Su+OVT+A==

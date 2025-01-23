@@ -2,7 +2,8 @@
 	"name": "use-filter-criteria",
 	"dependencies": {
 		"lodash": "^4.17.21",
-		"zod": "^3.24.1"
+		"zod": "^3.24.1",
+		"zod-default-instance": "^1.0.17"
 	},
 	"devDependencies": {
 		"@types/lodash": "^4.17.13",
@@ -28,5 +29,5 @@
 		"test": "vitest",
 		"test:coverage": "rm -rf coverage && vitest --run --coverage"
 	},
-	"version": "1.0.19"
+	"version": "1.0.20"
 }

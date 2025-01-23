@@ -1,17 +1,6 @@
 import _ from 'lodash';
 import z from 'zod';
-
-const filterValue = (...schemas: [z.ZodTypeAny, ...z.ZodTypeAny[]]) => {
-	const schemasWith = [
-		z.object({
-			$path: z.array(z.string())
-		}),
-		schemas[0],
-		...schemas.slice(1)
-	] as [z.ZodTypeAny, z.ZodTypeAny, ...z.ZodTypeAny[]];
-
-	return z.union(schemasWith);
-};
+import zDefault from 'zod-default-instance';
 
 const operatorArrayOrSet: [string, ...string[]] = [
 	'EXACTLY-MATCHES',
@@ -28,10 +17,42 @@ const operatorArrayOrSet: [string, ...string[]] = [
 	'SIZE-LESS-OR-EQUALS'
 ];
 
+const criteriaCustomPredicate = z
+	.function()
+	.args(z.any(), z.any())
+	.returns(z.union([z.boolean(), z.promise(z.boolean())]));
+
+const datetime = z.string().datetime({ offset: true });
+const fn = z.function().args(z.any()).returns(z.any());
 const logicalOperator = z.enum(['AND', 'OR']);
+const matchValueGetter = <T extends z.ZodSchema>(schema: T) => {
+	return schema.or(z.function().args(z.any()).returns(schema)).or(
+		z.object({
+			$path: z.array(z.string())
+		})
+	);
+};
+
+const normalize = z.union([z.boolean(), fn]).default(true);
 const operator = {
 	array: z.enum(operatorArrayOrSet),
-	boolean: z.enum(['IS', 'IS-NOT']),
+	boolean: z.enum([
+		// CHANGE ME
+		'EQUALS',
+		'IS-FALSE',
+		'IS-FALSY',
+		'IS-NIL',
+		'NOT-EQUALS',
+		'NOT-NIL',
+		'NOT-NULL',
+		'NOT-UNDEFINED',
+		'IS-NULL',
+		'STRICT-EQUAL',
+		'STRICT-NOT-EQUAL',
+		'IS-TRUE',
+		'IS-TRUTHY',
+		'IS-UNDEFINED'
+	]),
 	date: z.enum(['AFTER', 'AFTER-OR-EQUALS', 'BEFORE', 'BEFORE-OR-EQUALS', 'BETWEEN']),
 	geo: z.enum(['IN-RADIUS', 'NOT-IN-RADIUS']),
 	map: z.enum([
@@ -46,34 +67,45 @@ const operator = {
 		'SIZE-LESS-OR-EQUALS'
 	]),
 	number: z.enum(['BETWEEN', 'EQUALS', 'GREATER', 'GREATER-OR-EQUALS', 'LESS', 'LESS-OR-EQUALS']),
+	// TODO: object: z.enum(['CONTAINS', 'NOT-CONTAINS']),
 	set: z.enum([...operatorArrayOrSet, 'HAS']),
 	string: z.enum(['CONTAINS', 'ENDS-WITH', 'EQUALS', 'IS-EMPTY', 'MATCHES-REGEX', 'STARTS-WITH'])
 };
 
-const criteriaCustomFunction = z
-	.function()
-	.args(z.any())
-	.returns(z.union([z.boolean(), z.promise(z.boolean())]));
-
 const criteria = z.discriminatedUnion('type', [
 	z.object({
 		defaultValue: z.array(z.unknown()).default([]),
-		normalize: z.boolean().default(true),
+		matchValue: matchValueGetter(z.union([z.array(z.unknown()), z.number()]))
+			.nullable()
+			.optional(),
+		normalize,
 		operator: operator.array,
-		path: z.array(z.string()),
 		type: z.literal('ARRAY'),
-		value: filterValue(z.array(z.unknown()), z.number())
+		valuePath: z.array(z.string()),
+		valueTransformer: fn.nullable().optional()
 	}),
 	z.object({
-		defaultValue: z.boolean().default(false),
+		defaultValue: z.any().default(undefined),
+		matchValue: matchValueGetter(z.any()).nullable().optional(),
 		operator: operator.boolean,
-		path: z.array(z.string()),
 		type: z.literal('BOOLEAN'),
-		value: filterValue(z.boolean())
+		valuePath: z.array(z.string()),
+		valueTransformer: fn.nullable().optional()
 	}),
 	z.object({
-		type: z.literal('CUSTOM'),
-		value: filterValue(z.string(), criteriaCustomFunction)
+		matchValue: z.any().default(null),
+		predicate: criteriaCustomPredicate,
+		type: z.literal('CUSTOM')
+	}),
+	z.object({
+		matchValue: z.unknown().default(null),
+		operator: z
+			.union([operator.array, operator.boolean, operator.date, operator.geo, operator.map, operator.number, operator.set, operator.string])
+			.nullable()
+			.optional(),
+		valuePath: z.array(z.string()).default([]),
+		key: z.string(),
+		type: z.literal('CRITERIA')
 	}),
 	z.object({
 		defaultValue: z
@@ -82,186 +114,222 @@ const criteria = z.discriminatedUnion('type', [
 			.default(() => {
 				return new Date().toISOString();
 			}),
+		matchValue: matchValueGetter(z.union([datetime, z.tuple([datetime, datetime])])),
 		operator: operator.date,
-		path: z.array(z.string()),
 		type: z.literal('DATE'),
-		value: filterValue(z.string().datetime(), z.tuple([z.string().datetime(), z.string().datetime()]))
+		valuePath: z.array(z.string()),
+		valueTransformer: fn.nullable().optional()
 	}),
 	z.object({
 		defaultValue: z.record(z.number()).default({ lat: 0, lng: 0 }),
 		getCoordinates: z
-			.function()
-			.args(z.record(z.number()))
-			.returns(z.tuple([z.number(), z.number()]))
+			.object({
+				lat: z.array(z.string()),
+				lng: z.array(z.string())
+			})
+			.nullable()
 			.optional(),
-		operator: operator.geo,
-		path: z.array(z.string()),
-		type: z.literal('GEO'),
-		value: filterValue(
+		matchValue: matchValueGetter(
 			z.object({
 				lat: z.number(),
 				lng: z.number(),
 				radius: z.number().optional(),
 				unit: z.enum(['km', 'mi']).optional()
 			})
-		)
+		),
+		operator: operator.geo,
+		type: z.literal('GEO'),
+		valuePath: z.array(z.string()),
+		valueTransformer: fn.nullable().optional()
 	}),
 	z.object({
 		defaultValue: z.map(z.unknown(), z.unknown()).default(new Map()),
-		normalize: z.boolean().default(true),
+		matchValue: matchValueGetter(z.union([z.number(), z.string()]))
+			.nullable()
+			.optional(),
+		normalize,
 		operator: operator.map,
-		path: z.array(z.string()),
 		type: z.literal('MAP'),
-		value: filterValue(z.number(), z.string(), z.map(z.unknown(), z.unknown()))
+		valuePath: z.array(z.string()),
+		valueTransformer: fn.nullable().optional()
 	}),
 	z.object({
 		defaultValue: z.number().default(0),
+		matchValue: matchValueGetter(z.union([z.number(), z.array(z.number())])),
 		operator: operator.number,
-		path: z.array(z.string()),
 		type: z.literal('NUMBER'),
-		value: filterValue(z.union([z.number(), z.array(z.number())]))
+		valuePath: z.array(z.string()),
+		valueTransformer: fn.nullable().optional()
 	}),
 	z.object({
 		defaultValue: z.set(z.unknown()).default(new Set()),
-		normalize: z.boolean().default(true),
+		matchValue: matchValueGetter(z.union([z.number(), z.string(), z.array(z.unknown())]))
+			.nullable()
+			.optional(),
+		normalize,
 		operator: operator.set,
-		path: z.array(z.string()),
 		type: z.literal('SET'),
-		value: filterValue(z.number(), z.string(), z.set(z.unknown()))
+		valuePath: z.array(z.string()),
+		valueTransformer: fn.nullable().optional()
 	}),
 	z.object({
 		defaultValue: z.string().default(''),
-		normalize: z.boolean().default(true),
+		matchValue: matchValueGetter(z.union([z.string(), z.array(z.string()), z.instanceof(RegExp)]))
+			.nullable()
+			.optional(),
+		normalize,
 		operator: operator.string,
-		path: z.array(z.string()),
 		type: z.literal('STRING'),
-		value: filterValue(z.string(), z.array(z.string()), z.instanceof(RegExp))
+		valuePath: z.array(z.string()),
+		valueTransformer: fn.nullable().optional()
 	})
 ]);
 
-const rule = z.object({
+const filter = z.object({
 	criteria: z.array(criteria),
 	operator: logicalOperator
 });
 
-const filter = z.object({
-	operator: logicalOperator,
-	rules: z.array(rule)
+const filterGroup = z.object({
+	filters: z.array(filter),
+	operator: logicalOperator
 });
 
-const matchInput = z.union([criteria, rule, filter]);
+const matchManyInput = filterGroup;
+const matchInput = z.union([criteria, filter, filterGroup]);
+
 const schema = {
 	criteria,
-	criteriaCustomFunction,
+	criteriaCustomPredicate,
 	filter,
+	filterGroup,
 	logicalOperator,
-	matchInput,
-	rule
+	matchInput
 };
 
 namespace FilterCriteria {
 	export type Criteria = z.infer<typeof criteria>;
-	export type CriteriaCustomFunction = z.infer<typeof criteriaCustomFunction>;
 	export type CriteriaInput = z.input<typeof criteria>;
+	export type CriteriaCustomPredicate = z.infer<typeof criteriaCustomPredicate>;
 	export type CriteriaResult = {
-		criteriaValue: any;
-		level: 'criteria';
-		operator: string;
+		matchValue: string;
 		passed: boolean;
 		reason: string;
 		value: any;
 	};
 
-	export type Filter = z.infer<typeof filter>;
-	export type FilterInput = z.input<typeof filter>;
-	export type FilterResult = {
-		level: 'filter';
-		operator: LogicalOperator;
-		passed: boolean;
-		reason: string;
-		results: RuleResult[];
-	};
-
 	export type LogicalOperator = z.infer<typeof logicalOperator>;
 	export type MatchInput = z.input<typeof matchInput>;
-	export type MatchDetailedResult = CriteriaResult | RuleResult | FilterResult;
+	export type MatchManyInput = z.input<typeof matchManyInput>;
+	export type MatchDetailedResult = CriteriaResult | FilterResult | FilterGroupResult;
 
 	export type Operators = {
 		[K in keyof typeof operator]: z.infer<(typeof operator)[K]>;
 	};
 
-	export type Rule = z.infer<typeof rule>;
-	export type RuleInput = z.input<typeof rule>;
-	export type RuleResult = {
-		level: 'rule';
+	export type Filter = z.infer<typeof filter>;
+	export type FilterInput = z.input<typeof filter>;
+	export type FilterResult = {
 		operator: LogicalOperator;
 		passed: boolean;
 		reason: string;
 		results: CriteriaResult[];
 	};
+
+	export type FilterGroup = z.infer<typeof filterGroup>;
+	export type FilterGroupInput = z.input<typeof filterGroup>;
+	export type FilterGroupResult = {
+		operator: LogicalOperator;
+		passed: boolean;
+		reason: string;
+		results: FilterResult[];
+	};
 }
 
+const criteriaFactory = (input: FilterCriteria.CriteriaInput): FilterCriteria.Criteria => {
+	return zDefault(criteria, input);
+};
+
+const filterFactory = (input: FilterCriteria.FilterInput): FilterCriteria.Filter => {
+	return zDefault(filter, input);
+};
+
+const filterGroupFactory = (input: FilterCriteria.FilterGroupInput): FilterCriteria.FilterGroup => {
+	return zDefault(filterGroup, input);
+};
+
+const stringify = (value: any) => {
+	if (_.isNumber(value) || _.isRegExp(value)) {
+		return _.toString(value);
+	}
+
+	return _.isString(value) ? value : JSON.stringify(value);
+};
+
 class FilterCriteria {
-	static customCriteria: Map<string, FilterCriteria.CriteriaCustomFunction> = new Map();
+	static savedCriteria: Map<string, FilterCriteria.Criteria> = new Map();
 	static schema = schema;
 
+	static criteria = criteriaFactory;
+	static filter = filterFactory;
+	static filterGroup = filterGroupFactory;
+
 	static async match(
-		data: any,
+		value: any,
 		input: FilterCriteria.MatchInput,
 		detailed: boolean = false
 	): Promise<boolean | FilterCriteria.MatchDetailedResult> {
-		const converted = this.convertToFilterInput(input);
-		const args = filter.parse(converted.input);
-		const ruleResults = await Promise.all(
-			_.map(args.rules, rule => {
-				return this.applyRule(data, rule, detailed);
+		const converted = this.convertToFilterGroupInput(input);
+		const args = filterGroup.parse(converted.input);
+		const filtersResults = await Promise.all(
+			_.map(args.filters, filter => {
+				return this.applyFilter(value, filter, detailed);
 			})
 		);
 
 		const passed =
 			args.operator === 'AND'
-				? _.every(ruleResults, r => {
+				? _.every(filtersResults, r => {
 						return _.isBoolean(r) ? r : r.passed;
 					})
-				: _.some(ruleResults, r => {
+				: _.some(filtersResults, r => {
 						return _.isBoolean(r) ? r : r.passed;
 					});
 
 		if (detailed) {
 			if (converted.level === 'criteria') {
-				return (ruleResults[0] as FilterCriteria.RuleResult).results[0];
+				return (filtersResults[0] as FilterCriteria.FilterResult).results[0];
 			}
 
-			if (converted.level === 'rule') {
-				return ruleResults[0] as FilterCriteria.RuleResult;
+			if (converted.level === 'filter') {
+				return filtersResults[0] as FilterCriteria.FilterResult;
 			}
 
 			return {
-				level: 'filter',
 				operator: args.operator,
 				passed,
-				reason: `Filter "${args.operator}" check ${passed ? 'PASSED' : 'FAILED'}`,
-				results: ruleResults as FilterCriteria.RuleResult[]
+				reason: `Filter group "${args.operator}" check ${passed ? 'PASSED' : 'FAILED'}`,
+				results: filtersResults as FilterCriteria.FilterResult[]
 			};
 		}
 
 		return passed;
 	}
 
-	static async matchMany(data: any[], input: FilterCriteria.MatchInput): Promise<any[]> {
-		const converted = this.convertToFilterInput(input);
-		const args = filter.parse(converted.input);
+	static async matchMany(value: any[], input: FilterCriteria.MatchInput): Promise<any[]> {
+		const converted = this.convertToFilterGroupInput(input);
+		const args = filterGroup.parse(converted.input);
 
 		let results: any[] = [];
 
-		for await (const item of data) {
-			const ruleResults = await Promise.all(
-				_.map(args.rules, rule => {
-					return this.applyRule(item, rule);
+		for await (const item of value) {
+			const filtersResults = await Promise.all(
+				_.map(args.filters, filter => {
+					return this.applyFilter(item, filter);
 				}) as Promise<boolean>[]
 			);
 
-			if (args.operator === 'AND' ? _.every(ruleResults, Boolean) : _.some(ruleResults, Boolean)) {
+			if (args.operator === 'AND' ? _.every(filtersResults, Boolean) : _.some(filtersResults, Boolean)) {
 				results = [...results, item];
 			}
 		}
@@ -269,250 +337,223 @@ class FilterCriteria {
 		return results;
 	}
 
-	private static async applyRule(
-		item: any,
-		rule: FilterCriteria.RuleInput,
-		detailed: boolean = false
-	): Promise<boolean | FilterCriteria.RuleResult> {
-		const criteriaResults = await Promise.all(
-			_.map(rule.criteria, criteria => {
-				return this.applyCriteria(item, criteria, detailed);
-			})
-		);
-
-		const passed =
-			rule.operator === 'AND'
-				? _.every(criteriaResults, r => {
-						return _.isBoolean(r) ? r : r.passed;
-					})
-				: _.some(criteriaResults, r => {
-						return _.isBoolean(r) ? r : r.passed;
-					});
-
-		if (detailed) {
-			return {
-				operator: rule.operator,
-				passed,
-				reason: `Rule "${rule.operator}" check ${passed ? 'PASSED' : 'FAILED'}`,
-				results: criteriaResults as FilterCriteria.CriteriaResult[],
-				level: 'rule'
-			};
-		}
-
-		return passed;
-	}
-
 	private static async applyCriteria(
-		item: any,
+		value: any,
 		criteria: FilterCriteria.CriteriaInput,
 		detailed: boolean = false
 	): Promise<boolean | FilterCriteria.CriteriaResult> {
-		if (criteria.type === 'CUSTOM') {
-			const fn = _.isString(criteria.value) ? this.customCriteria.get(criteria.value) : criteria.value;
+		if (criteria.type === 'CRITERIA') {
+			const savedCriteria = this.savedCriteria.get(criteria.key);
 
-			if (!fn) {
+			if (!savedCriteria) {
 				return detailed
 					? {
-							criteriaValue: _.isString(criteria.value) ? criteria.value : 'Custom Criteria Function',
-							level: 'criteria',
-							operator: 'Custom Criteria Operator',
+							matchValue: stringify(criteria.matchValue),
 							passed: false,
-							reason: 'Custom criteria not found',
-							value: item
+							reason: `Criteria "${criteria.key}" not found`,
+							value: null
 						}
 					: false;
 			}
 
-			const result = await fn(item);
+			const newCriteria = {
+				...savedCriteria,
+				matchValue: criteria.matchValue || savedCriteria.matchValue
+			};
+
+			if (criteria.operator && 'operator' in newCriteria) {
+				newCriteria.operator = criteria.operator;
+			}
+
+			if (criteria.valuePath && _.size(criteria.valuePath) > 0 && 'valuePath' in newCriteria) {
+				newCriteria.valuePath = criteria.valuePath;
+			}
+
+			return this.applyCriteria(value, newCriteria, detailed);
+		}
+
+		if (criteria.type === 'CUSTOM') {
+			let { matchValue } = criteria;
+
+			if (_.isFunction(criteria.matchValue)) {
+				matchValue = criteria.matchValue(value);
+			}
+
+			const passed = await criteria.predicate(value, matchValue);
 
 			return detailed
 				? {
-						criteriaValue: _.isString(criteria.value) ? criteria.value : 'Custom Criteria Function',
-						level: 'criteria',
-						operator: 'Custom Criteria Operator',
-						passed: result,
-						reason: _.isString(criteria.value)
-							? `Custom "${criteria.value}" check ${result ? 'PASSED' : 'FAILED'}`
-							: `Custom check ${result ? 'PASSED' : 'FAILED'}`,
-						value: item
+						matchValue: stringify(matchValue),
+						passed,
+						reason: `Custom predicate check ${passed ? 'PASSED' : 'FAILED'}`,
+						value
 					}
-				: result;
+				: passed;
 		}
 
-		let value = _.get(item, criteria.path, criteria.defaultValue);
+		let { matchValue } = criteria;
 
-		if (_.isUndefined(value)) {
-			return detailed
-				? {
-						criteriaValue: criteria.value,
-						level: 'criteria',
-						operator: criteria.operator,
-						passed: false,
-						reason: 'Value not found in path',
-						value: null
-					}
-				: false;
+		if (matchValue) {
+			// dynamic match value
+			if (_.isObject(matchValue) && '$path' in matchValue && _.isArray(matchValue.$path) && (_.isArray(value) || _.isPlainObject(value))) {
+				matchValue = _.get(value, matchValue.$path);
+			} else if (_.isFunction(matchValue)) {
+				// custom match value
+				matchValue = matchValue(value);
+			}
 		}
 
-		if (_.isPlainObject(criteria.value) && _.isArray(criteria.value.$path)) {
-			criteria.value = _.get(item, criteria.value.$path, criteria.defaultValue);
+		if (_.isArray(criteria.valuePath) && _.size(criteria.valuePath) > 0) {
+			value = _.get(value, criteria.valuePath, criteria.defaultValue);
 		}
 
-		if ('normalize' in criteria && criteria.normalize) {
-			criteria.value = this.normalize(criteria.value);
-			value = this.normalize(value);
+		if (_.isFunction(criteria.valueTransformer)) {
+			value = criteria.valueTransformer(value);
+		}
+
+		if ('normalize' in criteria) {
+			if (_.isFunction(criteria.normalize)) {
+				matchValue = criteria.normalize(matchValue);
+				value = criteria.normalize(value);
+			} else if (criteria.normalize) {
+				matchValue = this.normalize(matchValue);
+				value = this.normalize(value);
+			}
 		}
 
 		switch (criteria.type) {
 			case 'ARRAY': {
-				const result = this.applyArrayFilter(value, criteria.operator, criteria.value);
+				const passed = this.applyArrayFilter(value, criteria.operator, matchValue);
 
 				if (detailed) {
 					return {
-						criteriaValue: criteria.value,
-						level: 'criteria',
-						operator: criteria.operator,
-						passed: result,
-						reason: `Array "${criteria.operator}" check ${result ? 'PASSED' : 'FAILED'}`,
+						matchValue: stringify(matchValue),
+						passed,
+						reason: `Array criteria "${criteria.operator}" check ${passed ? 'PASSED' : 'FAILED'}`,
 						value
 					};
 				}
 
-				return result;
+				return passed;
 			}
 
 			case 'BOOLEAN': {
-				const result = this.applyBooleanFilter(value, criteria.operator, criteria.value);
+				const passed = this.applyBooleanFilter(value, criteria.operator, matchValue);
 
 				if (detailed) {
 					return {
-						criteriaValue: criteria.value,
-						level: 'criteria',
-						operator: criteria.operator,
-						passed: result,
-						reason: `Boolean "${criteria.operator}" check ${result ? 'PASSED' : 'FAILED'}`,
+						matchValue: stringify(matchValue),
+						passed,
+						reason: `Boolean criteria "${criteria.operator}" check ${passed ? 'PASSED' : 'FAILED'}`,
 						value
 					};
 				}
 
-				return result;
+				return passed;
 			}
 
 			case 'DATE': {
-				const result = this.applyDateFilter(value, criteria.operator, criteria.value);
+				const passed = this.applyDateFilter(value, criteria.operator, matchValue);
 
 				if (detailed) {
 					return {
-						criteriaValue: _.isString(criteria.value)
-							? new Date(criteria.value).toISOString()
-							: _.map(criteria.value, v => {
-									return new Date(v).toISOString();
-								}),
-						level: 'criteria',
-						operator: criteria.operator,
-						passed: result,
-						reason: `Date "${criteria.operator}" check ${result ? 'PASSED' : 'FAILED'}`,
+						matchValue: stringify(matchValue),
+						passed,
+						reason: `Date criteria "${criteria.operator}" check ${passed ? 'PASSED' : 'FAILED'}`,
 						value
 					};
 				}
 
-				return result;
+				return passed;
 			}
 
 			case 'GEO': {
-				const [lat, lng] = criteria.getCoordinates?.(value) || [value.lat, value.lng];
-				const result = this.applyGeoFilter({ lat, lng }, criteria.operator, criteria.value);
+				const [lat, lng] = criteria.getCoordinates
+					? [_.get(value, criteria.getCoordinates.lat, 0), _.get(value, criteria.getCoordinates.lng, 0)]
+					: [value.lat, value.lng];
+				const passed = this.applyGeoFilter({ lat, lng }, criteria.operator, matchValue);
 
 				if (detailed) {
 					return {
-						criteriaValue: criteria.value,
-						level: 'criteria',
-						operator: criteria.operator,
-						passed: result,
-						reason: `Geo "${criteria.operator}" check ${result ? 'PASSED' : 'FAILED'}`,
+						matchValue: stringify(matchValue),
+						passed,
+						reason: `Geo criteria "${criteria.operator}" check ${passed ? 'PASSED' : 'FAILED'}`,
 						value: { lat, lng }
 					};
 				}
 
-				return result;
+				return passed;
 			}
 
 			case 'MAP': {
-				const result = this.applyMapFilter(value, criteria.operator, criteria.value);
+				const passed = this.applyMapFilter(value, criteria.operator, matchValue);
 
 				if (detailed) {
 					return {
-						criteriaValue: criteria.value,
-						level: 'criteria',
-						operator: criteria.operator,
-						passed: result,
-						reason: `Map "${criteria.operator}" check ${result ? 'PASSED' : 'FAILED'}`,
+						matchValue: stringify(matchValue),
+						passed,
+						reason: `Map criteria "${criteria.operator}" check ${passed ? 'PASSED' : 'FAILED'}`,
 						value
 					};
 				}
 
-				return result;
+				return passed;
 			}
 
 			case 'NUMBER': {
-				const result = this.applyNumberFilter(value, criteria.operator, criteria.value);
+				const passed = this.applyNumberFilter(value, criteria.operator, matchValue);
 
 				if (detailed) {
 					return {
-						criteriaValue: criteria.value,
-						level: 'criteria',
-						operator: criteria.operator,
-						passed: result,
-						reason: `Number "${criteria.operator}" check ${result ? 'PASSED' : 'FAILED'}`,
+						matchValue: stringify(matchValue),
+						passed,
+						reason: `Number criteria "${criteria.operator}" check ${passed ? 'PASSED' : 'FAILED'}`,
 						value
 					};
 				}
 
-				return result;
+				return passed;
 			}
 
 			case 'SET': {
-				const result = this.applySetFilter(value, criteria.operator, criteria.value);
+				const passed = this.applySetFilter(value, criteria.operator, matchValue);
 
 				if (detailed) {
 					return {
-						criteriaValue: criteria.value,
-						level: 'criteria',
-						operator: criteria.operator,
-						passed: result,
-						reason: `Set "${criteria.operator}" check ${result ? 'PASSED' : 'FAILED'}`,
+						matchValue: stringify(matchValue),
+						passed,
+						reason: `Set criteria "${criteria.operator}" check ${passed ? 'PASSED' : 'FAILED'}`,
 						value
 					};
 				}
 
-				return result;
+				return passed;
 			}
 
 			case 'STRING': {
-				const result = this.applyStringFilter(value, criteria.operator, criteria.value);
+				console.log({
+					value, op: criteria.operator, matchValue
+				});
+				const passed = this.applyStringFilter(value, criteria.operator, matchValue);
 
 				if (detailed) {
 					return {
-						criteriaValue: criteria.value,
-						level: 'criteria',
-						operator: criteria.operator,
-						passed: result,
-						reason: `String "${criteria.operator}" check ${result ? 'PASSED' : 'FAILED'}`,
+						matchValue: stringify(matchValue),
+						passed,
+						reason: `String criteria "${criteria.operator}" check ${passed ? 'PASSED' : 'FAILED'}`,
 						value
 					};
 				}
 
-				return result;
+				return passed;
 			}
 
 			default: {
 				if (detailed) {
 					return {
-						criteriaValue: null,
-						level: 'criteria',
-						operator: '',
+						matchValue: stringify(matchValue),
 						passed: false,
-						reason: 'Unknown filter type',
+						reason: 'Unknown criteria type',
 						value
 					};
 				}
@@ -522,21 +563,65 @@ class FilterCriteria {
 		}
 	}
 
-	private static applyArrayFilter(value: any[], operator: FilterCriteria.Operators['array'], filterValue: any): boolean {
+	private static async applyFilter(
+		value: any,
+		filter: FilterCriteria.FilterInput,
+		detailed: boolean = false
+	): Promise<boolean | FilterCriteria.FilterResult> {
+		const criteriaResults = await Promise.all(
+			_.map(filter.criteria, criteria => {
+				return this.applyCriteria(value, criteria, detailed);
+			})
+		);
+
+		const passed =
+			filter.operator === 'AND'
+				? _.every(criteriaResults, r => {
+						return _.isBoolean(r) ? r : r.passed;
+					})
+				: _.some(criteriaResults, r => {
+						return _.isBoolean(r) ? r : r.passed;
+					});
+
+		if (detailed) {
+			return {
+				operator: filter.operator,
+				passed,
+				reason: `Filter "${filter.operator}" check ${passed ? 'PASSED' : 'FAILED'}`,
+				results: criteriaResults as FilterCriteria.CriteriaResult[]
+			};
+		}
+
+		return passed;
+	}
+
+	private static applyArrayFilter(value: any[], operator: FilterCriteria.Operators['array'], matchValue: any): boolean {
 		switch (operator) {
 			case 'EXACTLY-MATCHES': {
-				return _.isEqual(_.sortBy(value), _.sortBy(filterValue));
+				if (!_.isArray(matchValue)) {
+					return false;
+				}
+
+				return _.isEqual(_.sortBy(value), _.sortBy(matchValue));
 			}
 
 			case 'INCLUDES-ALL': {
-				return _.every(filterValue, v => {
-					return _.includes(value, v);
+				if (!_.isArray(matchValue)) {
+					return false;
+				}
+
+				return _.every(value, v => {
+					return _.includes(matchValue, v);
 				});
 			}
 
 			case 'INCLUDES-ANY': {
-				return _.some(filterValue, v => {
-					return _.includes(value, v);
+				if (!_.isArray(matchValue)) {
+					return false;
+				}
+
+				return _.some(value, v => {
+					return _.includes(matchValue, v);
 				});
 			}
 
@@ -549,35 +634,63 @@ class FilterCriteria {
 			}
 
 			case 'NOT-INCLUDES-ALL': {
-				return !_.every(filterValue, v => {
-					return _.includes(value, v);
+				if (!_.isArray(matchValue)) {
+					return false;
+				}
+
+				return !_.every(value, v => {
+					return _.includes(matchValue, v);
 				});
 			}
 
 			case 'NOT-INCLUDES-ANY': {
-				return !_.some(filterValue, v => {
-					return _.includes(value, v);
+				if (!_.isArray(matchValue)) {
+					return false;
+				}
+
+				return !_.some(value, v => {
+					return _.includes(matchValue, v);
 				});
 			}
 
 			case 'SIZE-EQUALS': {
-				return _.size(value) === filterValue;
+				if (!_.isNumber(matchValue)) {
+					return false;
+				}
+
+				return _.size(value) === matchValue;
 			}
 
 			case 'SIZE-GREATER': {
-				return _.size(value) > filterValue;
+				if (!_.isNumber(matchValue)) {
+					return false;
+				}
+
+				return _.size(value) > matchValue;
 			}
 
 			case 'SIZE-GREATER-OR-EQUALS': {
-				return _.size(value) >= filterValue;
+				if (!_.isNumber(matchValue)) {
+					return false;
+				}
+
+				return _.size(value) >= matchValue;
 			}
 
 			case 'SIZE-LESS': {
-				return _.size(value) < filterValue;
+				if (!_.isNumber(matchValue)) {
+					return false;
+				}
+
+				return _.size(value) < matchValue;
 			}
 
 			case 'SIZE-LESS-OR-EQUALS': {
-				return _.size(value) <= filterValue;
+				if (!_.isNumber(matchValue)) {
+					return false;
+				}
+
+				return _.size(value) <= matchValue;
 			}
 
 			default:
@@ -585,14 +698,62 @@ class FilterCriteria {
 		}
 	}
 
-	private static applyBooleanFilter(value: boolean, operator: FilterCriteria.Operators['boolean'], filterValue: boolean): boolean {
+	private static applyBooleanFilter(value: boolean, operator: FilterCriteria.Operators['boolean'], matchValue: any): boolean {
 		switch (operator) {
-			case 'IS': {
-				return value === filterValue;
+			case 'IS-EQUAL': {
+				return _.isEqual(value, matchValue);
 			}
 
-			case 'IS-NOT': {
-				return value !== filterValue;
+			case 'IS-FALSE': {
+				return value === false;
+			}
+
+			case 'IS-FALSY': {
+				return Boolean(!value);
+			}
+
+			case 'IS-NIL': {
+				return _.isNil(value);
+			}
+
+			case 'IS-NOT-EQUAL': {
+				return !_.isEqual(value, matchValue);
+			}
+
+			case 'IS-NOT-NIL': {
+				return !_.isNil(value);
+			}
+
+			case 'IS-NOT-NULL': {
+				return !_.isNull(value);
+			}
+
+			case 'IS-NOT-UNDEFINED': {
+				return !_.isUndefined(value);
+			}
+
+			case 'IS-NULL': {
+				return _.isNull(value);
+			}
+
+			case 'IS-STRICT-EQUAL': {
+				return value === matchValue;
+			}
+
+			case 'IS-STRICT-NOT-EQUAL': {
+				return value !== matchValue;
+			}
+
+			case 'IS-TRUE': {
+				return value === true;
+			}
+
+			case 'IS-TRUTHY': {
+				return Boolean(value);
+			}
+
+			case 'IS-UNDEFINED': {
+				return _.isUndefined(value);
 			}
 
 			default:
@@ -600,18 +761,20 @@ class FilterCriteria {
 		}
 	}
 
-	private static applyDateFilter(
-		value: string,
-		operator: FilterCriteria.Operators['date'],
-		filterValue: string | [string, string]
-	): boolean {
+	private static applyDateFilter(value: string, operator: FilterCriteria.Operators['date'], matchValue: any): boolean {
+		const isStringArray = _.isArray(matchValue) && _.every(matchValue, _.isString);
+
+		if (!_.isString(value) && !isStringArray) {
+			return false;
+		}
+
 		const date = new Date(value);
 
-		if (_.isString(filterValue)) {
-			filterValue = [filterValue, new Date().toISOString()];
+		if (_.isString(matchValue)) {
+			matchValue = [matchValue, new Date().toISOString()];
 		}
 
-		const [start, end] = _.map(filterValue, d => {
+		const [start, end] = _.map(matchValue, d => {
 			return new Date(d);
 		});
 
@@ -641,22 +804,24 @@ class FilterCriteria {
 		}
 	}
 
-	private static applyGeoFilter(
-		value: { lat: number; lng: number },
-		operator: FilterCriteria.Operators['geo'],
-		filterValue: { lat: number; lng: number; radius?: number; unit?: 'km' | 'mi' }
-	): boolean {
+	private static applyGeoFilter(value: { lat: number; lng: number }, operator: FilterCriteria.Operators['geo'], matchValue: any): boolean {
+		const isValidObject = _.isPlainObject(matchValue) && 'lat' in matchValue && 'lng' in matchValue;
+
+		if (!isValidObject) {
+			return false;
+		}
+
 		switch (operator) {
 			case 'IN-RADIUS': {
 				return (
 					this.calculateDistance(
 						value,
 						{
-							lat: filterValue.lat,
-							lng: filterValue.lng
+							lat: matchValue.lat,
+							lng: matchValue.lng
 						},
-						filterValue.unit
-					) <= (filterValue.radius || 0)
+						matchValue.unit
+					) <= (matchValue.radius || 0)
 				);
 			}
 
@@ -665,11 +830,11 @@ class FilterCriteria {
 					this.calculateDistance(
 						value,
 						{
-							lat: filterValue.lat,
-							lng: filterValue.lng
+							lat: matchValue.lat,
+							lng: matchValue.lng
 						},
-						filterValue.unit
-					) > (filterValue.radius || 0)
+						matchValue.unit
+					) > (matchValue.radius || 0)
 				);
 			}
 
@@ -678,14 +843,14 @@ class FilterCriteria {
 		}
 	}
 
-	private static applyMapFilter(value: Map<any, any>, operator: FilterCriteria.Operators['map'], filterValue: any): boolean {
+	private static applyMapFilter(value: Map<any, any>, operator: FilterCriteria.Operators['map'], matchValue: any): boolean {
 		switch (operator) {
 			case 'HAS-KEY': {
-				return value.has(filterValue);
+				return value.has(matchValue);
 			}
 
 			case 'HAS-VALUE': {
-				return Array.from(value.values()).includes(filterValue);
+				return Array.from(value.values()).includes(matchValue);
 			}
 
 			case 'IS-EMPTY': {
@@ -697,23 +862,43 @@ class FilterCriteria {
 			}
 
 			case 'SIZE-EQUALS': {
-				return value.size === filterValue;
+				if (!_.isNumber(matchValue)) {
+					return false;
+				}
+
+				return value.size === matchValue;
 			}
 
 			case 'SIZE-GREATER': {
-				return value.size > filterValue;
+				if (!_.isNumber(matchValue)) {
+					return false;
+				}
+
+				return value.size > matchValue;
 			}
 
 			case 'SIZE-GREATER-OR-EQUALS': {
-				return value.size >= filterValue;
+				if (!_.isNumber(matchValue)) {
+					return false;
+				}
+
+				return value.size >= matchValue;
 			}
 
 			case 'SIZE-LESS': {
-				return value.size < filterValue;
+				if (!_.isNumber(matchValue)) {
+					return false;
+				}
+
+				return value.size < matchValue;
 			}
 
 			case 'SIZE-LESS-OR-EQUALS': {
-				return value.size <= filterValue;
+				if (!_.isNumber(matchValue)) {
+					return false;
+				}
+
+				return value.size <= matchValue;
 			}
 
 			default:
@@ -721,30 +906,36 @@ class FilterCriteria {
 		}
 	}
 
-	private static applyNumberFilter(value: number, operator: FilterCriteria.Operators['number'], filterValue: any): boolean {
+	private static applyNumberFilter(value: number, operator: FilterCriteria.Operators['number'], matchValue: any): boolean {
+		const isNumberArray = _.isArray(matchValue) && _.every(matchValue, _.isNumber);
+
+		if (!_.isNumber(value) && !isNumberArray) {
+			return false;
+		}
+
 		switch (operator) {
 			case 'EQUALS': {
-				return value === filterValue;
+				return value === matchValue;
 			}
 
 			case 'GREATER': {
-				return value > filterValue;
+				return value > matchValue;
 			}
 
 			case 'GREATER-OR-EQUALS': {
-				return value >= filterValue;
+				return value >= matchValue;
 			}
 
 			case 'LESS': {
-				return value < filterValue;
+				return value < matchValue;
 			}
 
 			case 'LESS-OR-EQUALS': {
-				return value <= filterValue;
+				return value <= matchValue;
 			}
 
 			case 'BETWEEN': {
-				const [min, max] = filterValue;
+				const [min, max] = matchValue;
 				return value >= min && value <= max;
 			}
 
@@ -753,22 +944,22 @@ class FilterCriteria {
 		}
 	}
 
-	private static applySetFilter(value: Set<any>, operator: FilterCriteria.Operators['set'], filterValue: any): boolean {
+	private static applySetFilter(value: Set<any>, operator: FilterCriteria.Operators['set'], matchValue: any): boolean {
 		switch (operator) {
 			case 'EXACTLY-MATCHES': {
-				return this.applyArrayFilter(Array.from(value), 'EXACTLY-MATCHES', filterValue);
+				return this.applyArrayFilter(Array.from(value), 'EXACTLY-MATCHES', matchValue);
 			}
 
 			case 'HAS': {
-				return value.has(filterValue);
+				return value.has(matchValue);
 			}
 
 			case 'INCLUDES-ALL': {
-				return this.applyArrayFilter(Array.from(value), 'INCLUDES-ALL', filterValue);
+				return this.applyArrayFilter(Array.from(value), 'INCLUDES-ALL', matchValue);
 			}
 
 			case 'INCLUDES-ANY': {
-				return this.applyArrayFilter(Array.from(value), 'INCLUDES-ANY', filterValue);
+				return this.applyArrayFilter(Array.from(value), 'INCLUDES-ANY', matchValue);
 			}
 
 			case 'IS-EMPTY': {
@@ -780,31 +971,51 @@ class FilterCriteria {
 			}
 
 			case 'NOT-INCLUDES-ALL': {
-				return this.applyArrayFilter(Array.from(value), 'NOT-INCLUDES-ALL', filterValue);
+				return this.applyArrayFilter(Array.from(value), 'NOT-INCLUDES-ALL', matchValue);
 			}
 
 			case 'NOT-INCLUDES-ANY': {
-				return this.applyArrayFilter(Array.from(value), 'NOT-INCLUDES-ANY', filterValue);
+				return this.applyArrayFilter(Array.from(value), 'NOT-INCLUDES-ANY', matchValue);
 			}
 
 			case 'SIZE-EQUALS': {
-				return value.size === filterValue;
+				if (!_.isNumber(matchValue)) {
+					return false;
+				}
+
+				return value.size === matchValue;
 			}
 
 			case 'SIZE-GREATER': {
-				return value.size > filterValue;
+				if (!_.isNumber(matchValue)) {
+					return false;
+				}
+
+				return value.size > matchValue;
 			}
 
 			case 'SIZE-GREATER-OR-EQUALS': {
-				return value.size >= filterValue;
+				if (!_.isNumber(matchValue)) {
+					return false;
+				}
+
+				return value.size >= matchValue;
 			}
 
 			case 'SIZE-LESS': {
-				return value.size < filterValue;
+				if (!_.isNumber(matchValue)) {
+					return false;
+				}
+
+				return value.size < matchValue;
 			}
 
 			case 'SIZE-LESS-OR-EQUALS': {
-				return value.size <= filterValue;
+				if (!_.isNumber(matchValue)) {
+					return false;
+				}
+
+				return value.size <= matchValue;
 			}
 
 			default:
@@ -812,18 +1023,22 @@ class FilterCriteria {
 		}
 	}
 
-	private static applyStringFilter(value: string, operator: FilterCriteria.Operators['string'], filterValue: any): boolean {
+	private static applyStringFilter(value: string, operator: FilterCriteria.Operators['string'], matchValue: any): boolean {
+		if (!_.isString(value) && !_.isRegExp(matchValue)) {
+			return false;
+		}
+
 		switch (operator) {
 			case 'CONTAINS': {
-				return _.includes(value, filterValue);
+				return _.includes(value, matchValue);
 			}
 
 			case 'EQUALS': {
-				return value === filterValue;
+				return value === matchValue;
 			}
 
 			case 'ENDS-WITH': {
-				return _.endsWith(value, filterValue);
+				return _.endsWith(value, matchValue);
 			}
 
 			case 'IS-EMPTY': {
@@ -831,11 +1046,11 @@ class FilterCriteria {
 			}
 
 			case 'MATCHES-REGEX': {
-				return new RegExp(filterValue).test(value);
+				return new RegExp(matchValue).test(value);
 			}
 
 			case 'STARTS-WITH': {
-				return _.startsWith(value, filterValue);
+				return _.startsWith(value, matchValue);
 			}
 
 			default:
@@ -860,50 +1075,50 @@ class FilterCriteria {
 		return R * c;
 	}
 
-	private static convertToFilterInput(input: FilterCriteria.MatchInput): {
-		input: FilterCriteria.FilterInput;
-		level: 'filter' | 'rule' | 'criteria';
+	private static convertToFilterGroupInput(input: FilterCriteria.MatchInput): {
+		input: FilterCriteria.FilterGroupInput;
+		level: 'filter-group' | 'filter' | 'criteria';
 	} {
 		let result: {
-			input: FilterCriteria.FilterInput;
-			level: 'filter' | 'rule' | 'criteria';
+			input: FilterCriteria.FilterGroupInput;
+			level: 'filter-group' | 'filter' | 'criteria';
 		};
 
 		if ('type' in input) {
 			// Handle CriteriaInput
 			result = {
 				input: {
-					operator: 'AND',
-					rules: [
+					filters: [
 						{
 							operator: 'AND',
 							criteria: [input]
 						}
-					]
+					],
+					operator: 'AND'
 				},
 				level: 'criteria'
 			};
 		} else if ('criteria' in input) {
-			// Handle RuleInput
-			result = {
-				input: {
-					operator: 'AND',
-					rules: [input]
-				},
-				level: 'rule'
-			};
-		} else {
 			// Handle FilterInput
 			result = {
-				input,
+				input: {
+					filters: [input],
+					operator: 'AND'
+				},
 				level: 'filter'
+			};
+		} else {
+			// Handle FilterGroupInput
+			result = {
+				input,
+				level: 'filter-group'
 			};
 		}
 
 		return result;
 	}
 
-	private static normalize = _.memoize((value: any): any => {
+	static normalize = _.memoize((value: any): any => {
 		if (_.isArray(value)) {
 			return _.map(value, v => {
 				return this.normalize(v);
@@ -951,12 +1166,16 @@ class FilterCriteria {
 		return value;
 	});
 
-	static registerCustomCriteria(name: string, fn: FilterCriteria.CriteriaCustomFunction): void {
-		this.customCriteria.set(name, fn);
+	static saveCriteria(key: string, criteria: FilterCriteria.Criteria): void {
+		if (criteria.type === 'CRITERIA') {
+			throw new Error('Cannot save criteria with type "CRITERIA"');
+		}
+
+		this.savedCriteria.set(key, criteria);
 	}
 
-	static unregisterCustomCriteria(name: string): void {
-		this.customCriteria.delete(name);
+	static deleteSavedCriteria(key: string): void {
+		this.savedCriteria.delete(key);
 	}
 
 	private static toRad(value: number): number {
