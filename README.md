@@ -430,7 +430,7 @@ const nestedResult = await FilterCriteria.match(users[0], nestedFilter, true);
 - `INCLUDES-ALL`: Array contains ALL filter values
 - `INCLUDES-ANY`: Array contains AT LEAST ONE filter value
 - `IS-EMPTY`: Array is empty
-- `IS-NOT-EMPTY`: Array is not empty
+- `NOT-EMPTY`: Array is not empty
 - `NOT-INCLUDES-ALL`: Array is missing AT LEAST ONE filter value
 - `NOT-INCLUDES-ANY`: Array contains NONE of the filter values
 - `SIZE-EQUALS`: Array size equals the filter value
@@ -462,7 +462,7 @@ const nestedResult = await FilterCriteria.match(users[0], nestedFilter, true);
 - `HAS-KEY`: Map contains the specified key
 - `HAS-VALUE`: Map contains the specified value
 - `IS-EMPTY`: Map is empty
-- `IS-NOT-EMPTY`: Map is not empty
+- `NOT-EMPTY`: Map is not empty
 - `SIZE-EQUALS`: Map size equals the filter value
 - `SIZE-GREATER`: Map size is greater than the filter value
 - `SIZE-GREATER-OR-EQUALS`: Map size is greater than or equal to the filter value
@@ -485,7 +485,7 @@ const nestedResult = await FilterCriteria.match(users[0], nestedFilter, true);
 - `INCLUDES-ALL`: Set contains ALL filter values
 - `INCLUDES-ANY`: Set contains AT LEAST ONE filter value
 - `IS-EMPTY`: Set is empty
-- `IS-NOT-EMPTY`: Set is not empty
+- `NOT-EMPTY`: Set is not empty
 - `NOT-INCLUDES-ALL`: Set is missing AT LEAST ONE filter value
 - `NOT-INCLUDES-ANY`: Set contains NONE of the filter values
 - `SIZE-EQUALS`: Set size equals the filter value

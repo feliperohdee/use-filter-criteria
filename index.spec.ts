@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi, Mock } from 'vitest';
 
 import FilterCriteria from './index';
 
@@ -235,7 +235,7 @@ describe('/index', () => {
 							criteria: [
 								{
 									matchValue: true,
-									operator: 'IS-EQUAL',
+									operator: 'EQUALS',
 									type: 'BOOLEAN',
 									valuePath: ['active']
 								}
@@ -275,7 +275,7 @@ describe('/index', () => {
 							criteria: [
 								{
 									matchValue: true,
-									operator: 'IS-EQUAL',
+									operator: 'EQUALS',
 									type: 'BOOLEAN',
 									valuePath: ['active']
 								}
@@ -412,7 +412,7 @@ describe('/index', () => {
 
 		it('should handle empty valuePath', async () => {
 			const criteria = FilterCriteria.criteria({
-				operator: 'IS-NOT-UNDEFINED',
+				operator: 'NOT-UNDEFINED',
 				type: 'BOOLEAN',
 				valuePath: []
 			});
@@ -428,7 +428,7 @@ describe('/index', () => {
 			expect(res[1]).toEqual({
 				matchValue: 'null',
 				passed: true,
-				reason: 'Boolean criteria "IS-NOT-UNDEFINED" check PASSED',
+				reason: 'Boolean criteria "NOT-UNDEFINED" check PASSED',
 				value: testData[0]
 			});
 		});
@@ -439,7 +439,7 @@ describe('/index', () => {
 			});
 
 			const criteria = FilterCriteria.criteria({
-				operator: 'IS-NOT-UNDEFINED',
+				operator: 'NOT-UNDEFINED',
 				type: 'BOOLEAN',
 				valuePath: [],
 				valueTransformer
@@ -458,7 +458,7 @@ describe('/index', () => {
 			expect(res[1]).toEqual({
 				matchValue: 'null',
 				passed: true,
-				reason: 'Boolean criteria "IS-NOT-UNDEFINED" check PASSED',
+				reason: 'Boolean criteria "NOT-UNDEFINED" check PASSED',
 				value: 'John Doe'
 			});
 		});
@@ -490,6 +490,19 @@ describe('/index', () => {
 		});
 
 		describe('array', () => {
+			it('should handle invalid valuePath', async () => {
+				// @ts-expect-error
+				const criteria = FilterCriteria.criteria({
+					type: 'ARRAY',
+					valuePath: ['age']
+				});
+
+				// @ts-expect-error
+				const res = await FilterCriteria.applyCriteria(testData[0], criteria);
+
+				expect(res).toEqual(false);
+			});
+
 			it('should handle EXACTLY-MATCHES operator with normalize = true', async () => {
 				const criteria = FilterCriteria.criteria({
 					matchValue: ['Develóper', 'JavaScript'],
@@ -571,6 +584,30 @@ describe('/index', () => {
 				});
 			});
 
+			it('should handle HAS operator', async () => {
+				const criteria = FilterCriteria.criteria({
+					matchValue: 'developer',
+					operator: 'HAS',
+					type: 'ARRAY',
+					valuePath: ['tags']
+				});
+
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					matchValue: 'developer',
+					passed: true,
+					reason: 'Array criteria "HAS" check PASSED',
+					value: ['developer', 'javascript']
+				});
+			});
+
 			it('should handle INCLUDES-ALL operator', async () => {
 				const criteria = FilterCriteria.criteria({
 					matchValue: ['developer', 'javascript'],
@@ -597,7 +634,7 @@ describe('/index', () => {
 
 			it('should handle INCLUDES-ANY operator', async () => {
 				const criteria = FilterCriteria.criteria({
-					matchValue: ['developer', 'javascript'],
+					matchValue: ['developer', 'inexistent'],
 					operator: 'INCLUDES-ANY',
 					type: 'ARRAY',
 					valuePath: ['tags']
@@ -612,9 +649,33 @@ describe('/index', () => {
 
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
-					matchValue: JSON.stringify(['developer', 'javascript']),
+					matchValue: JSON.stringify(['developer', 'inexistent']),
 					passed: true,
 					reason: 'Array criteria "INCLUDES-ANY" check PASSED',
+					value: ['developer', 'javascript']
+				});
+			});
+
+			it('should handle HAS operator', async () => {
+				const criteria = FilterCriteria.criteria({
+					matchValue: 'developer',
+					operator: 'HAS',
+					type: 'ARRAY',
+					valuePath: ['tags']
+				});
+
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					matchValue: 'developer',
+					passed: true,
+					reason: 'Array criteria "HAS" check PASSED',
 					value: ['developer', 'javascript']
 				});
 			});
@@ -642,9 +703,9 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle IS-NOT-EMPTY operator', async () => {
+			it('should handle NOT-EMPTY operator', async () => {
 				const criteria = FilterCriteria.criteria({
-					operator: 'IS-NOT-EMPTY',
+					operator: 'NOT-EMPTY',
 					type: 'ARRAY',
 					valuePath: ['tags']
 				});
@@ -660,7 +721,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: 'null',
 					passed: true,
-					reason: 'Array criteria "IS-NOT-EMPTY" check PASSED',
+					reason: 'Array criteria "NOT-EMPTY" check PASSED',
 					value: ['developer', 'javascript']
 				});
 			});
@@ -691,7 +752,7 @@ describe('/index', () => {
 
 			it('should handle NOT-INCLUDES-ANY operator', async () => {
 				const criteria = FilterCriteria.criteria({
-					matchValue: ['developer', 'javascript'],
+					matchValue: ['developer', 'inexistent'],
 					operator: 'NOT-INCLUDES-ANY',
 					type: 'ARRAY',
 					valuePath: ['tags']
@@ -706,7 +767,7 @@ describe('/index', () => {
 
 				expect(res[0]).toEqual(false);
 				expect(res[1]).toEqual({
-					matchValue: JSON.stringify(['developer', 'javascript']),
+					matchValue: JSON.stringify(['developer', 'inexistent']),
 					passed: false,
 					reason: 'Array criteria "NOT-INCLUDES-ANY" check FAILED',
 					value: ['developer', 'javascript']
@@ -835,10 +896,10 @@ describe('/index', () => {
 		});
 
 		describe('boolean', () => {
-			it('should handle IS-EQUAL operator', async () => {
+			it('should handle EQUALS operator', async () => {
 				const criteria = FilterCriteria.criteria({
 					matchValue: { a: 1 },
-					operator: 'IS-EQUAL',
+					operator: 'EQUALS',
 					type: 'BOOLEAN',
 					valuePath: ['obj']
 				});
@@ -854,7 +915,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: JSON.stringify({ a: 1 }),
 					passed: true,
-					reason: 'Boolean criteria "IS-EQUAL" check PASSED',
+					reason: 'Boolean criteria "EQUALS" check PASSED',
 					value: { a: 1 }
 				});
 			});
@@ -929,99 +990,6 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle IS-NOT-EQUAL operator', async () => {
-				const criteria = FilterCriteria.criteria({
-					matchValue: { a: 1 },
-					operator: 'IS-NOT-EQUAL',
-					type: 'BOOLEAN',
-					valuePath: ['obj']
-				});
-
-				const res = await Promise.all([
-					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
-
-				expect(res[0]).toEqual(false);
-				expect(res[1]).toEqual({
-					matchValue: JSON.stringify({ a: 1 }),
-					passed: false,
-					reason: 'Boolean criteria "IS-NOT-EQUAL" check FAILED',
-					value: { a: 1 }
-				});
-			});
-
-			it('should handle IS-NOT-NIL operator', async () => {
-				const criteria = FilterCriteria.criteria({
-					operator: 'IS-NOT-NIL',
-					type: 'BOOLEAN',
-					valuePath: ['null']
-				});
-
-				const res = await Promise.all([
-					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
-
-				expect(res[0]).toEqual(false);
-				expect(res[1]).toEqual({
-					matchValue: 'null',
-					passed: false,
-					reason: 'Boolean criteria "IS-NOT-NIL" check FAILED',
-					value: null
-				});
-			});
-
-			it('should handle IS-NOT-NULL operator', async () => {
-				const criteria = FilterCriteria.criteria({
-					operator: 'IS-NOT-NULL',
-					type: 'BOOLEAN',
-					valuePath: ['null']
-				});
-
-				const res = await Promise.all([
-					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
-
-				expect(res[0]).toEqual(false);
-				expect(res[1]).toEqual({
-					matchValue: 'null',
-					passed: false,
-					reason: 'Boolean criteria "IS-NOT-NULL" check FAILED',
-					value: null
-				});
-			});
-
-			it('should handle IS-NOT-UNDEFINED operator', async () => {
-				const criteria = FilterCriteria.criteria({
-					operator: 'IS-NOT-UNDEFINED',
-					type: 'BOOLEAN',
-					valuePath: ['inexistent']
-				});
-
-				const res = await Promise.all([
-					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
-
-				expect(res[0]).toEqual(false);
-				expect(res[1]).toEqual({
-					matchValue: 'null',
-					passed: false,
-					reason: 'Boolean criteria "IS-NOT-UNDEFINED" check FAILED',
-					value: undefined
-				});
-			});
-
 			it('should handle IS-NULL operator', async () => {
 				const criteria = FilterCriteria.criteria({
 					operator: 'IS-NULL',
@@ -1042,54 +1010,6 @@ describe('/index', () => {
 					passed: true,
 					reason: 'Boolean criteria "IS-NULL" check PASSED',
 					value: null
-				});
-			});
-
-			it('should handle IS-STRICT-EQUAL operator', async () => {
-				const criteria = FilterCriteria.criteria({
-					matchValue: { a: 1 },
-					operator: 'IS-STRICT-EQUAL',
-					type: 'BOOLEAN',
-					valuePath: ['obj']
-				});
-
-				const res = await Promise.all([
-					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
-
-				expect(res[0]).toEqual(false);
-				expect(res[1]).toEqual({
-					matchValue: JSON.stringify({ a: 1 }),
-					passed: false,
-					reason: 'Boolean criteria "IS-STRICT-EQUAL" check FAILED',
-					value: { a: 1 }
-				});
-			});
-
-			it('should handle IS-STRICT-NOT-EQUAL operator', async () => {
-				const criteria = FilterCriteria.criteria({
-					matchValue: { a: 1 },
-					operator: 'IS-STRICT-NOT-EQUAL',
-					type: 'BOOLEAN',
-					valuePath: ['obj']
-				});
-
-				const res = await Promise.all([
-					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
-
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
-					matchValue: JSON.stringify({ a: 1 }),
-					passed: true,
-					reason: 'Boolean criteria "IS-STRICT-NOT-EQUAL" check PASSED',
-					value: { a: 1 }
 				});
 			});
 
@@ -1159,6 +1079,147 @@ describe('/index', () => {
 					passed: true,
 					reason: 'Boolean criteria "IS-UNDEFINED" check PASSED',
 					value: undefined
+				});
+			});
+
+			it('should handle NOT-EQUALS operator', async () => {
+				const criteria = FilterCriteria.criteria({
+					matchValue: { a: 1 },
+					operator: 'NOT-EQUALS',
+					type: 'BOOLEAN',
+					valuePath: ['obj']
+				});
+
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
+
+				expect(res[0]).toEqual(false);
+				expect(res[1]).toEqual({
+					matchValue: JSON.stringify({ a: 1 }),
+					passed: false,
+					reason: 'Boolean criteria "NOT-EQUALS" check FAILED',
+					value: { a: 1 }
+				});
+			});
+
+			it('should handle NOT-NIL operator', async () => {
+				const criteria = FilterCriteria.criteria({
+					operator: 'NOT-NIL',
+					type: 'BOOLEAN',
+					valuePath: ['null']
+				});
+
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
+
+				expect(res[0]).toEqual(false);
+				expect(res[1]).toEqual({
+					matchValue: 'null',
+					passed: false,
+					reason: 'Boolean criteria "NOT-NIL" check FAILED',
+					value: null
+				});
+			});
+
+			it('should handle NOT-NULL operator', async () => {
+				const criteria = FilterCriteria.criteria({
+					operator: 'NOT-NULL',
+					type: 'BOOLEAN',
+					valuePath: ['null']
+				});
+
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
+
+				expect(res[0]).toEqual(false);
+				expect(res[1]).toEqual({
+					matchValue: 'null',
+					passed: false,
+					reason: 'Boolean criteria "NOT-NULL" check FAILED',
+					value: null
+				});
+			});
+
+			it('should handle NOT-UNDEFINED operator', async () => {
+				const criteria = FilterCriteria.criteria({
+					operator: 'NOT-UNDEFINED',
+					type: 'BOOLEAN',
+					valuePath: ['inexistent']
+				});
+
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
+
+				expect(res[0]).toEqual(false);
+				expect(res[1]).toEqual({
+					matchValue: 'null',
+					passed: false,
+					reason: 'Boolean criteria "NOT-UNDEFINED" check FAILED',
+					value: undefined
+				});
+			});
+
+			it('should handle STRICT-EQUAL operator', async () => {
+				const criteria = FilterCriteria.criteria({
+					matchValue: { a: 1 },
+					operator: 'STRICT-EQUAL',
+					type: 'BOOLEAN',
+					valuePath: ['obj']
+				});
+
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
+
+				expect(res[0]).toEqual(false);
+				expect(res[1]).toEqual({
+					matchValue: JSON.stringify({ a: 1 }),
+					passed: false,
+					reason: 'Boolean criteria "STRICT-EQUAL" check FAILED',
+					value: { a: 1 }
+				});
+			});
+
+			it('should handle STRICT-NOT-EQUAL operator', async () => {
+				const criteria = FilterCriteria.criteria({
+					matchValue: { a: 1 },
+					operator: 'STRICT-NOT-EQUAL',
+					type: 'BOOLEAN',
+					valuePath: ['obj']
+				});
+
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					matchValue: JSON.stringify({ a: 1 }),
+					passed: true,
+					reason: 'Boolean criteria "STRICT-NOT-EQUAL" check PASSED',
+					value: { a: 1 }
 				});
 			});
 		});
@@ -1257,7 +1318,7 @@ describe('/index', () => {
 		});
 
 		describe('criteria', () => {
-			let predicate;
+			let predicate: Mock;
 
 			beforeEach(() => {
 				predicate = vi.fn(async (value, matchValue) => {
@@ -1321,10 +1382,14 @@ describe('/index', () => {
 				const savedCriteria = FilterCriteria.savedCriteria.get('test');
 
 				// @ts-expect-error
-				expect(FilterCriteria.applyCriteria).toHaveBeenCalledWith(testData[0], {
-					...savedCriteria,
-					matchValue: 'JÓHN'
-				}, true);
+				expect(FilterCriteria.applyCriteria).toHaveBeenCalledWith(
+					testData[0],
+					{
+						...savedCriteria,
+						matchValue: 'JÓHN'
+					},
+					true
+				);
 				expect(predicate).toHaveBeenCalledWith(testData[0], 'JÓHN');
 
 				expect(res[0]).toEqual(true);
@@ -1336,7 +1401,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle with operator and valuePath', async () => {
+			it('should handle with [operator, normalize, valuePath]', async () => {
 				FilterCriteria.saveCriteria(
 					'test-string',
 					FilterCriteria.criteria({
@@ -1348,7 +1413,8 @@ describe('/index', () => {
 
 				const criteria = FilterCriteria.criteria({
 					key: 'test-string',
-					matchValue: 'JÓHN',
+					matchValue: 'John Doe',
+					normalize: false,
 					operator: 'EQUALS',
 					type: 'CRITERIA',
 					valuePath: ['name']
@@ -1368,7 +1434,8 @@ describe('/index', () => {
 					testData[0],
 					{
 						...savedCriteria,
-						matchValue: 'JÓHN',
+						matchValue: 'John Doe',
+						normalize: false,
 						operator: 'EQUALS',
 						valuePath: ['name']
 					},
@@ -1377,10 +1444,10 @@ describe('/index', () => {
 
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
-					matchValue: 'john',
+					matchValue: 'John Doe',
 					passed: true,
-					reason: 'String criteria "STARTS-WITH" check PASSED',
-					value: 'john-doe'
+					reason: 'String criteria "EQUALS" check PASSED',
+					value: 'John Doe'
 				});
 			});
 
@@ -1408,6 +1475,19 @@ describe('/index', () => {
 		});
 
 		describe('date', () => {
+			it('should handle invalid valuePath', async () => {
+				// @ts-expect-error
+				const criteria = FilterCriteria.criteria({
+					type: 'DATE',
+					valuePath: ['age']
+				});
+
+				// @ts-expect-error
+				const res = await FilterCriteria.applyCriteria(testData[0], criteria);
+
+				expect(res).toEqual(false);
+			});
+
 			it('should handle AFTER operator', async () => {
 				const criteria = FilterCriteria.criteria({
 					matchValue: '2023-01-01T00:00:00+00:01',
@@ -1524,6 +1604,19 @@ describe('/index', () => {
 		});
 
 		describe('geo', () => {
+			it('should handle invalid valuePath', async () => {
+				// @ts-expect-error
+				const criteria = FilterCriteria.criteria({
+					type: 'GEO',
+					valuePath: ['age']
+				});
+
+				// @ts-expect-error
+				const res = await FilterCriteria.applyCriteria(testData[0], criteria);
+
+				expect(res).toEqual(false);
+			});
+
 			it('should handle IN-RADIUS operator with km unit', async () => {
 				// From New York
 				const criteria = FilterCriteria.criteria({
@@ -1801,6 +1894,43 @@ describe('/index', () => {
 		});
 
 		describe('map', () => {
+			it('should handle invalid valuePath', async () => {
+				// @ts-expect-error
+				const criteria = FilterCriteria.criteria({
+					type: 'MAP',
+					valuePath: ['age']
+				});
+
+				// @ts-expect-error
+				const res = await FilterCriteria.applyCriteria(testData[0], criteria);
+
+				expect(res).toEqual(false);
+			});
+
+			it('should handle CONTAINS operator', async () => {
+				const criteria = FilterCriteria.criteria({
+					matchValue: { 'key-1': 'VALUE-1' },
+					operator: 'CONTAINS',
+					type: 'MAP',
+					valuePath: ['map']
+				});
+
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					matchValue: JSON.stringify({ 'key-1': 'value-1' }),
+					passed: true,
+					reason: 'Map criteria "CONTAINS" check PASSED',
+					value: new Map([['key-1', 'value-1']])
+				});
+			});
+
 			it('should handle HAS-KEY operator with normalize = true', async () => {
 				const criteria = FilterCriteria.criteria({
 					matchValue: 'KÉY-1',
@@ -1898,9 +2028,9 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle IS-NOT-EMPTY operator', async () => {
+			it('should handle NOT-EMPTY operator', async () => {
 				const criteria = FilterCriteria.criteria({
-					operator: 'IS-NOT-EMPTY',
+					operator: 'NOT-EMPTY',
 					type: 'MAP',
 					valuePath: ['map']
 				});
@@ -1916,7 +2046,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: 'null',
 					passed: true,
-					reason: 'Map criteria "IS-NOT-EMPTY" check PASSED',
+					reason: 'Map criteria "NOT-EMPTY" check PASSED',
 					value: new Map([['key-1', 'value-1']])
 				});
 			});
@@ -2043,6 +2173,19 @@ describe('/index', () => {
 		});
 
 		describe('number', () => {
+			it('should handle invalid valuePath', async () => {
+				// @ts-expect-error
+				const criteria = FilterCriteria.criteria({
+					type: 'NUMBER',
+					valuePath: ['name']
+				});
+
+				// @ts-expect-error
+				const res = await FilterCriteria.applyCriteria(testData[0], criteria);
+
+				expect(res).toEqual(false);
+			});
+
 			it('should handle BETWEEN operator', async () => {
 				const criteria = FilterCriteria.criteria({
 					matchValue: [25, 30],
@@ -2139,6 +2282,30 @@ describe('/index', () => {
 				});
 			});
 
+			it('should handle IN operator', async () => {
+				const criteria = FilterCriteria.criteria({
+					matchValue: [15, 25, 30],
+					operator: 'IN',
+					type: 'NUMBER',
+					valuePath: ['age']
+				});
+
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					matchValue: JSON.stringify([15, 25, 30]),
+					passed: true,
+					reason: 'Number criteria "IN" check PASSED',
+					value: 25
+				});
+			});
+
 			it('should handle LESS operator', async () => {
 				const criteria = FilterCriteria.criteria({
 					matchValue: 30,
@@ -2186,9 +2353,325 @@ describe('/index', () => {
 					value: 25
 				});
 			});
+
+			it('should handle NOT-EQUALS operator', async () => {
+				const criteria = FilterCriteria.criteria({
+					matchValue: 30,
+					operator: 'NOT-EQUALS',
+					type: 'NUMBER',
+					valuePath: ['age']
+				});
+
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					matchValue: '30',
+					passed: true,
+					reason: 'Number criteria "NOT-EQUALS" check PASSED',
+					value: 25
+				});
+			});
+		});
+
+		describe('object', () => {
+			it('should handle invalid valuePath', async () => {
+				// @ts-expect-error
+				const criteria = FilterCriteria.criteria({
+					type: 'OBJECT',
+					valuePath: ['age']
+				});
+
+				// @ts-expect-error
+				const res = await FilterCriteria.applyCriteria(testData[0], criteria);
+
+				expect(res).toEqual(false);
+			});
+
+			it('should handle CONTAINS operator', async () => {
+				const criteria = FilterCriteria.criteria({
+					matchValue: { a: 1 },
+					operator: 'CONTAINS',
+					type: 'OBJECT',
+					valuePath: ['obj']
+				});
+
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					matchValue: JSON.stringify({ a: 1 }),
+					passed: true,
+					reason: 'Object criteria "CONTAINS" check PASSED',
+					value: { a: 1 }
+				});
+			});
+
+			it('should handle HAS-KEY operator with normalize = true', async () => {
+				const criteria = FilterCriteria.criteria({
+					matchValue: 'A',
+					normalize: true,
+					operator: 'HAS-KEY',
+					type: 'OBJECT',
+					valuePath: ['obj']
+				});
+
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					matchValue: 'a',
+					passed: true,
+					reason: 'Object criteria "HAS-KEY" check PASSED',
+					value: { a: 1 }
+				});
+			});
+
+			it('should handle HAS-KEY operator with normalize = false', async () => {
+				const criteria = FilterCriteria.criteria({
+					matchValue: 'KÉY-1',
+					normalize: false,
+					operator: 'HAS-KEY',
+					type: 'OBJECT',
+					valuePath: ['obj']
+				});
+
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
+
+				expect(res[0]).toEqual(false);
+				expect(res[1]).toEqual({
+					matchValue: 'KÉY-1',
+					passed: false,
+					reason: 'Object criteria "HAS-KEY" check FAILED',
+					value: { a: 1 }
+				});
+			});
+
+			it('should handle HAS-VALUE operator', async () => {
+				const criteria = FilterCriteria.criteria({
+					matchValue: 1,
+					operator: 'HAS-VALUE',
+					type: 'OBJECT',
+					valuePath: ['obj']
+				});
+
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					matchValue: '1',
+					passed: true,
+					reason: 'Object criteria "HAS-VALUE" check PASSED',
+					value: { a: 1 }
+				});
+			});
+
+			it('should handle IS-EMPTY operator', async () => {
+				const criteria = FilterCriteria.criteria({
+					operator: 'IS-EMPTY',
+					type: 'OBJECT',
+					valuePath: ['obj']
+				});
+
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
+
+				expect(res[0]).toEqual(false);
+				expect(res[1]).toEqual({
+					matchValue: 'null',
+					passed: false,
+					reason: 'Object criteria "IS-EMPTY" check FAILED',
+					value: { a: 1 }
+				});
+			});
+
+			it('should handle NOT-EMPTY operator', async () => {
+				const criteria = FilterCriteria.criteria({
+					operator: 'NOT-EMPTY',
+					type: 'OBJECT',
+					valuePath: ['obj']
+				});
+
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					matchValue: 'null',
+					passed: true,
+					reason: 'Object criteria "NOT-EMPTY" check PASSED',
+					value: { a: 1 }
+				});
+			});
+
+			it('should handle SIZE-EQUALS operator', async () => {
+				const criteria = FilterCriteria.criteria({
+					matchValue: 1,
+					operator: 'SIZE-EQUALS',
+					type: 'OBJECT',
+					valuePath: ['obj']
+				});
+
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					matchValue: '1',
+					passed: true,
+					reason: 'Object criteria "SIZE-EQUALS" check PASSED',
+					value: { a: 1 }
+				});
+			});
+
+			it('should handle SIZE-GREATER operator', async () => {
+				const criteria = FilterCriteria.criteria({
+					matchValue: 0,
+					operator: 'SIZE-GREATER',
+					type: 'OBJECT',
+					valuePath: ['obj']
+				});
+
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					matchValue: '0',
+					passed: true,
+					reason: 'Object criteria "SIZE-GREATER" check PASSED',
+					value: { a: 1 }
+				});
+			});
+
+			it('should handle SIZE-GREATER-OR-EQUALS operator', async () => {
+				const criteria = FilterCriteria.criteria({
+					matchValue: 1,
+					operator: 'SIZE-GREATER-OR-EQUALS',
+					type: 'OBJECT',
+					valuePath: ['obj']
+				});
+
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					matchValue: '1',
+					passed: true,
+					reason: 'Object criteria "SIZE-GREATER-OR-EQUALS" check PASSED',
+					value: { a: 1 }
+				});
+			});
+
+			it('should handle SIZE-LESS operator', async () => {
+				const criteria = FilterCriteria.criteria({
+					matchValue: 2,
+					operator: 'SIZE-LESS',
+					type: 'OBJECT',
+					valuePath: ['obj']
+				});
+
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					matchValue: '2',
+					passed: true,
+					reason: 'Object criteria "SIZE-LESS" check PASSED',
+					value: { a: 1 }
+				});
+			});
+
+			it('should handle SIZE-LESS-OR-EQUALS operator', async () => {
+				const criteria = FilterCriteria.criteria({
+					matchValue: 1,
+					operator: 'SIZE-LESS-OR-EQUALS',
+					type: 'OBJECT',
+					valuePath: ['obj']
+				});
+
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					matchValue: '1',
+					passed: true,
+					reason: 'Object criteria "SIZE-LESS-OR-EQUALS" check PASSED',
+					value: { a: 1 }
+				});
+			});
 		});
 
 		describe('set', () => {
+			it('should handle invalid valuePath', async () => {
+				// @ts-expect-error
+				const criteria = FilterCriteria.criteria({
+					type: 'SET',
+					valuePath: ['age']
+				});
+
+				// @ts-expect-error
+				const res = await FilterCriteria.applyCriteria(testData[0], criteria);
+
+				expect(res).toEqual(false);
+			});
+
 			it('should handle EXACTLY-MATCHES operator with normalize = true', async () => {
 				const criteria = FilterCriteria.criteria({
 					matchValue: ['developer', 'javascript'],
@@ -2334,9 +2817,9 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle IS-NOT-EMPTY operator', async () => {
+			it('should handle NOT-EMPTY operator', async () => {
 				const criteria = FilterCriteria.criteria({
-					operator: 'IS-NOT-EMPTY',
+					operator: 'NOT-EMPTY',
 					type: 'SET',
 					valuePath: ['tagsSet']
 				});
@@ -2352,7 +2835,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: 'null',
 					passed: true,
-					reason: 'Set criteria "IS-NOT-EMPTY" check PASSED',
+					reason: 'Set criteria "NOT-EMPTY" check PASSED',
 					value: new Set(['developer', 'javascript'])
 				});
 			});
@@ -2527,6 +3010,19 @@ describe('/index', () => {
 		});
 
 		describe('string', () => {
+			it('should handle invalid valuePath', async () => {
+				// @ts-expect-error
+				const criteria = FilterCriteria.criteria({
+					type: 'STRING',
+					valuePath: ['age']
+				});
+
+				// @ts-expect-error
+				const res = await FilterCriteria.applyCriteria(testData[0], criteria);
+
+				expect(res).toEqual(false);
+			});
+
 			it('should handle CONTAINS operator with normalize = true', async () => {
 				const criteria = FilterCriteria.criteria({
 					matchValue: 'doe',
@@ -2652,6 +3148,31 @@ describe('/index', () => {
 					matchValue: 'john-doe',
 					passed: true,
 					reason: 'String criteria "EQUALS" check PASSED',
+					value: 'john-doe'
+				});
+			});
+
+			it('should handle IN operator', async () => {
+				const criteria = FilterCriteria.criteria({
+					matchValue: ['DOE', 'JOHN DOE', 'JOHN'],
+					operator: 'IN',
+					normalize: true,
+					type: 'STRING',
+					valuePath: ['name']
+				});
+
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					matchValue: JSON.stringify(['doe', 'john-doe', 'john']),
+					passed: true,
+					reason: 'String criteria "IN" check PASSED',
 					value: 'john-doe'
 				});
 			});
@@ -2925,6 +3446,92 @@ describe('/index', () => {
 			expect(FilterCriteria.normalizeString('Develóper')).toEqual('developer');
 			// @ts-expect-error
 			expect(FilterCriteria.normalizeString('Devel  óper')).toEqual('devel-oper');
+		});
+	});
+
+	describe('objectContaining', () => {
+		it('should return false for null or undefined values', () => {
+			expect(FilterCriteria.objectContaining(null, {})).toBe(false);
+			expect(FilterCriteria.objectContaining(undefined, {})).toBe(false);
+			expect(FilterCriteria.objectContaining({}, null)).toBe(false);
+			expect(FilterCriteria.objectContaining({}, undefined)).toBe(false);
+		});
+
+		it('should compare strings', () => {
+			expect(FilterCriteria.objectContaining('hello', 'hello')).toBe(true);
+			expect(FilterCriteria.objectContaining('Hello', 'hello')).toBe(false);
+			expect(FilterCriteria.objectContaining('hello', 'Hello')).toBe(false);
+		});
+
+		it('should compare primitive values directly', () => {
+			expect(FilterCriteria.objectContaining(42, 42)).toBe(true);
+			expect(FilterCriteria.objectContaining(42, 43)).toBe(false);
+			expect(FilterCriteria.objectContaining(true, true)).toBe(true);
+			expect(FilterCriteria.objectContaining(true, false)).toBe(false);
+		});
+
+		it('should handle array comparisons', () => {
+			expect(FilterCriteria.objectContaining([1, 2, 3], [1, 2])).toBe(true);
+			expect(FilterCriteria.objectContaining([1, 2], [1, 2, 3])).toBe(false);
+			expect(FilterCriteria.objectContaining([{ a: 1 }, { b: 2 }], [{ a: 1 }])).toBe(true);
+			expect(FilterCriteria.objectContaining([1, 2, 3], [4, 5])).toBe(false);
+		});
+
+		it('should handle nested array comparisons', () => {
+			expect(
+				FilterCriteria.objectContaining(
+					[
+						[1, 2],
+						[3, 4]
+					],
+					[[1, 2]]
+				)
+			).toBe(true);
+			expect(
+				FilterCriteria.objectContaining(
+					[[1, 2]],
+					[
+						[1, 2],
+						[3, 4]
+					]
+				)
+			).toBe(false);
+			expect(FilterCriteria.objectContaining([[{ a: 1 }]], [[{ a: 1 }]])).toBe(true);
+		});
+
+		it('should handle object comparisons', () => {
+			expect(FilterCriteria.objectContaining({ a: 1, b: 2 }, { a: 1 })).toBe(true);
+			expect(FilterCriteria.objectContaining({ a: 1 }, { a: 1, b: 2 })).toBe(false);
+			expect(FilterCriteria.objectContaining({ a: { b: 2 } }, { a: { b: 2 } })).toBe(true);
+		});
+
+		it('should handle mixed nested structures', () => {
+			const obj = {
+				a: 1,
+				b: [1, 2, { c: 3 }],
+				d: { e: [4, 5] }
+			};
+
+			expect(FilterCriteria.objectContaining(obj, { b: [{ c: 3 }] })).toBe(true);
+			expect(FilterCriteria.objectContaining(obj, { d: { e: [4] } })).toBe(true);
+			expect(FilterCriteria.objectContaining(obj, { b: [{ c: 4 }] })).toBe(false);
+		});
+
+		it('should handle string comparisons in nested structures with normalize = true', () => {
+			const obj = {
+				name: 'John',
+				details: [{ city: 'New York' }, { city: 'London' }]
+			};
+
+			expect(FilterCriteria.objectContaining(obj, { details: [{ city: 'New York' }] })).toBe(true);
+			expect(FilterCriteria.objectContaining(obj, { details: [{ city: 'Caple Town' }] })).toBe(false);
+		});
+
+		it('should handle edge cases', () => {
+			expect(FilterCriteria.objectContaining({}, {})).toBe(true);
+			expect(FilterCriteria.objectContaining([], [])).toBe(true);
+			expect(FilterCriteria.objectContaining({ a: [] }, { a: [] })).toBe(true);
+			expect(FilterCriteria.objectContaining({ a: {} }, { a: {} })).toBe(true);
 		});
 	});
 

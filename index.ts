@@ -2,20 +2,7 @@ import _ from 'lodash';
 import z from 'zod';
 import zDefault from 'zod-default-instance';
 
-const operatorArrayOrSet: [string, ...string[]] = [
-	'EXACTLY-MATCHES',
-	'INCLUDES-ALL',
-	'INCLUDES-ANY',
-	'IS-EMPTY',
-	'IS-NOT-EMPTY',
-	'NOT-INCLUDES-ALL',
-	'NOT-INCLUDES-ANY',
-	'SIZE-EQUALS',
-	'SIZE-GREATER',
-	'SIZE-GREATER-OR-EQUALS',
-	'SIZE-LESS',
-	'SIZE-LESS-OR-EQUALS'
-];
+import { isNumberArray, isStringArray, objectContainKeys, stringify } from './util';
 
 const criteriaCustomPredicate = z
 	.function()
@@ -34,52 +21,89 @@ const matchValueGetter = <T extends z.ZodSchema>(schema: T) => {
 };
 
 const normalize = z.union([z.boolean(), fn]).default(true);
-const operator = {
-	array: z.enum(operatorArrayOrSet),
-	boolean: z.enum([
-		// CHANGE ME
-		'EQUALS',
-		'IS-FALSE',
-		'IS-FALSY',
-		'IS-NIL',
-		'NOT-EQUALS',
-		'NOT-NIL',
-		'NOT-NULL',
-		'NOT-UNDEFINED',
-		'IS-NULL',
-		'STRICT-EQUAL',
-		'STRICT-NOT-EQUAL',
-		'IS-TRUE',
-		'IS-TRUTHY',
-		'IS-UNDEFINED'
-	]),
-	date: z.enum(['AFTER', 'AFTER-OR-EQUALS', 'BEFORE', 'BEFORE-OR-EQUALS', 'BETWEEN']),
-	geo: z.enum(['IN-RADIUS', 'NOT-IN-RADIUS']),
-	map: z.enum([
-		'HAS-KEY',
-		'HAS-VALUE',
+const operators = {
+	array: z.enum([
+		'EXACTLY-MATCHES',
+		'INCLUDES-ALL',
+		'INCLUDES-ANY',
+		'HAS',
 		'IS-EMPTY',
-		'IS-NOT-EMPTY',
+		'NOT-EMPTY',
+		'NOT-INCLUDES-ALL',
+		'NOT-INCLUDES-ANY',
 		'SIZE-EQUALS',
 		'SIZE-GREATER',
 		'SIZE-GREATER-OR-EQUALS',
 		'SIZE-LESS',
 		'SIZE-LESS-OR-EQUALS'
 	]),
-	number: z.enum(['BETWEEN', 'EQUALS', 'GREATER', 'GREATER-OR-EQUALS', 'LESS', 'LESS-OR-EQUALS']),
-	// TODO: object: z.enum(['CONTAINS', 'NOT-CONTAINS']),
-	set: z.enum([...operatorArrayOrSet, 'HAS']),
-	string: z.enum(['CONTAINS', 'ENDS-WITH', 'EQUALS', 'IS-EMPTY', 'MATCHES-REGEX', 'STARTS-WITH'])
+	boolean: z.enum([
+		'EQUALS',
+		'IS-FALSE',
+		'IS-FALSY',
+		'IS-NIL',
+		'IS-NULL',
+		'IS-TRUE',
+		'IS-TRUTHY',
+		'IS-UNDEFINED',
+		'NOT-EQUALS',
+		'NOT-NIL',
+		'NOT-NULL',
+		'NOT-UNDEFINED',
+		'STRICT-EQUAL',
+		'STRICT-NOT-EQUAL'
+	]),
+	date: z.enum(['AFTER', 'AFTER-OR-EQUALS', 'BEFORE', 'BEFORE-OR-EQUALS', 'BETWEEN']),
+	geo: z.enum(['IN-RADIUS', 'NOT-IN-RADIUS']),
+	map: z.enum([
+		'CONTAINS',
+		'HAS-KEY',
+		'HAS-VALUE',
+		'IS-EMPTY',
+		'NOT-EMPTY',
+		'SIZE-EQUALS',
+		'SIZE-GREATER',
+		'SIZE-GREATER-OR-EQUALS',
+		'SIZE-LESS',
+		'SIZE-LESS-OR-EQUALS'
+	]),
+	number: z.enum(['BETWEEN', 'EQUALS', 'GREATER', 'GREATER-OR-EQUALS', 'IN', 'LESS', 'LESS-OR-EQUALS', 'NOT-EQUALS']),
+	object: z.enum([
+		'CONTAINS',
+		'HAS-KEY',
+		'HAS-VALUE',
+		'IS-EMPTY',
+		'NOT-EMPTY',
+		'SIZE-EQUALS',
+		'SIZE-GREATER',
+		'SIZE-GREATER-OR-EQUALS',
+		'SIZE-LESS',
+		'SIZE-LESS-OR-EQUALS'
+	]),
+	set: z.enum([
+		'EXACTLY-MATCHES',
+		'INCLUDES-ALL',
+		'INCLUDES-ANY',
+		'HAS',
+		'IS-EMPTY',
+		'NOT-EMPTY',
+		'NOT-INCLUDES-ALL',
+		'NOT-INCLUDES-ANY',
+		'SIZE-EQUALS',
+		'SIZE-GREATER',
+		'SIZE-GREATER-OR-EQUALS',
+		'SIZE-LESS',
+		'SIZE-LESS-OR-EQUALS'
+	]),
+	string: z.enum(['CONTAINS', 'ENDS-WITH', 'EQUALS', 'IN', 'IS-EMPTY', 'MATCHES-REGEX', 'STARTS-WITH'])
 };
 
 const criteria = z.discriminatedUnion('type', [
 	z.object({
 		defaultValue: z.array(z.unknown()).default([]),
-		matchValue: matchValueGetter(z.union([z.array(z.unknown()), z.number()]))
-			.nullable()
-			.optional(),
+		matchValue: matchValueGetter(z.any()).nullable().optional(),
 		normalize,
-		operator: operator.array,
+		operator: operators.array,
 		type: z.literal('ARRAY'),
 		valuePath: z.array(z.string()),
 		valueTransformer: fn.nullable().optional()
@@ -87,7 +111,7 @@ const criteria = z.discriminatedUnion('type', [
 	z.object({
 		defaultValue: z.any().default(undefined),
 		matchValue: matchValueGetter(z.any()).nullable().optional(),
-		operator: operator.boolean,
+		operator: operators.boolean,
 		type: z.literal('BOOLEAN'),
 		valuePath: z.array(z.string()),
 		valueTransformer: fn.nullable().optional()
@@ -98,9 +122,20 @@ const criteria = z.discriminatedUnion('type', [
 		type: z.literal('CUSTOM')
 	}),
 	z.object({
-		matchValue: z.unknown().default(null),
+		matchValue: z.any().default(null),
+		normalize: normalize.nullable().optional(),
 		operator: z
-			.union([operator.array, operator.boolean, operator.date, operator.geo, operator.map, operator.number, operator.set, operator.string])
+			.union([
+				operators.array,
+				operators.boolean,
+				operators.date,
+				operators.geo,
+				operators.map,
+				operators.number,
+				operators.object,
+				operators.set,
+				operators.string
+			])
 			.nullable()
 			.optional(),
 		valuePath: z.array(z.string()).default([]),
@@ -108,14 +143,9 @@ const criteria = z.discriminatedUnion('type', [
 		type: z.literal('CRITERIA')
 	}),
 	z.object({
-		defaultValue: z
-			.string()
-			.datetime()
-			.default(() => {
-				return new Date().toISOString();
-			}),
+		defaultValue: z.string().default(''),
 		matchValue: matchValueGetter(z.union([datetime, z.tuple([datetime, datetime])])),
-		operator: operator.date,
+		operator: operators.date,
 		type: z.literal('DATE'),
 		valuePath: z.array(z.string()),
 		valueTransformer: fn.nullable().optional()
@@ -137,18 +167,16 @@ const criteria = z.discriminatedUnion('type', [
 				unit: z.enum(['km', 'mi']).optional()
 			})
 		),
-		operator: operator.geo,
+		operator: operators.geo,
 		type: z.literal('GEO'),
 		valuePath: z.array(z.string()),
 		valueTransformer: fn.nullable().optional()
 	}),
 	z.object({
 		defaultValue: z.map(z.unknown(), z.unknown()).default(new Map()),
-		matchValue: matchValueGetter(z.union([z.number(), z.string()]))
-			.nullable()
-			.optional(),
+		matchValue: matchValueGetter(z.any()).nullable().optional(),
 		normalize,
-		operator: operator.map,
+		operator: operators.map,
 		type: z.literal('MAP'),
 		valuePath: z.array(z.string()),
 		valueTransformer: fn.nullable().optional()
@@ -156,18 +184,27 @@ const criteria = z.discriminatedUnion('type', [
 	z.object({
 		defaultValue: z.number().default(0),
 		matchValue: matchValueGetter(z.union([z.number(), z.array(z.number())])),
-		operator: operator.number,
+		operator: operators.number,
 		type: z.literal('NUMBER'),
 		valuePath: z.array(z.string()),
 		valueTransformer: fn.nullable().optional()
 	}),
 	z.object({
+		defaultValue: z.record(z.unknown()).default({}),
+		matchValue: matchValueGetter(z.any()).nullable().optional(),
+		normalize,
+		operator: operators.object,
+		type: z.literal('OBJECT'),
+		valuePath: z.array(z.string()),
+		valueTransformer: fn.nullable().optional()
+	}),
+	z.object({
 		defaultValue: z.set(z.unknown()).default(new Set()),
-		matchValue: matchValueGetter(z.union([z.number(), z.string(), z.array(z.unknown())]))
+		matchValue: matchValueGetter(z.union([z.array(z.unknown()), z.number(), z.string()]))
 			.nullable()
 			.optional(),
 		normalize,
-		operator: operator.set,
+		operator: operators.set,
 		type: z.literal('SET'),
 		valuePath: z.array(z.string()),
 		valueTransformer: fn.nullable().optional()
@@ -178,7 +215,7 @@ const criteria = z.discriminatedUnion('type', [
 			.nullable()
 			.optional(),
 		normalize,
-		operator: operator.string,
+		operator: operators.string,
 		type: z.literal('STRING'),
 		valuePath: z.array(z.string()),
 		valueTransformer: fn.nullable().optional()
@@ -224,7 +261,7 @@ namespace FilterCriteria {
 	export type MatchDetailedResult = CriteriaResult | FilterResult | FilterGroupResult;
 
 	export type Operators = {
-		[K in keyof typeof operator]: z.infer<(typeof operator)[K]>;
+		[K in keyof typeof operators]: z.infer<(typeof operators)[K]>;
 	};
 
 	export type Filter = z.infer<typeof filter>;
@@ -256,14 +293,6 @@ const filterFactory = (input: FilterCriteria.FilterInput): FilterCriteria.Filter
 
 const filterGroupFactory = (input: FilterCriteria.FilterGroupInput): FilterCriteria.FilterGroup => {
 	return zDefault(filterGroup, input);
-};
-
-const stringify = (value: any) => {
-	if (_.isNumber(value) || _.isRegExp(value)) {
-		return _.toString(value);
-	}
-
-	return _.isString(value) ? value : JSON.stringify(value);
 };
 
 class FilterCriteria {
@@ -361,6 +390,10 @@ class FilterCriteria {
 				matchValue: criteria.matchValue || savedCriteria.matchValue
 			};
 
+			if (!_.isNil(criteria.normalize) && 'normalize' in newCriteria) {
+				newCriteria.normalize = criteria.normalize;
+			}
+
 			if (criteria.operator && 'operator' in newCriteria) {
 				newCriteria.operator = criteria.operator;
 			}
@@ -423,7 +456,7 @@ class FilterCriteria {
 
 		switch (criteria.type) {
 			case 'ARRAY': {
-				const passed = this.applyArrayFilter(value, criteria.operator, matchValue);
+				const passed = this.applyArrayCriteria(value, criteria.operator, matchValue);
 
 				if (detailed) {
 					return {
@@ -438,7 +471,7 @@ class FilterCriteria {
 			}
 
 			case 'BOOLEAN': {
-				const passed = this.applyBooleanFilter(value, criteria.operator, matchValue);
+				const passed = this.applyBooleanCriteria(value, criteria.operator, matchValue);
 
 				if (detailed) {
 					return {
@@ -453,7 +486,7 @@ class FilterCriteria {
 			}
 
 			case 'DATE': {
-				const passed = this.applyDateFilter(value, criteria.operator, matchValue);
+				const passed = this.applyDateCriteria(value, criteria.operator, matchValue);
 
 				if (detailed) {
 					return {
@@ -471,7 +504,7 @@ class FilterCriteria {
 				const [lat, lng] = criteria.getCoordinates
 					? [_.get(value, criteria.getCoordinates.lat, 0), _.get(value, criteria.getCoordinates.lng, 0)]
 					: [value.lat, value.lng];
-				const passed = this.applyGeoFilter({ lat, lng }, criteria.operator, matchValue);
+				const passed = this.applyGeoCriteria({ lat, lng }, criteria.operator, matchValue);
 
 				if (detailed) {
 					return {
@@ -486,7 +519,7 @@ class FilterCriteria {
 			}
 
 			case 'MAP': {
-				const passed = this.applyMapFilter(value, criteria.operator, matchValue);
+				const passed = this.applyMapCriteria(value, criteria.operator, matchValue);
 
 				if (detailed) {
 					return {
@@ -501,7 +534,7 @@ class FilterCriteria {
 			}
 
 			case 'NUMBER': {
-				const passed = this.applyNumberFilter(value, criteria.operator, matchValue);
+				const passed = this.applyNumberCriteria(value, criteria.operator, matchValue);
 
 				if (detailed) {
 					return {
@@ -515,8 +548,23 @@ class FilterCriteria {
 				return passed;
 			}
 
+			case 'OBJECT': {
+				const passed = this.applyObjectCriteria(value, criteria.operator, matchValue);
+
+				if (detailed) {
+					return {
+						matchValue: stringify(matchValue),
+						passed,
+						reason: `Object criteria "${criteria.operator}" check ${passed ? 'PASSED' : 'FAILED'}`,
+						value
+					};
+				}
+
+				return passed;
+			}
+
 			case 'SET': {
-				const passed = this.applySetFilter(value, criteria.operator, matchValue);
+				const passed = this.applySetCriteria(value, criteria.operator, matchValue);
 
 				if (detailed) {
 					return {
@@ -531,10 +579,7 @@ class FilterCriteria {
 			}
 
 			case 'STRING': {
-				console.log({
-					value, op: criteria.operator, matchValue
-				});
-				const passed = this.applyStringFilter(value, criteria.operator, matchValue);
+				const passed = this.applyStringCriteria(value, criteria.operator, matchValue);
 
 				if (detailed) {
 					return {
@@ -595,7 +640,13 @@ class FilterCriteria {
 		return passed;
 	}
 
-	private static applyArrayFilter(value: any[], operator: FilterCriteria.Operators['array'], matchValue: any): boolean {
+	private static applyArrayCriteria(value: any[], operator: FilterCriteria.Operators['array'], matchValue: any): boolean {
+		const validValue = _.isArray(value);
+
+		if (!validValue) {
+			return false;
+		}
+
 		switch (operator) {
 			case 'EXACTLY-MATCHES': {
 				if (!_.isArray(matchValue)) {
@@ -605,13 +656,19 @@ class FilterCriteria {
 				return _.isEqual(_.sortBy(value), _.sortBy(matchValue));
 			}
 
+			case 'HAS': {
+				return _.some(value, v => {
+					return _.isEqual(v, matchValue);
+				});
+			}
+
 			case 'INCLUDES-ALL': {
 				if (!_.isArray(matchValue)) {
 					return false;
 				}
 
-				return _.every(value, v => {
-					return _.includes(matchValue, v);
+				return _.every(matchValue, v => {
+					return _.includes(value, v);
 				});
 			}
 
@@ -620,8 +677,8 @@ class FilterCriteria {
 					return false;
 				}
 
-				return _.some(value, v => {
-					return _.includes(matchValue, v);
+				return _.some(matchValue, v => {
+					return _.includes(value, v);
 				});
 			}
 
@@ -629,7 +686,7 @@ class FilterCriteria {
 				return _.size(value) === 0;
 			}
 
-			case 'IS-NOT-EMPTY': {
+			case 'NOT-EMPTY': {
 				return _.size(value) > 0;
 			}
 
@@ -638,8 +695,8 @@ class FilterCriteria {
 					return false;
 				}
 
-				return !_.every(value, v => {
-					return _.includes(matchValue, v);
+				return !_.every(matchValue, v => {
+					return _.includes(value, v);
 				});
 			}
 
@@ -648,8 +705,8 @@ class FilterCriteria {
 					return false;
 				}
 
-				return !_.some(value, v => {
-					return _.includes(matchValue, v);
+				return !_.some(matchValue, v => {
+					return _.includes(value, v);
 				});
 			}
 
@@ -698,9 +755,9 @@ class FilterCriteria {
 		}
 	}
 
-	private static applyBooleanFilter(value: boolean, operator: FilterCriteria.Operators['boolean'], matchValue: any): boolean {
+	private static applyBooleanCriteria(value: any, operator: FilterCriteria.Operators['boolean'], matchValue: any): boolean {
 		switch (operator) {
-			case 'IS-EQUAL': {
+			case 'EQUALS': {
 				return _.isEqual(value, matchValue);
 			}
 
@@ -716,32 +773,8 @@ class FilterCriteria {
 				return _.isNil(value);
 			}
 
-			case 'IS-NOT-EQUAL': {
-				return !_.isEqual(value, matchValue);
-			}
-
-			case 'IS-NOT-NIL': {
-				return !_.isNil(value);
-			}
-
-			case 'IS-NOT-NULL': {
-				return !_.isNull(value);
-			}
-
-			case 'IS-NOT-UNDEFINED': {
-				return !_.isUndefined(value);
-			}
-
 			case 'IS-NULL': {
 				return _.isNull(value);
-			}
-
-			case 'IS-STRICT-EQUAL': {
-				return value === matchValue;
-			}
-
-			case 'IS-STRICT-NOT-EQUAL': {
-				return value !== matchValue;
 			}
 
 			case 'IS-TRUE': {
@@ -756,15 +789,40 @@ class FilterCriteria {
 				return _.isUndefined(value);
 			}
 
+			case 'NOT-EQUALS': {
+				return !_.isEqual(value, matchValue);
+			}
+
+			case 'NOT-NIL': {
+				return !_.isNil(value);
+			}
+
+			case 'NOT-NULL': {
+				return !_.isNull(value);
+			}
+
+			case 'NOT-UNDEFINED': {
+				return !_.isUndefined(value);
+			}
+
+			case 'STRICT-EQUAL': {
+				return value === matchValue;
+			}
+
+			case 'STRICT-NOT-EQUAL': {
+				return value !== matchValue;
+			}
+
 			default:
 				return false;
 		}
 	}
 
-	private static applyDateFilter(value: string, operator: FilterCriteria.Operators['date'], matchValue: any): boolean {
-		const isStringArray = _.isArray(matchValue) && _.every(matchValue, _.isString);
+	private static applyDateCriteria(value: string, operator: FilterCriteria.Operators['date'], matchValue: any): boolean {
+		const validValue = _.isString(value);
+		const validMatchValue = _.isString(matchValue) || isStringArray(matchValue);
 
-		if (!_.isString(value) && !isStringArray) {
+		if (!validValue || !validMatchValue) {
 			return false;
 		}
 
@@ -804,10 +862,15 @@ class FilterCriteria {
 		}
 	}
 
-	private static applyGeoFilter(value: { lat: number; lng: number }, operator: FilterCriteria.Operators['geo'], matchValue: any): boolean {
-		const isValidObject = _.isPlainObject(matchValue) && 'lat' in matchValue && 'lng' in matchValue;
+	private static applyGeoCriteria(
+		value: { lat: number; lng: number },
+		operator: FilterCriteria.Operators['geo'],
+		matchValue: any
+	): boolean {
+		const validValue = objectContainKeys(value, ['lat', 'lng']) && _.isNumber(value.lat) && _.isNumber(value.lng);
+		const validMatchValue = objectContainKeys(matchValue, ['lat', 'lng']) && _.isNumber(matchValue.lat) && _.isNumber(matchValue.lng);
 
-		if (!isValidObject) {
+		if (!validValue || !validMatchValue) {
 			return false;
 		}
 
@@ -843,21 +906,37 @@ class FilterCriteria {
 		}
 	}
 
-	private static applyMapFilter(value: Map<any, any>, operator: FilterCriteria.Operators['map'], matchValue: any): boolean {
+	private static applyMapCriteria(value: Map<any, any>, operator: FilterCriteria.Operators['map'], matchValue: any): boolean {
+		const validValue = _.isMap(value);
+
+		if (!validValue) {
+			return false;
+		}
+
 		switch (operator) {
+			case 'CONTAINS': {
+				return this.applyObjectCriteria(Object.fromEntries(value), 'CONTAINS', matchValue);
+			}
+
 			case 'HAS-KEY': {
+				if (!_.isString(matchValue)) {
+					return false;
+				}
+
 				return value.has(matchValue);
 			}
 
 			case 'HAS-VALUE': {
-				return Array.from(value.values()).includes(matchValue);
+				return _.some(Array.from(value.values()), v => {
+					return _.isEqual(v, matchValue);
+				});
 			}
 
 			case 'IS-EMPTY': {
 				return value.size === 0;
 			}
 
-			case 'IS-NOT-EMPTY': {
+			case 'NOT-EMPTY': {
 				return value.size > 0;
 			}
 
@@ -906,37 +985,77 @@ class FilterCriteria {
 		}
 	}
 
-	private static applyNumberFilter(value: number, operator: FilterCriteria.Operators['number'], matchValue: any): boolean {
-		const isNumberArray = _.isArray(matchValue) && _.every(matchValue, _.isNumber);
+	private static applyNumberCriteria(value: number, operator: FilterCriteria.Operators['number'], matchValue: any): boolean {
+		const validValue = _.isNumber(value);
 
-		if (!_.isNumber(value) && !isNumberArray) {
+		if (!validValue) {
 			return false;
 		}
 
 		switch (operator) {
+			case 'BETWEEN': {
+				if (!isNumberArray(matchValue)) {
+					return false;
+				}
+
+				const [min, max] = matchValue;
+				return value >= min && value <= max;
+			}
+
 			case 'EQUALS': {
+				if (!_.isNumber(matchValue)) {
+					return false;
+				}
+
 				return value === matchValue;
 			}
 
 			case 'GREATER': {
+				if (!_.isNumber(matchValue)) {
+					return false;
+				}
+
 				return value > matchValue;
 			}
 
 			case 'GREATER-OR-EQUALS': {
+				if (!_.isNumber(matchValue)) {
+					return false;
+				}
+
 				return value >= matchValue;
 			}
 
+			case 'IN': {
+				if (!isNumberArray(matchValue)) {
+					return false;
+				}
+
+				return matchValue.includes(value);
+			}
+
 			case 'LESS': {
+				if (!_.isNumber(matchValue)) {
+					return false;
+				}
+
 				return value < matchValue;
 			}
 
 			case 'LESS-OR-EQUALS': {
+				if (!_.isNumber(matchValue)) {
+					return false;
+				}
+
 				return value <= matchValue;
 			}
 
-			case 'BETWEEN': {
-				const [min, max] = matchValue;
-				return value >= min && value <= max;
+			case 'NOT-EQUALS': {
+				if (!_.isNumber(matchValue)) {
+					return false;
+				}
+
+				return value !== matchValue;
 			}
 
 			default:
@@ -944,10 +1063,99 @@ class FilterCriteria {
 		}
 	}
 
-	private static applySetFilter(value: Set<any>, operator: FilterCriteria.Operators['set'], matchValue: any): boolean {
+	private static applyObjectCriteria(value: any, operator: FilterCriteria.Operators['object'], matchValue: any): boolean {
+		const validValue = _.isPlainObject(value);
+
+		if (!validValue) {
+			return false;
+		}
+
+		switch (operator) {
+			case 'CONTAINS': {
+				if (!_.isPlainObject(matchValue)) {
+					return false;
+				}
+
+				return this.objectContaining(value, matchValue);
+			}
+
+			case 'HAS-KEY': {
+				if (!_.isString(matchValue)) {
+					return false;
+				}
+
+				return _.has(value, matchValue);
+			}
+
+			case 'HAS-VALUE': {
+				return _.some(value, v => {
+					return _.isEqual(v, matchValue);
+				});
+			}
+
+			case 'IS-EMPTY': {
+				return _.isEmpty(value);
+			}
+
+			case 'NOT-EMPTY': {
+				return !_.isEmpty(value);
+			}
+
+			case 'SIZE-EQUALS': {
+				if (!_.isNumber(matchValue)) {
+					return false;
+				}
+
+				return _.size(value) === matchValue;
+			}
+
+			case 'SIZE-GREATER': {
+				if (!_.isNumber(matchValue)) {
+					return false;
+				}
+
+				return _.size(value) > matchValue;
+			}
+
+			case 'SIZE-GREATER-OR-EQUALS': {
+				if (!_.isNumber(matchValue)) {
+					return false;
+				}
+
+				return _.size(value) >= matchValue;
+			}
+
+			case 'SIZE-LESS': {
+				if (!_.isNumber(matchValue)) {
+					return false;
+				}
+
+				return _.size(value) < matchValue;
+			}
+
+			case 'SIZE-LESS-OR-EQUALS': {
+				if (!_.isNumber(matchValue)) {
+					return false;
+				}
+
+				return _.size(value) <= matchValue;
+			}
+
+			default:
+				return false;
+		}
+	}
+
+	private static applySetCriteria(value: Set<any>, operator: FilterCriteria.Operators['set'], matchValue: any): boolean {
+		const validValue = _.isSet(value);
+
+		if (!validValue) {
+			return false;
+		}
+
 		switch (operator) {
 			case 'EXACTLY-MATCHES': {
-				return this.applyArrayFilter(Array.from(value), 'EXACTLY-MATCHES', matchValue);
+				return this.applyArrayCriteria(Array.from(value), 'EXACTLY-MATCHES', matchValue);
 			}
 
 			case 'HAS': {
@@ -955,27 +1163,27 @@ class FilterCriteria {
 			}
 
 			case 'INCLUDES-ALL': {
-				return this.applyArrayFilter(Array.from(value), 'INCLUDES-ALL', matchValue);
+				return this.applyArrayCriteria(Array.from(value), 'INCLUDES-ALL', matchValue);
 			}
 
 			case 'INCLUDES-ANY': {
-				return this.applyArrayFilter(Array.from(value), 'INCLUDES-ANY', matchValue);
+				return this.applyArrayCriteria(Array.from(value), 'INCLUDES-ANY', matchValue);
 			}
 
 			case 'IS-EMPTY': {
 				return value.size === 0;
 			}
 
-			case 'IS-NOT-EMPTY': {
+			case 'NOT-EMPTY': {
 				return value.size > 0;
 			}
 
 			case 'NOT-INCLUDES-ALL': {
-				return this.applyArrayFilter(Array.from(value), 'NOT-INCLUDES-ALL', matchValue);
+				return this.applyArrayCriteria(Array.from(value), 'NOT-INCLUDES-ALL', matchValue);
 			}
 
 			case 'NOT-INCLUDES-ANY': {
-				return this.applyArrayFilter(Array.from(value), 'NOT-INCLUDES-ANY', matchValue);
+				return this.applyArrayCriteria(Array.from(value), 'NOT-INCLUDES-ANY', matchValue);
 			}
 
 			case 'SIZE-EQUALS': {
@@ -1023,22 +1231,44 @@ class FilterCriteria {
 		}
 	}
 
-	private static applyStringFilter(value: string, operator: FilterCriteria.Operators['string'], matchValue: any): boolean {
-		if (!_.isString(value) && !_.isRegExp(matchValue)) {
+	private static applyStringCriteria(value: string, operator: FilterCriteria.Operators['string'], matchValue: any): boolean {
+		const validValue = _.isString(value);
+
+		if (!validValue) {
 			return false;
 		}
 
 		switch (operator) {
 			case 'CONTAINS': {
+				if (!_.isString(matchValue)) {
+					return false;
+				}
+
 				return _.includes(value, matchValue);
 			}
 
 			case 'EQUALS': {
+				if (!_.isString(matchValue)) {
+					return false;
+				}
+
 				return value === matchValue;
 			}
 
 			case 'ENDS-WITH': {
+				if (!_.isString(matchValue)) {
+					return false;
+				}
+
 				return _.endsWith(value, matchValue);
+			}
+
+			case 'IN': {
+				if (!isStringArray(matchValue)) {
+					return false;
+				}
+
+				return matchValue.includes(value);
 			}
 
 			case 'IS-EMPTY': {
@@ -1046,10 +1276,18 @@ class FilterCriteria {
 			}
 
 			case 'MATCHES-REGEX': {
+				if (!_.isString(matchValue) && !_.isRegExp(matchValue)) {
+					return false;
+				}
+
 				return new RegExp(matchValue).test(value);
 			}
 
 			case 'STARTS-WITH': {
+				if (!_.isString(matchValue)) {
+					return false;
+				}
+
 				return _.startsWith(value, matchValue);
 			}
 
@@ -1166,16 +1404,40 @@ class FilterCriteria {
 		return value;
 	});
 
+	static objectContaining(obj: any, subObject: any): boolean {
+		if (_.isNil(obj) || _.isNil(subObject)) {
+			return false;
+		}
+
+		if (!_.isObject(subObject)) {
+			return _.isEqual(obj, subObject);
+		}
+
+		if (_.isArray(subObject)) {
+			if (!_.isArray(obj)) {
+				return false;
+			}
+
+			return _.every(subObject, subItem =>
+				_.some(obj, item => {
+					return this.objectContaining(item, subItem);
+				})
+			);
+		}
+
+		if (!_.isObject(obj)) {
+			return false;
+		}
+
+		return _.isMatch(obj, subObject);
+	}
+
 	static saveCriteria(key: string, criteria: FilterCriteria.Criteria): void {
 		if (criteria.type === 'CRITERIA') {
 			throw new Error('Cannot save criteria with type "CRITERIA"');
 		}
 
 		this.savedCriteria.set(key, criteria);
-	}
-
-	static deleteSavedCriteria(key: string): void {
-		this.savedCriteria.delete(key);
 	}
 
 	private static toRad(value: number): number {
