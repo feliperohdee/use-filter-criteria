@@ -1,5 +1,6 @@
 import _ from 'lodash';
 import { beforeEach, describe, expect, it, vi, Mock } from 'vitest';
+import DataLoader from 'use-data-loader';
 
 import FilterCriteria from './index';
 
@@ -304,6 +305,41 @@ describe('/index', () => {
 				const res = await FilterCriteria.matchMany(testData, input);
 				expect(res).toHaveLength(2);
 				expect(_.map(res, 'id').sort()).toEqual([1, 3]);
+			});
+
+			it('should handle multiple CUSTOM criteria using dataloader and concurrency', async () => {
+				const fn = vi.fn(async users => {
+					return _.map(users, () => {
+						return true;
+					});
+				});
+
+				const userLoader = new DataLoader(fn);
+				const predicate = vi.fn(user => {
+					return userLoader.load(user.id);
+				});
+
+				const input = FilterCriteria.filter({
+					operator: 'AND',
+					criteria: [
+						{
+							predicate,
+							type: 'CUSTOM'
+						},
+						{
+							predicate,
+							type: 'CUSTOM'
+						}
+					]
+				});
+
+				const res = await FilterCriteria.matchMany(testData, input, 2);
+
+				expect(fn).toHaveBeenCalledTimes(2);
+				expect(fn).toHaveBeenCalledWith([1, 2]);
+				expect(fn).toHaveBeenCalledWith([3]);
+				
+				expect(res).toHaveLength(3);
 			});
 		});
 

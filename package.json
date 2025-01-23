@@ -2,6 +2,7 @@
 	"name": "use-filter-criteria",
 	"dependencies": {
 		"lodash": "^4.17.21",
+		"use-async-helpers": "^1.0.24",
 		"zod": "^3.24.1",
 		"zod-default-instance": "^1.0.17"
 	},
@@ -10,6 +11,7 @@
 		"@vitest/coverage-v8": "2.1.8",
 		"prettier": "^3.4.2",
 		"typescript": "^5.7.2",
+		"use-data-loader": "^1.0.0",
 		"vitest": "2.1.8"
 	},
 	"files": [
@@ -30,5 +32,5 @@
 		"test:coverage": "rm -rf coverage && vitest --run --coverage",
 		"test:coverage:watch": "rm -rf coverage && vitest --coverage"
 	},
-	"version": "1.0.20"
+	"version": "1.0.21"
 }

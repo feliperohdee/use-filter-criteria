@@ -1,6 +1,7 @@
 import _ from 'lodash';
 import z from 'zod';
 import zDefault from 'zod-default-instance';
+import { promiseFilter } from 'use-async-helpers';
 
 import { isNumberArray, isStringArray, objectContainKeys, stringify } from './util';
 
@@ -345,25 +346,23 @@ class FilterCriteria {
 		return passed;
 	}
 
-	static async matchMany(value: any[], input: FilterCriteria.MatchInput): Promise<any[]> {
+	static async matchMany(value: any[], input: FilterCriteria.MatchInput, concurrency: number = Infinity): Promise<any[]> {
 		const converted = this.convertToFilterGroupInput(input);
 		const args = filterGroup.parse(converted.input);
 
-		let results: any[] = [];
-
-		for await (const item of value) {
-			const filtersResults = await Promise.all(
-				_.map(args.filters, filter => {
-					return this.applyFilter(item, filter);
-				}) as Promise<boolean>[]
-			);
-
-			if (args.operator === 'AND' ? _.every(filtersResults, Boolean) : _.some(filtersResults, Boolean)) {
-				results = [...results, item];
+		return promiseFilter(value, async item => {
+			try {
+				const filtersResults = await Promise.all(
+					_.map(args.filters, filter => {
+						return this.applyFilter(item, filter);
+					}) as Promise<boolean>[]
+				);
+	
+				return args.operator === 'AND' ? _.every(filtersResults, Boolean) : _.some(filtersResults, Boolean);
+			} catch {
+				return false;
 			}
-		}
-
-		return results;
+		}, concurrency);
 	}
 
 	private static async applyCriteria(

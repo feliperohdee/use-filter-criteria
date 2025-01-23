@@ -10,13 +10,13 @@ A TypeScript-based filtering engine that provides a flexible, type-safe way to f
 ## Features
 
 - 🎯 **Type-Safe**: Built with TypeScript and Zod for runtime type validation
-- 🔄 **Multiple Data Types**: Support for arrays, booleans, dates, geographic coordinates, maps, numbers, sets, and strings
+- 🔄 **Multiple Data Types**: Support for arrays, booleans, dates, geographic coordinates, maps, numbers, objects, sets, and strings
 - 🎨 **Rich Operators**: Comprehensive set of comparison and logical operators
 - 🌐 **Internationalization-Ready**: Built-in string normalization (accents, case, etc.)
 - 🔍 **Complex Queries**: Support for nested AND/OR logic combinations
 - 📍 **Geospatial**: Built-in support for geographic radius searches
 - 🎛️ **Flexible**: Customizable default values and source path resolution
-- 🔄 **Dynamic Values**: Support for dynamic value resolution using `$path`
+- 🔄 **Dynamic Values**: Support for dynamic value resolution using `$path` and custom functions
 - 📊 **Detailed Logging**: Optional detailed diagnostics for understanding filter results
 
 ## Installation
@@ -50,40 +50,30 @@ const users = [
 
 // Simple number comparison
 const ageFilter = {
-	operator: 'AND',
-	rules: [
-		{
-			operator: 'AND',
-			criteria: [
-				{
-					type: 'NUMBER',
-					operator: 'GREATER',
-					path: ['age'],
-					value: 25
-				}
-			]
-		}
-	]
+	type: 'NUMBER',
+	operator: 'GREATER',
+	valuePath: ['age'],
+	matchValue: 25
 };
 
 // Complex multi-criteria filter
 const complexFilter = {
 	operator: 'AND',
-	rules: [
+	filters: [
 		{
 			operator: 'AND',
 			criteria: [
 				{
 					type: 'SET',
 					operator: 'INCLUDES-ANY',
-					path: ['skills'],
-					value: ['typescript', 'python']
+					valuePath: ['skills'],
+					matchValue: ['typescript', 'python']
 				},
 				{
 					type: 'BOOLEAN',
-					operator: 'IS',
-					path: ['active'],
-					value: true
+					operator: 'EQUALS',
+					valuePath: ['active'],
+					matchValue: true
 				}
 			]
 		},
@@ -93,14 +83,14 @@ const complexFilter = {
 				{
 					type: 'STRING',
 					operator: 'CONTAINS',
-					path: ['name'],
-					value: 'john'
+					valuePath: ['name'],
+					matchValue: 'john'
 				},
 				{
 					type: 'ARRAY',
 					operator: 'INCLUDES-ANY',
-					path: ['roles'],
-					value: ['admin']
+					valuePath: ['roles'],
+					matchValue: ['admin']
 				}
 			]
 		}
@@ -128,61 +118,61 @@ For basic, single-condition filtering:
 const simpleCriteria = {
 	type: 'NUMBER',
 	operator: 'GREATER',
-	path: ['age'],
-	value: 25
+	valuePath: ['age'],
+	matchValue: 25
 };
 
-const result = await FilterCriteria.matchCriteria(data, simpleCriteria);
+const result = await FilterCriteria.match(data, simpleCriteria);
 ```
 
-### 2. Rule Input
+### 2. Filter Input
 
 For grouping multiple criteria with a logical operator:
 
 ```typescript
-const ruleInput = {
+const filterInput = {
 	operator: 'AND',
 	criteria: [
 		{
 			type: 'NUMBER',
 			operator: 'GREATER',
-			path: ['age'],
-			value: 25
+			valuePath: ['age'],
+			matchValue: 25
 		},
 		{
 			type: 'STRING',
 			operator: 'CONTAINS',
-			path: ['name'],
-			value: 'john'
+			valuePath: ['name'],
+			matchValue: 'john'
 		}
 	]
 };
 
-const result = await FilterCriteria.matchRule(data, ruleInput);
+const result = await FilterCriteria.match(data, filterInput);
 ```
 
-### 3. Complete Filter Input
+### 3. Filter Group Input
 
-For complex filtering with multiple rules and nested logic:
+For complex filtering with multiple filters and nested logic:
 
 ```typescript
-const filterInput = {
+const filterGroupInput = {
 	operator: 'OR',
-	rules: [
+	filters: [
 		{
 			operator: 'AND',
 			criteria: [
 				{
 					type: 'NUMBER',
 					operator: 'GREATER',
-					path: ['age'],
-					value: 25
+					valuePath: ['age'],
+					matchValue: 25
 				},
 				{
 					type: 'SET',
 					operator: 'INCLUDES-ALL',
-					path: ['skills'],
-					value: ['typescript']
+					valuePath: ['skills'],
+					matchValue: ['typescript']
 				}
 			]
 		},
@@ -192,22 +182,22 @@ const filterInput = {
 				{
 					type: 'STRING',
 					operator: 'MATCHES-REGEX',
-					path: ['name'],
-					value: /^john/i
+					valuePath: ['name'],
+					matchValue: /^john/i
 				}
 			]
 		}
 	]
 };
 
-const result = await FilterCriteria.match(data, filterInput);
+const result = await FilterCriteria.match(data, filterGroupInput);
 ```
 
 Each input format supports all the filter types and operators described in the "Supported Filter Types" section. The choice between them depends on your filtering complexity needs:
 
 - Use **Criteria Input** for simple, single-condition checks
-- Use **Rule Input** when you need to combine multiple criteria with AND/OR logic
-- Use **Filter Input** for complex scenarios requiring multiple rules and nested logic combinations
+- Use **Filter Input** when you need to combine multiple criteria with AND/OR logic
+- Use **Filter Group Input** for complex scenarios requiring multiple filters and nested logic combinations
 
 ## Detailed Logging
 
@@ -219,11 +209,11 @@ const result = await FilterCriteria.match(data, filter, true);
 
 The detailed output includes:
 
-- Match level information showing overall filter results
-- Rule level results showing how each rule was evaluated
+- Filter group level information showing overall filter results
+- Filter level results showing how each filter was evaluated
 - Criteria level details showing:
   - The actual value found at the specified path
-  - The criteria value being compared against
+  - The match value being compared against
   - The operator used
   - Whether the check passed or failed
   - A human-readable reason for the result
@@ -243,15 +233,15 @@ Here are examples showing how to use detailed logging with different filter type
 // String filter with detailed logging
 const stringFilter = {
 	operator: 'AND',
-	rules: [
+	filters: [
 		{
 			operator: 'AND',
 			criteria: [
 				{
 					type: 'STRING',
 					operator: 'CONTAINS',
-					path: ['name'],
-					value: 'john'
+					valuePath: ['name'],
+					matchValue: 'john'
 				}
 			]
 		}
@@ -261,21 +251,17 @@ const stringFilter = {
 const stringResult = await FilterCriteria.match(users[0], stringFilter, true);
 /* Output:
 {
-  level: 'match',
   operator: 'AND',
   passed: true,
-  reason: 'Match "AND" check PASSED',
+  reason: 'Filter group "AND" check PASSED',
   results: [{
-    level: 'rule',
     operator: 'AND',
     passed: true,
-    reason: 'Rule "AND" check PASSED',
+    reason: 'Filter "AND" check PASSED',
     results: [{
-      criteriaValue: 'john',
-      level: 'criteria',
-      operator: 'CONTAINS',
+      matchValue: 'john',
       passed: true,
-      reason: 'String "CONTAINS" check PASSED',
+      reason: 'String criteria "CONTAINS" check PASSED',
       value: 'john-doe'
     }]
   }]
@@ -285,15 +271,15 @@ const stringResult = await FilterCriteria.match(users[0], stringFilter, true);
 // Geographic filter with detailed logging
 const geoFilter = {
 	operator: 'AND',
-	rules: [
+	filters: [
 		{
 			operator: 'AND',
 			criteria: [
 				{
 					type: 'GEO',
 					operator: 'IN-RADIUS',
-					path: ['location'],
-					value: {
+					valuePath: ['location'],
+					matchValue: {
 						lat: 40.7128,
 						lng: -74.006,
 						radius: 10,
@@ -308,26 +294,22 @@ const geoFilter = {
 const geoResult = await FilterCriteria.match(users[0], geoFilter, true);
 /* Output shows detailed radius check results:
 {
-  level: 'match',
   operator: 'AND',
   passed: true,
-  reason: 'Match "AND" check PASSED',
+  reason: 'Filter group "AND" check PASSED',
   results: [{
-    level: 'rule',
     operator: 'AND',
     passed: true,
-    reason: 'Rule "AND" check PASSED',
+    reason: 'Filter "AND" check PASSED',
     results: [{
-      criteriaValue: {
+      matchValue: {
         lat: 40.7128,
         lng: -74.006,
         radius: 10,
         unit: 'km'
       },
-      level: 'criteria',
-      operator: 'IN-RADIUS',
       passed: true,
-      reason: 'Geo "IN-RADIUS" check PASSED',
+      reason: 'Geo criteria "IN-RADIUS" check PASSED',
       value: { lat: 40.7128, lng: -74.006 }
     }]
   }]
@@ -337,21 +319,21 @@ const geoResult = await FilterCriteria.match(users[0], geoFilter, true);
 // Complex nested filter with detailed logging
 const nestedFilter = {
 	operator: 'OR',
-	rules: [
+	filters: [
 		{
 			operator: 'AND',
 			criteria: [
 				{
 					type: 'NUMBER',
 					operator: 'GREATER',
-					path: ['age'],
-					value: 25
+					valuePath: ['age'],
+					matchValue: 25
 				},
 				{
 					type: 'SET',
 					operator: 'INCLUDES-ALL',
-					path: ['skills'],
-					value: ['typescript']
+					valuePath: ['skills'],
+					matchValue: ['typescript']
 				}
 			]
 		},
@@ -361,8 +343,8 @@ const nestedFilter = {
 				{
 					type: 'STRING',
 					operator: 'MATCHES-REGEX',
-					path: ['name'],
-					value: /^john/i
+					valuePath: ['name'],
+					matchValue: /^john/i
 				}
 			]
 		}
@@ -372,47 +354,38 @@ const nestedFilter = {
 const nestedResult = await FilterCriteria.match(users[0], nestedFilter, true);
 /* Output shows the complete evaluation tree:
 {
-  level: 'match',
   operator: 'OR',
   passed: true,
-  reason: 'Match "OR" check PASSED',
+  reason: 'Filter group "OR" check PASSED',
   results: [
     {
-      level: 'rule',
       operator: 'AND',
       passed: true,
-      reason: 'Rule "AND" check PASSED',
+      reason: 'Filter "AND" check PASSED',
       results: [
         {
-          criteriaValue: 25,
-          level: 'criteria',
-          operator: 'GREATER',
+          matchValue: 25,
           passed: true,
-          reason: 'Number "GREATER" check PASSED',
+          reason: 'Number criteria "GREATER" check PASSED',
           value: 30
         },
         {
-          criteriaValue: ['typescript'],
-          level: 'criteria',
-          operator: 'INCLUDES-ALL',
+          matchValue: ['typescript'],
           passed: true,
-          reason: 'Set "INCLUDES-ALL" check PASSED',
+          reason: 'Set criteria "INCLUDES-ALL" check PASSED',
           value: Set(['typescript', 'react'])
         }
       ]
     },
     {
-      level: 'rule',
       operator: 'OR',
       passed: true,
-      reason: 'Rule "OR" check PASSED',
+      reason: 'Filter "OR" check PASSED',
       results: [
         {
-          criteriaValue: /^john/i,
-          level: 'criteria',
-          operator: 'MATCHES-REGEX',
+          matchValue: /^john/i,
           passed: true,
-          reason: 'String "MATCHES-REGEX" check PASSED',
+          reason: 'String criteria "MATCHES-REGEX" check PASSED',
           value: 'John Doe'
         }
       ]
@@ -427,6 +400,7 @@ const nestedResult = await FilterCriteria.match(users[0], nestedFilter, true);
 ### Array Operators
 
 - `EXACTLY-MATCHES`: Arrays contain the same elements (order independent)
+- `HAS`: Array has the specified element
 - `INCLUDES-ALL`: Array contains ALL filter values
 - `INCLUDES-ANY`: Array contains AT LEAST ONE filter value
 - `IS-EMPTY`: Array is empty
@@ -441,8 +415,20 @@ const nestedResult = await FilterCriteria.match(users[0], nestedFilter, true);
 
 ### Boolean Operators
 
-- `IS`: Value equals the filter value
-- `IS-NOT`: Value does not equal the filter value
+- `EQUALS`: Value equals the filter value
+- `IS-FALSE`: Value is `false`
+- `IS-FALSY`: Value is falsy
+- `IS-NIL`: Value is `null` or `undefined`
+- `IS-NULL`: Value is `null`
+- `IS-TRUE`: Value is `true`
+- `IS-TRUTHY`: Value is truthy
+- `IS-UNDEFINED`: Value is `undefined`
+- `NOT-EQUALS`: Value does not equal the filter value
+- `NOT-NIL`: Value is not `null` or `undefined`
+- `NOT-NULL`: Value is not `null`
+- `NOT-UNDEFINED`: Value is not `undefined`
+- `STRICT-EQUAL`: Value is strictly equal to the filter value
+- `STRICT-NOT-EQUAL`: Value is not strictly equal to the filter value
 
 ### Date Operators
 
@@ -450,7 +436,7 @@ const nestedResult = await FilterCriteria.match(users[0], nestedFilter, true);
 - `AFTER-OR-EQUALS`: Date is after or equal to the filter value
 - `BEFORE`: Date is before the filter value
 - `BEFORE-OR-EQUALS`: Date is before or equal to the filter value
-- `BETWEEN`: Date is between two filter values
+- `BETWEEN`: Date is between two filter values (inclusive)
 
 ### Geographic Operators
 
@@ -459,6 +445,7 @@ const nestedResult = await FilterCriteria.match(users[0], nestedFilter, true);
 
 ### Map Operators
 
+- `CONTAINS`: Map's values object contains the specified value (using deep object comparision)
 - `HAS-KEY`: Map contains the specified key
 - `HAS-VALUE`: Map contains the specified value
 - `IS-EMPTY`: Map is empty
@@ -475,12 +462,27 @@ const nestedResult = await FilterCriteria.match(users[0], nestedFilter, true);
 - `EQUALS`: Number equals the filter value
 - `GREATER`: Number is greater than the filter value
 - `GREATER-OR-EQUALS`: Number is greater than or equal to the filter value
+- `IN`: Number is in the filter values
 - `LESS`: Number is less than the filter value
 - `LESS-OR-EQUALS`: Number is less than or equal to the filter value
+- `NOT-EQUALS`: Number does not equal the filter value
+
+### Object Operators
+
+- `CONTAINS`: Object contains the specified value (using deep object comparision)
+- `HAS-KEY`: Object contains the specified key
+- `HAS-VALUE`: Object contains the specified value
+- `IS-EMPTY`: Object is empty
+- `NOT-EMPTY`: Object is not empty
+- `SIZE-EQUALS`: Object size equals the filter value
+- `SIZE-GREATER`: Object size is greater than the filter value
+- `SIZE-GREATER-OR-EQUALS`: Object size is greater than or equal to the filter value
+- `SIZE-LESS`: Object size is less than the filter value
+- `SIZE-LESS-OR-EQUALS`: Object size is less than or equal to the filter value
 
 ### Set Operators
 
-- `EXACTLY-MATCHES`: Set contains the exact same elements
+- `EXACTLY-MATCHES`: Set contains the exact same elements (order independent)
 - `HAS`: Set contains the specific element
 - `INCLUDES-ALL`: Set contains ALL filter values
 - `INCLUDES-ANY`: Set contains AT LEAST ONE filter value
@@ -499,6 +501,7 @@ const nestedResult = await FilterCriteria.match(users[0], nestedFilter, true);
 - `CONTAINS`: String contains the filter value
 - `ENDS-WITH`: String ends with the filter value
 - `EQUALS`: String equals the filter value
+- `IN`: String is in the filter values
 - `IS-EMPTY`: String is empty
 - `MATCHES-REGEX`: String matches the regular expression pattern
 - `STARTS-WITH`: String starts with the filter value
@@ -514,16 +517,17 @@ You can define custom filter functions directly in your criteria:
 ```typescript
 const customFilter = {
 	operator: 'AND',
-	rules: [
+	filters: [
 		{
 			operator: 'AND',
 			criteria: [
 				{
 					type: 'CUSTOM',
-					value: async item => {
+					predicate: async (item, matchValue) => {
 						// Your custom logic here
-						return item.someProperty > 10;
-					}
+						return item.someProperty > matchValue;
+					},
+					matchValue: 10
 				}
 			]
 		}
@@ -531,42 +535,45 @@ const customFilter = {
 };
 ```
 
-#### 2. Registered Custom Criteria
+#### 2. Saved Custom Criteria
 
-You can register reusable custom criteria that can be referenced by name:
+You can save reusable custom criteria that can be referenced by key:
 
 ```typescript
-// Register a custom criteria
-FilterCriteria.registerCustomCriteria('isHighValueUser', async item => {
-	return item.purchases > 1000 && item.membershipLevel === 'premium';
-});
+// Save a custom criteria
+FilterCriteria.saveCriteria(
+	'isHighValueUser',
+	FilterCriteria.criteria({
+		type: 'CUSTOM',
+		predicate: async (item, matchValue) => {
+			return item.purchases > matchValue && item.membershipLevel === 'premium';
+		},
+		matchValue: 1000
+	})
+);
 
-// Use the registered criteria by name
-const registeredFilter = {
+// Use the saved criteria by key
+const savedFilter = {
 	operator: 'AND',
-	rules: [
+	filters: [
 		{
 			operator: 'AND',
 			criteria: [
 				{
-					type: 'CUSTOM',
-					value: 'isHighValueUser' // Reference the registered criteria by name
+					type: 'CRITERIA',
+					key: 'isHighValueUser' // Reference the saved criteria by key
 				}
 			]
 		}
 	]
 };
-
-// Remove a custom criteria when no longer needed
-FilterCriteria.unregisterCustomCriteria('isHighValueUser');
 ```
 
 Custom criteria can be:
 
 - Synchronous or asynchronous (returning `boolean | Promise<boolean>`)
 - Used for complex filtering logic that can't be expressed with standard operators
-- Registered once and reused across multiple filters
-- Managed with `registerCustomCriteria` and `unregisterCustomCriteria` methods
+- Saved once and reused across multiple filters
 
 ## Advanced Usage
 
@@ -587,15 +594,15 @@ const data = [
 // Filter by Set contents
 const setFilter = {
 	operator: 'AND',
-	rules: [
+	filters: [
 		{
 			operator: 'AND',
 			criteria: [
 				{
 					type: 'SET',
 					operator: 'INCLUDES-ALL',
-					path: ['skills'],
-					value: ['typescript', 'react'],
+					valuePath: ['skills'],
+					matchValue: ['typescript', 'react'],
 					normalize: true // Optional: normalize string values
 				}
 			]
@@ -606,15 +613,15 @@ const setFilter = {
 // Filter by Map contents
 const mapFilter = {
 	operator: 'AND',
-	rules: [
+	filters: [
 		{
 			operator: 'AND',
 			criteria: [
 				{
 					type: 'MAP',
 					operator: 'HAS-KEY',
-					path: ['metadata'],
-					value: 'level'
+					valuePath: ['metadata'],
+					matchValue: 'level'
 				}
 			]
 		}
@@ -635,15 +642,49 @@ const data = [
 
 const filter = {
 	operator: 'AND',
-	rules: [
+	filters: [
 		{
 			operator: 'AND',
 			criteria: [
 				{
 					type: 'SET',
 					operator: 'INCLUDES-ALL',
-					path: ['actualSkills'],
-					value: { $path: ['requiredSkills'] } // Compare actualSkills with requiredSkills
+					valuePath: ['actualSkills'],
+					matchValue: { $path: ['requiredSkills'] } // Compare actualSkills with requiredSkills
+				}
+			]
+		}
+	]
+};
+```
+
+### Dynamic Values Using Custom Functions
+
+```typescript
+const data = [
+	{
+		id: 1,
+		name: 'John Doe',
+		createdAt: '2024-01-01T00:00:00Z'
+	}
+];
+
+const filter = {
+	operator: 'AND',
+	filters: [
+		{
+			operator: 'AND',
+			criteria: [
+				{
+					type: 'DATE',
+					operator: 'BETWEEN',
+					valuePath: ['createdAt'],
+					matchValue: item => {
+						// Calculate the date range dynamically based on the item
+						const oneMonthAgo = new Date(item.createdAt);
+						oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+						return [oneMonthAgo.toISOString(), item.createdAt];
+					}
 				}
 			]
 		}
@@ -656,12 +697,11 @@ const filter = {
 Full TypeScript support is provided out of the box. The library exports all necessary types and interfaces:
 
 ```typescript
-import FilterCriteria, { FilterCriteriaTypes } from 'use-filter-criteria';
+import FilterCriteria, { FilterCriteria } from 'use-filter-criteria';
 
-type FilterInput = FilterCriteriaTypes.FilterInput;
-type Filter = FilterCriteriaTypes.Filter;
-type Rule = FilterCriteriaTypes.Rule;
-type Criteria = FilterCriteriaTypes.Criteria;
+type Criteria = FilterCriteria.Criteria;
+type Filter = FilterCriteria.Filter;
+type FilterGroup = FilterCriteria.FilterGroup;
 ```
 
 ## Contributing
@@ -676,5 +716,6 @@ MIT © [Felipe Rohde](mailto:feliperohdee@gmail.com)
 
 **Felipe Rohde**
 
+- Twitter: [@felipe_rohde](https://twitter.com/felipe_rohde)
 - Github: [@feliperohdee](https://github.com/feliperohdee)
 - Email: feliperohdee@gmail.com

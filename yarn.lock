@@ -314,6 +314,11 @@
   resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.17.13.tgz#786e2d67cfd95e32862143abe7463a7f90c300eb"
   integrity sha512-lfx+dftrEZcdBPczf9d0Qv0x+j/rfNCMuC6OcfXmO8gkfeNAY88PgKUbvG56whcN23gc27yenwF6oJZXGFpYxg==
 
+"@types/lodash@^4.17.14":
+  version "4.17.14"
+  resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.17.14.tgz#bafc053533f4cdc5fcc9635af46a963c1f3deaff"
+  integrity sha512-jsxagdikDiDBeIRaPYtArcT8my4tN1og7MtMRquFT3XNA6axxyHDRUemqDz/taRDdOUn0GnGHRCuff4q48sW9A==
+
 "@vitest/coverage-v8@2.1.8":
   version "2.1.8"
   resolved "https://registry.yarnpkg.com/@vitest/coverage-v8/-/coverage-v8-2.1.8.tgz#738527e6e79cef5004248452527e272e0df12284"
@@ -900,6 +905,19 @@ typescript@^5.7.2:
   version "5.7.2"
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-5.7.2.tgz#3169cf8c4c8a828cde53ba9ecb3d2b1d5dd67be6"
   integrity sha512-i5t66RHxDvVN40HfDd1PsEThGNnlMCMT3jMUuoh9/0TaqWevNontacunWyN02LA9/fIbEWlcHZcgTKb9QoaLfg==
+
+use-async-helpers@^1.0.24:
+  version "1.0.24"
+  resolved "https://registry.yarnpkg.com/use-async-helpers/-/use-async-helpers-1.0.24.tgz#349d9e9ee5a797fdb29f1c58df751af88df7cee4"
+  integrity sha512-YkkqZg+S67lgqPVOkRo+RxB3rM8HiA13CPW6cwVGQ4uOBi80y2J5FvWxiV60wWDtLN53On9d4f1mMxJiUu9JPg==
+
+use-data-loader@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/use-data-loader/-/use-data-loader-1.0.0.tgz#6610c1c826072ea7c53b4d0bd4fc76539a464d42"
+  integrity sha512-ptoMLjsNTuY5MBXLb10hHDEcH0uDqORwI++3yuQ3LO8zvti04y/jvZxF7PyUsticaUoMDYzy+6ubq8/hbwaC8w==
+  dependencies:
+    "@types/lodash" "^4.17.14"
+    lodash "^4.17.21"
 
 vite-node@2.1.8:
   version "2.1.8"
