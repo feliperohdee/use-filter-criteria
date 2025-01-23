@@ -350,19 +350,23 @@ class FilterCriteria {
 		const converted = this.convertToFilterGroupInput(input);
 		const args = filterGroup.parse(converted.input);
 
-		return promiseFilter(value, async item => {
-			try {
-				const filtersResults = await Promise.all(
-					_.map(args.filters, filter => {
-						return this.applyFilter(item, filter);
-					}) as Promise<boolean>[]
-				);
-	
-				return args.operator === 'AND' ? _.every(filtersResults, Boolean) : _.some(filtersResults, Boolean);
-			} catch {
-				return false;
-			}
-		}, concurrency);
+		return promiseFilter(
+			value,
+			async item => {
+				try {
+					const filtersResults = await Promise.all(
+						_.map(args.filters, filter => {
+							return this.applyFilter(item, filter);
+						}) as Promise<boolean>[]
+					);
+
+					return args.operator === 'AND' ? _.every(filtersResults, Boolean) : _.some(filtersResults, Boolean);
+				} catch {
+					return false;
+				}
+			},
+			concurrency
+		);
 	}
 
 	private static async applyCriteria(
@@ -583,10 +587,7 @@ class FilterCriteria {
 				: false;
 		}
 
-		const newCriteria = {
-			...savedCriteria,
-			matchValue: criteria.matchValue || savedCriteria.matchValue
-		};
+		const newCriteria = { ...savedCriteria };
 
 		if (!_.isNil(criteria.normalize) && 'normalize' in newCriteria) {
 			newCriteria.normalize = criteria.normalize;
@@ -594,6 +595,10 @@ class FilterCriteria {
 
 		if (criteria.operator && 'operator' in newCriteria) {
 			newCriteria.operator = criteria.operator;
+		}
+
+		if (criteria.matchValue) {
+			newCriteria.matchValue = criteria.matchValue;
 		}
 
 		if (criteria.valuePath && _.size(criteria.valuePath) > 0 && 'valuePath' in newCriteria) {

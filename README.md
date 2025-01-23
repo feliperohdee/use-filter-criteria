@@ -508,9 +508,41 @@ const nestedResult = await FilterCriteria.match(users[0], nestedFilter, true);
 
 ### Custom Operators
 
-There are two ways to use custom criteria: inline functions and registered criteria.
+There are several ways to use custom criteria with support for batching and concurrency optimization:
 
-#### 1. Inline Custom Functions
+#### 1. Using DataLoader for Efficient Batching
+
+You can use DataLoader to batch multiple criteria checks efficiently:
+
+```typescript
+import DataLoader from 'use-data-loader';
+
+// Create a loader that batches user checks
+const userLoader = new DataLoader(async userIds => {
+	// Batch process multiple users at once
+	return userIds.map(() => true); // Your batch logic here
+});
+
+// Create a filter using the loader
+const batchedFilter = {
+	operator: 'AND',
+	criteria: [
+		{
+			type: 'CUSTOM',
+			predicate: async user => userLoader.load(user.id)
+		},
+		{
+			type: 'CUSTOM',
+			predicate: async user => userLoader.load(user.id)
+		}
+	]
+};
+
+// Apply the filter with concurrency control
+const results = await FilterCriteria.matchMany(users, batchedFilter, 2); // Process 2 items concurrently
+```
+
+#### 2. Inline Custom Functions
 
 You can define custom filter functions directly in your criteria:
 
@@ -535,7 +567,7 @@ const customFilter = {
 };
 ```
 
-#### 2. Saved Custom Criteria
+### 3. Saved Custom Criteria
 
 You can save reusable custom criteria that can be referenced by key:
 
@@ -552,8 +584,20 @@ FilterCriteria.saveCriteria(
 	})
 );
 
-// Use the saved criteria by key
-const savedFilter = {
+// Save a string criteria with normalize option
+FilterCriteria.saveCriteria(
+	'containsKeyword',
+	FilterCriteria.criteria({
+		type: 'STRING',
+		operator: 'CONTAINS',
+		valuePath: ['description'],
+		normalize: true,
+		matchValue: 'premium'
+	})
+);
+
+// Use the saved criteria by key with default values
+const basicFilter = {
 	operator: 'AND',
 	filters: [
 		{
@@ -561,13 +605,65 @@ const savedFilter = {
 			criteria: [
 				{
 					type: 'CRITERIA',
-					key: 'isHighValueUser' // Reference the saved criteria by key
+					key: 'isHighValueUser'
+				}
+			]
+		}
+	]
+};
+
+// Override saved criteria properties
+const customFilter = {
+	operator: 'AND',
+	filters: [
+		{
+			operator: 'AND',
+			criteria: [
+				{
+					type: 'CRITERIA',
+					key: 'containsKeyword',
+					valuePath: ['title'], // Override default valuePath
+					normalize: false, // Override normalize setting
+					operator: 'STARTS-WITH', // Override operator
+					matchValue: 'special-offer' // Override matchValue
+				}
+			]
+		}
+	]
+};
+
+// Multiple saved criteria in a single filter
+const combinedFilter = {
+	operator: 'AND',
+	filters: [
+		{
+			operator: 'AND',
+			criteria: [
+				{
+					type: 'CRITERIA',
+					key: 'isHighValueUser',
+					matchValue: 2000 // Higher threshold
+				},
+				{
+					type: 'CRITERIA',
+					key: 'containsKeyword',
+					valuePath: ['tags'], // Search in tags instead
+					matchValue: 'vip' // Different keyword
 				}
 			]
 		}
 	]
 };
 ```
+
+When using saved criteria, you can:
+
+- Use them as-is by just referencing their key
+- Override any of their properties (valuePath, normalize, operator, matchValue)
+- Combine multiple saved criteria in a single filter
+- Mix saved criteria with regular criteria in the same filter
+
+Note: You cannot save a criteria of type "CRITERIA" (no nested saved criteria references).
 
 Custom criteria can be:
 
