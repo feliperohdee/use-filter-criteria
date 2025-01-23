@@ -101,20 +101,20 @@ const operators = {
 const criteria = z.discriminatedUnion('type', [
 	z.object({
 		defaultValue: z.array(z.unknown()).default([]),
-		matchValue: matchValueGetter(z.any()).nullable().optional(),
+		matchValue: matchValueGetter(z.any()).default(null),
 		normalize,
 		operator: operators.array,
 		type: z.literal('ARRAY'),
 		valuePath: z.array(z.string()),
-		valueTransformer: fn.nullable().optional()
+		valueTransformer: fn.nullable().default(null)
 	}),
 	z.object({
 		defaultValue: z.any().default(undefined),
-		matchValue: matchValueGetter(z.any()).nullable().optional(),
+		matchValue: matchValueGetter(z.any()).default(null),
 		operator: operators.boolean,
 		type: z.literal('BOOLEAN'),
 		valuePath: z.array(z.string()),
-		valueTransformer: fn.nullable().optional()
+		valueTransformer: fn.nullable().default(null)
 	}),
 	z.object({
 		matchValue: z.any().default(null),
@@ -123,7 +123,7 @@ const criteria = z.discriminatedUnion('type', [
 	}),
 	z.object({
 		matchValue: z.any().default(null),
-		normalize: normalize.nullable().optional(),
+		normalize: normalize.nullable().default(null),
 		operator: z
 			.union([
 				operators.array,
@@ -137,7 +137,7 @@ const criteria = z.discriminatedUnion('type', [
 				operators.string
 			])
 			.nullable()
-			.optional(),
+			.default(null),
 		valuePath: z.array(z.string()).default([]),
 		key: z.string(),
 		type: z.literal('CRITERIA')
@@ -148,7 +148,7 @@ const criteria = z.discriminatedUnion('type', [
 		operator: operators.date,
 		type: z.literal('DATE'),
 		valuePath: z.array(z.string()),
-		valueTransformer: fn.nullable().optional()
+		valueTransformer: fn.nullable().default(null)
 	}),
 	z.object({
 		defaultValue: z.record(z.number()).default({ lat: 0, lng: 0 }),
@@ -158,7 +158,7 @@ const criteria = z.discriminatedUnion('type', [
 				lng: z.array(z.string())
 			})
 			.nullable()
-			.optional(),
+			.default(null),
 		matchValue: matchValueGetter(
 			z.object({
 				lat: z.number(),
@@ -170,16 +170,16 @@ const criteria = z.discriminatedUnion('type', [
 		operator: operators.geo,
 		type: z.literal('GEO'),
 		valuePath: z.array(z.string()),
-		valueTransformer: fn.nullable().optional()
+		valueTransformer: fn.nullable().default(null)
 	}),
 	z.object({
 		defaultValue: z.map(z.unknown(), z.unknown()).default(new Map()),
-		matchValue: matchValueGetter(z.any()).nullable().optional(),
+		matchValue: matchValueGetter(z.any()).default(null),
 		normalize,
 		operator: operators.map,
 		type: z.literal('MAP'),
 		valuePath: z.array(z.string()),
-		valueTransformer: fn.nullable().optional()
+		valueTransformer: fn.nullable().default(null)
 	}),
 	z.object({
 		defaultValue: z.number().default(0),
@@ -187,38 +187,38 @@ const criteria = z.discriminatedUnion('type', [
 		operator: operators.number,
 		type: z.literal('NUMBER'),
 		valuePath: z.array(z.string()),
-		valueTransformer: fn.nullable().optional()
+		valueTransformer: fn.nullable().default(null)
 	}),
 	z.object({
 		defaultValue: z.record(z.unknown()).default({}),
-		matchValue: matchValueGetter(z.any()).nullable().optional(),
+		matchValue: matchValueGetter(z.any()).default(null),
 		normalize,
 		operator: operators.object,
 		type: z.literal('OBJECT'),
 		valuePath: z.array(z.string()),
-		valueTransformer: fn.nullable().optional()
+		valueTransformer: fn.nullable().default(null)
 	}),
 	z.object({
 		defaultValue: z.set(z.unknown()).default(new Set()),
 		matchValue: matchValueGetter(z.union([z.array(z.unknown()), z.number(), z.string()]))
 			.nullable()
-			.optional(),
+			.default(null),
 		normalize,
 		operator: operators.set,
 		type: z.literal('SET'),
 		valuePath: z.array(z.string()),
-		valueTransformer: fn.nullable().optional()
+		valueTransformer: fn.nullable().default(null)
 	}),
 	z.object({
 		defaultValue: z.string().default(''),
 		matchValue: matchValueGetter(z.union([z.string(), z.array(z.string()), z.instanceof(RegExp)]))
 			.nullable()
-			.optional(),
+			.default(null),
 		normalize,
 		operator: operators.string,
 		type: z.literal('STRING'),
 		valuePath: z.array(z.string()),
-		valueTransformer: fn.nullable().optional()
+		valueTransformer: fn.nullable().default(null)
 	})
 ]);
 
@@ -372,47 +372,21 @@ class FilterCriteria {
 		detailed: boolean = false
 	): Promise<boolean | FilterCriteria.CriteriaResult> {
 		if (criteria.type === 'CRITERIA') {
-			const savedCriteria = this.savedCriteria.get(criteria.key);
+			return this.$applyCriteria(value, criteria, detailed);
+		}
 
-			if (!savedCriteria) {
-				return detailed
-					? {
-							matchValue: stringify(criteria.matchValue),
-							passed: false,
-							reason: `Criteria "${criteria.key}" not found`,
-							value: null
-						}
-					: false;
-			}
+		let { matchValue } = criteria;
 
-			const newCriteria = {
-				...savedCriteria,
-				matchValue: criteria.matchValue || savedCriteria.matchValue
-			};
-
-			if (!_.isNil(criteria.normalize) && 'normalize' in newCriteria) {
-				newCriteria.normalize = criteria.normalize;
-			}
-
-			if (criteria.operator && 'operator' in newCriteria) {
-				newCriteria.operator = criteria.operator;
-			}
-
-			if (criteria.valuePath && _.size(criteria.valuePath) > 0 && 'valuePath' in newCriteria) {
-				newCriteria.valuePath = criteria.valuePath;
-			}
-
-			return this.applyCriteria(value, newCriteria, detailed);
+		// dynamic match value
+		if (_.isObject(matchValue) && '$path' in matchValue && _.isArray(matchValue.$path) && (_.isArray(value) || _.isPlainObject(value))) {
+			matchValue = _.get(value, matchValue.$path);
+		} else if (_.isFunction(matchValue)) {
+			// custom match value
+			matchValue = matchValue(value);
 		}
 
 		if (criteria.type === 'CUSTOM') {
-			let { matchValue } = criteria;
-
-			if (_.isFunction(criteria.matchValue)) {
-				matchValue = criteria.matchValue(value);
-			}
-
-			const passed = await criteria.predicate(value, matchValue);
+			const passed = await this.applyCustomCriteria(value, criteria.predicate, matchValue);
 
 			return detailed
 				? {
@@ -422,18 +396,6 @@ class FilterCriteria {
 						value
 					}
 				: passed;
-		}
-
-		let { matchValue } = criteria;
-
-		if (matchValue) {
-			// dynamic match value
-			if (_.isObject(matchValue) && '$path' in matchValue && _.isArray(matchValue.$path) && (_.isArray(value) || _.isPlainObject(value))) {
-				matchValue = _.get(value, matchValue.$path);
-			} else if (_.isFunction(matchValue)) {
-				// custom match value
-				matchValue = matchValue(value);
-			}
 		}
 
 		if (_.isArray(criteria.valuePath) && _.size(criteria.valuePath) > 0) {
@@ -606,6 +568,40 @@ class FilterCriteria {
 				return false;
 			}
 		}
+	}
+
+	static async $applyCriteria(value: any, criteria: FilterCriteria.CriteriaInput & { type: 'CRITERIA' }, detailed: boolean = false) {
+		const savedCriteria = this.savedCriteria.get(criteria.key);
+
+		if (!savedCriteria) {
+			return detailed
+				? {
+						matchValue: stringify(criteria.matchValue),
+						passed: false,
+						reason: `Criteria "${criteria.key}" not found`,
+						value: null
+					}
+				: false;
+		}
+
+		const newCriteria = {
+			...savedCriteria,
+			matchValue: criteria.matchValue || savedCriteria.matchValue
+		};
+
+		if (!_.isNil(criteria.normalize) && 'normalize' in newCriteria) {
+			newCriteria.normalize = criteria.normalize;
+		}
+
+		if (criteria.operator && 'operator' in newCriteria) {
+			newCriteria.operator = criteria.operator;
+		}
+
+		if (criteria.valuePath && _.size(criteria.valuePath) > 0 && 'valuePath' in newCriteria) {
+			newCriteria.valuePath = criteria.valuePath;
+		}
+
+		return this.applyCriteria(value, newCriteria, detailed);
 	}
 
 	private static async applyFilter(
@@ -816,6 +812,14 @@ class FilterCriteria {
 			default:
 				return false;
 		}
+	}
+
+	private static applyCustomCriteria(
+		value: any,
+		predicate: FilterCriteria.CriteriaCustomPredicate,
+		matchValue: any
+	): boolean | Promise<boolean> {
+		return predicate(value, matchValue);
 	}
 
 	private static applyDateCriteria(value: string, operator: FilterCriteria.Operators['date'], matchValue: any): boolean {
