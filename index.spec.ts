@@ -338,7 +338,7 @@ describe('/index', () => {
 				expect(fn).toHaveBeenCalledTimes(2);
 				expect(fn).toHaveBeenCalledWith([1, 2]);
 				expect(fn).toHaveBeenCalledWith([3]);
-				
+
 				expect(res).toHaveLength(3);
 			});
 		});

@@ -22,205 +22,237 @@ const matchValueGetter = <T extends z.ZodSchema>(schema: T) => {
 };
 
 const normalize = z.union([z.boolean(), fn]).default(true);
+const operatorsArray = z.enum([
+	'EXACTLY-MATCHES',
+	'INCLUDES-ALL',
+	'INCLUDES-ANY',
+	'HAS',
+	'IS-EMPTY',
+	'NOT-EMPTY',
+	'NOT-INCLUDES-ALL',
+	'NOT-INCLUDES-ANY',
+	'SIZE-EQUALS',
+	'SIZE-GREATER',
+	'SIZE-GREATER-OR-EQUALS',
+	'SIZE-LESS',
+	'SIZE-LESS-OR-EQUALS'
+]);
+
+const operatorsBoolean = z.enum([
+	'EQUALS',
+	'IS-FALSE',
+	'IS-FALSY',
+	'IS-NIL',
+	'IS-NULL',
+	'IS-TRUE',
+	'IS-TRUTHY',
+	'IS-UNDEFINED',
+	'NOT-EQUALS',
+	'NOT-NIL',
+	'NOT-NULL',
+	'NOT-UNDEFINED',
+	'STRICT-EQUAL',
+	'STRICT-NOT-EQUAL'
+]);
+const operatorsDate = z.enum(['AFTER', 'AFTER-OR-EQUALS', 'BEFORE', 'BEFORE-OR-EQUALS', 'BETWEEN']);
+const operatorsGeo = z.enum(['IN-RADIUS', 'NOT-IN-RADIUS']);
+const operatorsMap = z.enum([
+	'CONTAINS',
+	'HAS-KEY',
+	'HAS-VALUE',
+	'IS-EMPTY',
+	'NOT-EMPTY',
+	'SIZE-EQUALS',
+	'SIZE-GREATER',
+	'SIZE-GREATER-OR-EQUALS',
+	'SIZE-LESS',
+	'SIZE-LESS-OR-EQUALS'
+]);
+const operatorsNumber = z.enum(['BETWEEN', 'EQUALS', 'GREATER', 'GREATER-OR-EQUALS', 'IN', 'LESS', 'LESS-OR-EQUALS', 'NOT-EQUALS']);
+const operatorsObject = z.enum([
+	'CONTAINS',
+	'HAS-KEY',
+	'HAS-VALUE',
+	'IS-EMPTY',
+	'NOT-EMPTY',
+	'SIZE-EQUALS',
+	'SIZE-GREATER',
+	'SIZE-GREATER-OR-EQUALS',
+	'SIZE-LESS',
+	'SIZE-LESS-OR-EQUALS'
+]);
+const operatorsSet = z.enum([
+	'EXACTLY-MATCHES',
+	'INCLUDES-ALL',
+	'INCLUDES-ANY',
+	'HAS',
+	'IS-EMPTY',
+	'NOT-EMPTY',
+	'NOT-INCLUDES-ALL',
+	'NOT-INCLUDES-ANY',
+	'SIZE-EQUALS',
+	'SIZE-GREATER',
+	'SIZE-GREATER-OR-EQUALS',
+	'SIZE-LESS',
+	'SIZE-LESS-OR-EQUALS'
+]);
+const operatorsString = z.enum(['CONTAINS', 'ENDS-WITH', 'EQUALS', 'IN', 'IS-EMPTY', 'MATCHES-REGEX', 'STARTS-WITH']);
 const operators = {
-	array: z.enum([
-		'EXACTLY-MATCHES',
-		'INCLUDES-ALL',
-		'INCLUDES-ANY',
-		'HAS',
-		'IS-EMPTY',
-		'NOT-EMPTY',
-		'NOT-INCLUDES-ALL',
-		'NOT-INCLUDES-ANY',
-		'SIZE-EQUALS',
-		'SIZE-GREATER',
-		'SIZE-GREATER-OR-EQUALS',
-		'SIZE-LESS',
-		'SIZE-LESS-OR-EQUALS'
-	]),
-	boolean: z.enum([
-		'EQUALS',
-		'IS-FALSE',
-		'IS-FALSY',
-		'IS-NIL',
-		'IS-NULL',
-		'IS-TRUE',
-		'IS-TRUTHY',
-		'IS-UNDEFINED',
-		'NOT-EQUALS',
-		'NOT-NIL',
-		'NOT-NULL',
-		'NOT-UNDEFINED',
-		'STRICT-EQUAL',
-		'STRICT-NOT-EQUAL'
-	]),
-	date: z.enum(['AFTER', 'AFTER-OR-EQUALS', 'BEFORE', 'BEFORE-OR-EQUALS', 'BETWEEN']),
-	geo: z.enum(['IN-RADIUS', 'NOT-IN-RADIUS']),
-	map: z.enum([
-		'CONTAINS',
-		'HAS-KEY',
-		'HAS-VALUE',
-		'IS-EMPTY',
-		'NOT-EMPTY',
-		'SIZE-EQUALS',
-		'SIZE-GREATER',
-		'SIZE-GREATER-OR-EQUALS',
-		'SIZE-LESS',
-		'SIZE-LESS-OR-EQUALS'
-	]),
-	number: z.enum(['BETWEEN', 'EQUALS', 'GREATER', 'GREATER-OR-EQUALS', 'IN', 'LESS', 'LESS-OR-EQUALS', 'NOT-EQUALS']),
-	object: z.enum([
-		'CONTAINS',
-		'HAS-KEY',
-		'HAS-VALUE',
-		'IS-EMPTY',
-		'NOT-EMPTY',
-		'SIZE-EQUALS',
-		'SIZE-GREATER',
-		'SIZE-GREATER-OR-EQUALS',
-		'SIZE-LESS',
-		'SIZE-LESS-OR-EQUALS'
-	]),
-	set: z.enum([
-		'EXACTLY-MATCHES',
-		'INCLUDES-ALL',
-		'INCLUDES-ANY',
-		'HAS',
-		'IS-EMPTY',
-		'NOT-EMPTY',
-		'NOT-INCLUDES-ALL',
-		'NOT-INCLUDES-ANY',
-		'SIZE-EQUALS',
-		'SIZE-GREATER',
-		'SIZE-GREATER-OR-EQUALS',
-		'SIZE-LESS',
-		'SIZE-LESS-OR-EQUALS'
-	]),
-	string: z.enum(['CONTAINS', 'ENDS-WITH', 'EQUALS', 'IN', 'IS-EMPTY', 'MATCHES-REGEX', 'STARTS-WITH'])
+	array: operatorsArray,
+	boolean: operatorsBoolean,
+	date: operatorsDate,
+	geo: operatorsGeo,
+	map: operatorsMap,
+	number: operatorsNumber,
+	object: operatorsObject,
+	set: operatorsSet,
+	string: operatorsString
 };
 
+const criteriaArray = z.object({
+	defaultValue: z.array(z.unknown()).default([]),
+	matchValue: matchValueGetter(z.any()).default(null),
+	normalize,
+	operator: operatorsArray,
+	type: z.literal('ARRAY'),
+	valuePath: z.array(z.string()),
+	valueTransformer: fn.nullable().default(null)
+});
+
+const criteriaBoolean = z.object({
+	defaultValue: z.any().default(undefined),
+	matchValue: matchValueGetter(z.any()).default(null),
+	operator: operatorsBoolean,
+	type: z.literal('BOOLEAN'),
+	valuePath: z.array(z.string()),
+	valueTransformer: fn.nullable().default(null)
+});
+
+const criteriaCustom = z.object({
+	matchValue: z.any().default(null),
+	predicate: criteriaCustomPredicate,
+	type: z.literal('CUSTOM')
+});
+
+const criteriaCriteria = z.object({
+	matchValue: z.any().default(null),
+	normalize: normalize.nullable().default(null),
+	operator: z
+		.union([
+			operatorsArray,
+			operatorsBoolean,
+			operatorsDate,
+			operatorsGeo,
+			operatorsMap,
+			operatorsNumber,
+			operatorsObject,
+			operatorsSet,
+			operatorsString
+		])
+		.nullable()
+		.default(null),
+	valuePath: z.array(z.string()).default([]),
+	key: z.string(),
+	type: z.literal('CRITERIA')
+});
+
+const criteriaDate = z.object({
+	defaultValue: z.string().default(''),
+	matchValue: matchValueGetter(z.union([datetime, z.tuple([datetime, datetime])])),
+	operator: operatorsDate,
+	type: z.literal('DATE'),
+	valuePath: z.array(z.string()),
+	valueTransformer: fn.nullable().default(null)
+});
+
+const criteriaGeo = z.object({
+	defaultValue: z.record(z.number()).default({ lat: 0, lng: 0 }),
+	getCoordinates: z
+		.object({
+			lat: z.array(z.string()),
+			lng: z.array(z.string())
+		})
+		.nullable()
+		.default(null),
+	matchValue: matchValueGetter(
+		z.object({
+			lat: z.number(),
+			lng: z.number(),
+			radius: z.number().optional(),
+			unit: z.enum(['km', 'mi']).optional()
+		})
+	),
+	operator: operatorsGeo,
+	type: z.literal('GEO'),
+	valuePath: z.array(z.string()),
+	valueTransformer: fn.nullable().default(null)
+});
+
+const criteriaMap = z.object({
+	defaultValue: z.map(z.unknown(), z.unknown()).default(new Map()),
+	matchValue: matchValueGetter(z.any()).default(null),
+	normalize,
+	operator: operatorsMap,
+	type: z.literal('MAP'),
+	valuePath: z.array(z.string()),
+	valueTransformer: fn.nullable().default(null)
+});
+
+const criteriaNumber = z.object({
+	defaultValue: z.number().default(0),
+	matchValue: matchValueGetter(z.union([z.number(), z.array(z.number())])),
+	operator: operatorsNumber,
+	type: z.literal('NUMBER'),
+	valuePath: z.array(z.string()),
+	valueTransformer: fn.nullable().default(null)
+});
+
+const criteriaObject = z.object({
+	defaultValue: z.record(z.unknown()).default({}),
+	matchValue: matchValueGetter(z.any()).default(null),
+	normalize,
+	operator: operatorsObject,
+	type: z.literal('OBJECT'),
+	valuePath: z.array(z.string()),
+	valueTransformer: fn.nullable().default(null)
+});
+
+const criteriaSet = z.object({
+	defaultValue: z.set(z.unknown()).default(new Set()),
+	matchValue: matchValueGetter(z.union([z.array(z.unknown()), z.number(), z.string()]))
+		.nullable()
+		.default(null),
+	normalize,
+	operator: operatorsSet,
+	type: z.literal('SET'),
+	valuePath: z.array(z.string()),
+	valueTransformer: fn.nullable().default(null)
+});
+
+const criteriaString = z.object({
+	defaultValue: z.string().default(''),
+	matchValue: matchValueGetter(z.union([z.string(), z.array(z.string()), z.instanceof(RegExp)]))
+		.nullable()
+		.default(null),
+	normalize,
+	operator: operatorsString,
+	type: z.literal('STRING'),
+	valuePath: z.array(z.string()),
+	valueTransformer: fn.nullable().default(null)
+});
+
 const criteria = z.discriminatedUnion('type', [
-	z.object({
-		defaultValue: z.array(z.unknown()).default([]),
-		matchValue: matchValueGetter(z.any()).default(null),
-		normalize,
-		operator: operators.array,
-		type: z.literal('ARRAY'),
-		valuePath: z.array(z.string()),
-		valueTransformer: fn.nullable().default(null)
-	}),
-	z.object({
-		defaultValue: z.any().default(undefined),
-		matchValue: matchValueGetter(z.any()).default(null),
-		operator: operators.boolean,
-		type: z.literal('BOOLEAN'),
-		valuePath: z.array(z.string()),
-		valueTransformer: fn.nullable().default(null)
-	}),
-	z.object({
-		matchValue: z.any().default(null),
-		predicate: criteriaCustomPredicate,
-		type: z.literal('CUSTOM')
-	}),
-	z.object({
-		matchValue: z.any().default(null),
-		normalize: normalize.nullable().default(null),
-		operator: z
-			.union([
-				operators.array,
-				operators.boolean,
-				operators.date,
-				operators.geo,
-				operators.map,
-				operators.number,
-				operators.object,
-				operators.set,
-				operators.string
-			])
-			.nullable()
-			.default(null),
-		valuePath: z.array(z.string()).default([]),
-		key: z.string(),
-		type: z.literal('CRITERIA')
-	}),
-	z.object({
-		defaultValue: z.string().default(''),
-		matchValue: matchValueGetter(z.union([datetime, z.tuple([datetime, datetime])])),
-		operator: operators.date,
-		type: z.literal('DATE'),
-		valuePath: z.array(z.string()),
-		valueTransformer: fn.nullable().default(null)
-	}),
-	z.object({
-		defaultValue: z.record(z.number()).default({ lat: 0, lng: 0 }),
-		getCoordinates: z
-			.object({
-				lat: z.array(z.string()),
-				lng: z.array(z.string())
-			})
-			.nullable()
-			.default(null),
-		matchValue: matchValueGetter(
-			z.object({
-				lat: z.number(),
-				lng: z.number(),
-				radius: z.number().optional(),
-				unit: z.enum(['km', 'mi']).optional()
-			})
-		),
-		operator: operators.geo,
-		type: z.literal('GEO'),
-		valuePath: z.array(z.string()),
-		valueTransformer: fn.nullable().default(null)
-	}),
-	z.object({
-		defaultValue: z.map(z.unknown(), z.unknown()).default(new Map()),
-		matchValue: matchValueGetter(z.any()).default(null),
-		normalize,
-		operator: operators.map,
-		type: z.literal('MAP'),
-		valuePath: z.array(z.string()),
-		valueTransformer: fn.nullable().default(null)
-	}),
-	z.object({
-		defaultValue: z.number().default(0),
-		matchValue: matchValueGetter(z.union([z.number(), z.array(z.number())])),
-		operator: operators.number,
-		type: z.literal('NUMBER'),
-		valuePath: z.array(z.string()),
-		valueTransformer: fn.nullable().default(null)
-	}),
-	z.object({
-		defaultValue: z.record(z.unknown()).default({}),
-		matchValue: matchValueGetter(z.any()).default(null),
-		normalize,
-		operator: operators.object,
-		type: z.literal('OBJECT'),
-		valuePath: z.array(z.string()),
-		valueTransformer: fn.nullable().default(null)
-	}),
-	z.object({
-		defaultValue: z.set(z.unknown()).default(new Set()),
-		matchValue: matchValueGetter(z.union([z.array(z.unknown()), z.number(), z.string()]))
-			.nullable()
-			.default(null),
-		normalize,
-		operator: operators.set,
-		type: z.literal('SET'),
-		valuePath: z.array(z.string()),
-		valueTransformer: fn.nullable().default(null)
-	}),
-	z.object({
-		defaultValue: z.string().default(''),
-		matchValue: matchValueGetter(z.union([z.string(), z.array(z.string()), z.instanceof(RegExp)]))
-			.nullable()
-			.default(null),
-		normalize,
-		operator: operators.string,
-		type: z.literal('STRING'),
-		valuePath: z.array(z.string()),
-		valueTransformer: fn.nullable().default(null)
-	})
+	criteriaArray,
+	criteriaBoolean,
+	criteriaCustom,
+	criteriaCriteria,
+	criteriaDate,
+	criteriaGeo,
+	criteriaMap,
+	criteriaNumber,
+	criteriaObject,
+	criteriaSet,
+	criteriaString
 ]);
 
 const filter = z.object({
