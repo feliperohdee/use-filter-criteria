@@ -1396,7 +1396,7 @@ class FilterCriteria {
 		return result;
 	}
 
-	static normalize = _.memoize((value: any): any => {
+	static normalize(value: any): any {
 		if (_.isArray(value)) {
 			return _.map(value, v => {
 				return this.normalize(v);
@@ -1430,7 +1430,7 @@ class FilterCriteria {
 		}
 
 		return value;
-	});
+	}
 
 	private static normalizeString = _.memoize((value: string): string => {
 		value = _.trim(value);
