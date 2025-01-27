@@ -1,6 +1,6 @@
 import _ from 'lodash';
 import z from 'zod';
-import zDefault from 'zod-default-instance';
+import zDefault from 'use-zod-default';
 import { promiseFilter } from 'use-async-helpers';
 
 import { isNumberArray, isStringArray, objectContainKeys, stringify } from './util';
