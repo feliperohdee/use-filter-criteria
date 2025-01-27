@@ -48,6 +48,7 @@ const testData = [
 
 describe('/index', () => {
 	beforeEach(() => {
+		// @ts-expect-error
 		FilterCriteria.savedCriteria.clear();
 	});
 
@@ -1386,6 +1387,7 @@ describe('/index', () => {
 					FilterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
+				// @ts-expect-error
 				const savedCriteria = FilterCriteria.savedCriteria.get('test');
 
 				// @ts-expect-error
@@ -1415,6 +1417,7 @@ describe('/index', () => {
 					FilterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
+				// @ts-expect-error
 				const savedCriteria = FilterCriteria.savedCriteria.get('test');
 
 				// @ts-expect-error
@@ -1463,6 +1466,7 @@ describe('/index', () => {
 					FilterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
+				// @ts-expect-error
 				const savedCriteria = FilterCriteria.savedCriteria.get('test-string');
 
 				// @ts-expect-error
@@ -3399,7 +3403,7 @@ describe('/index', () => {
 		});
 	});
 
-	describe.only('inspect', () => {
+	describe('inspect', () => {
 		it('should return a JSON string with operators and saved criteria', () => {
 			// Save some test criteria
 			FilterCriteria.saveCriteria(
@@ -3617,34 +3621,50 @@ describe('/index', () => {
 
 	describe('objectContaining', () => {
 		it('should return false for null or undefined values', () => {
+			// @ts-expect-error
 			expect(FilterCriteria.objectContaining(null, {})).toBe(false);
+			// @ts-expect-error
 			expect(FilterCriteria.objectContaining(undefined, {})).toBe(false);
+			// @ts-expect-error
 			expect(FilterCriteria.objectContaining({}, null)).toBe(false);
+			// @ts-expect-error
 			expect(FilterCriteria.objectContaining({}, undefined)).toBe(false);
 		});
 
 		it('should compare strings', () => {
+			// @ts-expect-error
 			expect(FilterCriteria.objectContaining('hello', 'hello')).toBe(true);
+			// @ts-expect-error
 			expect(FilterCriteria.objectContaining('Hello', 'hello')).toBe(false);
+			// @ts-expect-error
 			expect(FilterCriteria.objectContaining('hello', 'Hello')).toBe(false);
 		});
 
 		it('should compare primitive values directly', () => {
+			// @ts-expect-error
 			expect(FilterCriteria.objectContaining(42, 42)).toBe(true);
+			// @ts-expect-error
 			expect(FilterCriteria.objectContaining(42, 43)).toBe(false);
+			// @ts-expect-error
 			expect(FilterCriteria.objectContaining(true, true)).toBe(true);
+			// @ts-expect-error
 			expect(FilterCriteria.objectContaining(true, false)).toBe(false);
 		});
 
 		it('should handle array comparisons', () => {
+			// @ts-expect-error
 			expect(FilterCriteria.objectContaining([1, 2, 3], [1, 2])).toBe(true);
+			// @ts-expect-error
 			expect(FilterCriteria.objectContaining([1, 2], [1, 2, 3])).toBe(false);
+			// @ts-expect-error
 			expect(FilterCriteria.objectContaining([{ a: 1 }, { b: 2 }], [{ a: 1 }])).toBe(true);
+			// @ts-expect-error
 			expect(FilterCriteria.objectContaining([1, 2, 3], [4, 5])).toBe(false);
 		});
 
 		it('should handle nested array comparisons', () => {
 			expect(
+				// @ts-expect-error
 				FilterCriteria.objectContaining(
 					[
 						[1, 2],
@@ -3654,6 +3674,7 @@ describe('/index', () => {
 				)
 			).toBe(true);
 			expect(
+				// @ts-expect-error
 				FilterCriteria.objectContaining(
 					[[1, 2]],
 					[
@@ -3662,12 +3683,16 @@ describe('/index', () => {
 					]
 				)
 			).toBe(false);
+			// @ts-expect-error
 			expect(FilterCriteria.objectContaining([[{ a: 1 }]], [[{ a: 1 }]])).toBe(true);
 		});
 
 		it('should handle object comparisons', () => {
+			// @ts-expect-error
 			expect(FilterCriteria.objectContaining({ a: 1, b: 2 }, { a: 1 })).toBe(true);
+			// @ts-expect-error
 			expect(FilterCriteria.objectContaining({ a: 1 }, { a: 1, b: 2 })).toBe(false);
+			// @ts-expect-error
 			expect(FilterCriteria.objectContaining({ a: { b: 2 } }, { a: { b: 2 } })).toBe(true);
 		});
 
@@ -3678,8 +3703,11 @@ describe('/index', () => {
 				d: { e: [4, 5] }
 			};
 
+			// @ts-expect-error
 			expect(FilterCriteria.objectContaining(obj, { b: [{ c: 3 }] })).toBe(true);
+			// @ts-expect-error
 			expect(FilterCriteria.objectContaining(obj, { d: { e: [4] } })).toBe(true);
+			// @ts-expect-error
 			expect(FilterCriteria.objectContaining(obj, { b: [{ c: 4 }] })).toBe(false);
 		});
 
@@ -3689,14 +3717,20 @@ describe('/index', () => {
 				details: [{ city: 'New York' }, { city: 'London' }]
 			};
 
+			// @ts-expect-error
 			expect(FilterCriteria.objectContaining(obj, { details: [{ city: 'New York' }] })).toBe(true);
+			// @ts-expect-error
 			expect(FilterCriteria.objectContaining(obj, { details: [{ city: 'Caple Town' }] })).toBe(false);
 		});
 
 		it('should handle edge cases', () => {
+			// @ts-expect-error
 			expect(FilterCriteria.objectContaining({}, {})).toBe(true);
+			// @ts-expect-error
 			expect(FilterCriteria.objectContaining([], [])).toBe(true);
+			// @ts-expect-error
 			expect(FilterCriteria.objectContaining({ a: [] }, { a: [] })).toBe(true);
+			// @ts-expect-error
 			expect(FilterCriteria.objectContaining({ a: {} }, { a: {} })).toBe(true);
 		});
 	});
@@ -3713,6 +3747,7 @@ describe('/index', () => {
 				})
 			);
 
+			// @ts-expect-error
 			expect(FilterCriteria.savedCriteria.get('test')).toEqual({
 				defaultValue: '',
 				matchValue: 'John',

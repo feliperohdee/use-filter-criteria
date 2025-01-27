@@ -329,12 +329,12 @@ const filterGroupFactory = (input: FilterCriteria.FilterGroupInput): FilterCrite
 };
 
 class FilterCriteria {
-	static savedCriteria: Map<string, FilterCriteria.Criteria> = new Map();
-	static schema = schema;
-
+	private static savedCriteria: Map<string, FilterCriteria.Criteria> = new Map();
+	
 	static criteria = criteriaFactory;
 	static filter = filterFactory;
 	static filterGroup = filterGroupFactory;
+	static schema = schema;
 
 	static async match(
 		value: any,
@@ -605,7 +605,7 @@ class FilterCriteria {
 		}
 	}
 
-	static async $applyCriteria(value: any, criteria: FilterCriteria.CriteriaInput & { type: 'CRITERIA' }, detailed: boolean = false) {
+	private static async $applyCriteria(value: any, criteria: FilterCriteria.CriteriaInput & { type: 'CRITERIA' }, detailed: boolean = false) {
 		const savedCriteria = this.savedCriteria.get(criteria.key);
 
 		if (!savedCriteria) {
@@ -1473,7 +1473,7 @@ class FilterCriteria {
 		return value;
 	});
 
-	static objectContaining(obj: any, subObject: any): boolean {
+	private static objectContaining(obj: any, subObject: any): boolean {
 		if (_.isNil(obj) || _.isNil(subObject)) {
 			return false;
 		}
