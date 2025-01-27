@@ -3399,6 +3399,136 @@ describe('/index', () => {
 		});
 	});
 
+	describe.only('inspect', () => {
+		it('should return a JSON string with operators and saved criteria', () => {
+			// Save some test criteria
+			FilterCriteria.saveCriteria(
+				'test-string',
+				FilterCriteria.criteria({
+					type: 'STRING',
+					operator: 'STARTS-WITH',
+					valuePath: ['name']
+				})
+			);
+
+			FilterCriteria.saveCriteria(
+				'test-boolean',
+				FilterCriteria.criteria({
+					type: 'BOOLEAN',
+					operator: 'IS-TRUE',
+					valuePath: ['active']
+				})
+			);
+
+			const result = JSON.parse(FilterCriteria.inspect());
+
+			// Check operators
+			expect(result.operators).toEqual({
+				array: [
+					'EXACTLY-MATCHES',
+					'INCLUDES-ALL',
+					'INCLUDES-ANY',
+					'HAS',
+					'IS-EMPTY',
+					'NOT-EMPTY',
+					'NOT-INCLUDES-ALL',
+					'NOT-INCLUDES-ANY',
+					'SIZE-EQUALS',
+					'SIZE-GREATER',
+					'SIZE-GREATER-OR-EQUALS',
+					'SIZE-LESS',
+					'SIZE-LESS-OR-EQUALS'
+				],
+				boolean: [
+					'EQUALS',
+					'IS-FALSE',
+					'IS-FALSY',
+					'IS-NIL',
+					'IS-NULL',
+					'IS-TRUE',
+					'IS-TRUTHY',
+					'IS-UNDEFINED',
+					'NOT-EQUALS',
+					'NOT-NIL',
+					'NOT-NULL',
+					'NOT-UNDEFINED',
+					'STRICT-EQUAL',
+					'STRICT-NOT-EQUAL'
+				],
+				date: ['AFTER', 'AFTER-OR-EQUALS', 'BEFORE', 'BEFORE-OR-EQUALS', 'BETWEEN'],
+				geo: ['IN-RADIUS', 'NOT-IN-RADIUS'],
+				map: [
+					'CONTAINS',
+					'HAS-KEY',
+					'HAS-VALUE',
+					'IS-EMPTY',
+					'NOT-EMPTY',
+					'SIZE-EQUALS',
+					'SIZE-GREATER',
+					'SIZE-GREATER-OR-EQUALS',
+					'SIZE-LESS',
+					'SIZE-LESS-OR-EQUALS'
+				],
+				number: ['BETWEEN', 'EQUALS', 'GREATER', 'GREATER-OR-EQUALS', 'IN', 'LESS', 'LESS-OR-EQUALS', 'NOT-EQUALS'],
+				object: [
+					'CONTAINS',
+					'HAS-KEY',
+					'HAS-VALUE',
+					'IS-EMPTY',
+					'NOT-EMPTY',
+					'SIZE-EQUALS',
+					'SIZE-GREATER',
+					'SIZE-GREATER-OR-EQUALS',
+					'SIZE-LESS',
+					'SIZE-LESS-OR-EQUALS'
+				],
+				set: [
+					'EXACTLY-MATCHES',
+					'INCLUDES-ALL',
+					'INCLUDES-ANY',
+					'HAS',
+					'IS-EMPTY',
+					'NOT-EMPTY',
+					'NOT-INCLUDES-ALL',
+					'NOT-INCLUDES-ANY',
+					'SIZE-EQUALS',
+					'SIZE-GREATER',
+					'SIZE-GREATER-OR-EQUALS',
+					'SIZE-LESS',
+					'SIZE-LESS-OR-EQUALS'
+				],
+				string: ['CONTAINS', 'ENDS-WITH', 'EQUALS', 'IN', 'IS-EMPTY', 'MATCHES-REGEX', 'STARTS-WITH']
+			});
+
+			// Check saved criteria
+			expect(result.savedCriteria).toEqual({
+				'test-string': {
+					type: 'STRING',
+					operator: 'STARTS-WITH',
+					valuePath: ['name'],
+					defaultValue: '',
+					matchValue: null,
+					normalize: true,
+					valueTransformer: null
+				},
+				'test-boolean': {
+					type: 'BOOLEAN',
+					operator: 'IS-TRUE',
+					valuePath: ['active'],
+					defaultValue: undefined,
+					matchValue: null,
+					valueTransformer: null
+				}
+			});
+		});
+
+		it('should return empty savedCriteria when no criteria are saved', () => {
+			const result = JSON.parse(FilterCriteria.inspect());
+			expect(result.savedCriteria).toEqual({});
+			expect(Object.keys(result.operators).length).toBe(9); // Check that operators are still present
+		});
+	});
+
 	describe('normalize', () => {
 		it('should normalize array', () => {
 			expect(FilterCriteria.normalize([1, 'Develóper', 3])).toEqual([1, 'developer', 3]);

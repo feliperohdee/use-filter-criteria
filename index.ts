@@ -1396,6 +1396,35 @@ class FilterCriteria {
 		return result;
 	}
 
+	static inspect(): string {
+		const builtInOperators = {
+			array: _.keys(operatorsArray.enum),
+			boolean: _.keys(operatorsBoolean.enum),
+			date: _.keys(operatorsDate.enum),
+			geo: _.keys(operatorsGeo.enum),
+			map: _.keys(operatorsMap.enum),
+			number: _.keys(operatorsNumber.enum),
+			object: _.keys(operatorsObject.enum),
+			set: _.keys(operatorsSet.enum),
+			string: _.keys(operatorsString.enum)
+		};
+
+		const savedCriteriaMap = Array.from(this.savedCriteria.entries()).reduce(
+			(acc, [key, criteria]) => {
+				acc[key] = criteria;
+				return acc;
+			},
+			{} as Record<string, FilterCriteria.Criteria>
+		);
+
+		const result = {
+			operators: builtInOperators,
+			savedCriteria: savedCriteriaMap
+		};
+
+		return JSON.stringify(result, null, 2);
+	}
+
 	static normalize(value: any): any {
 		if (_.isArray(value)) {
 			return _.map(value, v => {

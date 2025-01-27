@@ -800,6 +800,92 @@ type Filter = FilterCriteria.Filter;
 type FilterGroup = FilterCriteria.FilterGroup;
 ```
 
+## Inspect Functionality
+
+The `FilterCriteria.inspect()` method provides a way to introspect the current state of the filter criteria system. It returns a stringified JSON object containing:
+
+1. All available operators for each data type
+2. All currently saved criteria
+
+### Usage
+
+```typescript
+// Get information about available operators and saved criteria
+const info = FilterCriteria.inspect();
+console.log(info);
+
+/* Example output:
+{
+  "operators": {
+    "array": [
+      "EXACTLY-MATCHES",
+      "INCLUDES-ALL",
+      "INCLUDES-ANY",
+      "HAS",
+      "IS-EMPTY",
+      "NOT-EMPTY",
+      "NOT-INCLUDES-ALL",
+      "NOT-INCLUDES-ANY",
+      "SIZE-EQUALS",
+      "SIZE-GREATER",
+      "SIZE-GREATER-OR-EQUALS",
+      "SIZE-LESS",
+      "SIZE-LESS-OR-EQUALS"
+    ],
+    "boolean": [
+      "EQUALS",
+      "IS-FALSE",
+      "IS-FALSY",
+      "IS-NIL",
+      "IS-NULL",
+      "IS-TRUE",
+      "IS-TRUTHY",
+      "IS-UNDEFINED",
+      "NOT-EQUALS",
+      "NOT-NIL",
+      "NOT-NULL",
+      "NOT-UNDEFINED",
+      "STRICT-EQUAL",
+      "STRICT-NOT-EQUAL"
+    ],
+    // ... other operator types
+  },
+  "savedCriteria": {
+    "isHighValueUser": {
+      "type": "CUSTOM",
+      "predicate": [Function],
+      "matchValue": 1000
+    },
+    "containsKeyword": {
+      "type": "STRING",
+      "operator": "CONTAINS",
+      "valuePath": ["description"],
+      "normalize": true,
+      "matchValue": "premium"
+    }
+  }
+}
+*/
+```
+
+### Use Cases
+
+The inspect functionality is particularly useful for:
+
+1. **Debugging**: Understanding what operators are available for each data type
+2. **Documentation**: Generating dynamic documentation of available operators
+3. **UI Building**: Creating dynamic filter builders that show available options
+4. **Validation**: Verifying that saved criteria are properly registered
+5. **Development**: Exploring the current state of the filtering system
+
+### Output Structure
+
+The returned JSON object contains two main sections:
+
+1. `operators`: An object where each key is a data type (array, boolean, date, etc.) and the value is an array of available operators for that type.
+
+2. `savedCriteria`: An object containing all criteria that have been saved using `FilterCriteria.saveCriteria()`. Each key is the criteria name, and the value is the criteria configuration.
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
