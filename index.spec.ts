@@ -489,7 +489,7 @@ describe('/index', () => {
 				FilterCriteria.applyCriteria(testData[0], criteria, true)
 			]);
 
-			expect(valueTransformer).toHaveBeenCalledWith(testData[0]);
+			expect(valueTransformer).toHaveBeenCalledWith(testData[0], criteria);
 
 			expect(res[0]).toEqual(true);
 			expect(res[1]).toEqual({

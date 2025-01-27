@@ -11,7 +11,6 @@ const criteriaCustomPredicate = z
 	.returns(z.union([z.boolean(), z.promise(z.boolean())]));
 
 const datetime = z.string().datetime({ offset: true });
-const fn = z.function().args(z.any()).returns(z.any());
 const logicalOperator = z.enum(['AND', 'OR']);
 const matchValueGetter = <T extends z.ZodSchema>(schema: T) => {
 	return schema.or(z.function().args(z.any()).returns(schema)).or(
@@ -21,7 +20,7 @@ const matchValueGetter = <T extends z.ZodSchema>(schema: T) => {
 	);
 };
 
-const normalize = z.union([z.boolean(), fn]).default(true);
+const normalize = z.union([z.boolean(), z.function().args(z.any()).returns(z.any())]).default(true);
 const operatorsArray = z.enum([
 	'EXACTLY-MATCHES',
 	'INCLUDES-ALL',
@@ -109,6 +108,7 @@ const operators = {
 	string: operatorsString
 };
 
+const criteriaValueTransformer = z.function().args(z.any(), z.any()).returns(z.any()).nullable().default(null);
 const criteriaArray = z.object({
 	defaultValue: z.array(z.unknown()).default([]),
 	matchValue: matchValueGetter(z.any()).default(null),
@@ -116,7 +116,7 @@ const criteriaArray = z.object({
 	operator: operatorsArray,
 	type: z.literal('ARRAY'),
 	valuePath: z.array(z.string()),
-	valueTransformer: fn.nullable().default(null)
+	valueTransformer: criteriaValueTransformer
 });
 
 const criteriaBoolean = z.object({
@@ -125,7 +125,7 @@ const criteriaBoolean = z.object({
 	operator: operatorsBoolean,
 	type: z.literal('BOOLEAN'),
 	valuePath: z.array(z.string()),
-	valueTransformer: fn.nullable().default(null)
+	valueTransformer: criteriaValueTransformer
 });
 
 const criteriaCustom = z.object({
@@ -162,7 +162,7 @@ const criteriaDate = z.object({
 	operator: operatorsDate,
 	type: z.literal('DATE'),
 	valuePath: z.array(z.string()),
-	valueTransformer: fn.nullable().default(null)
+	valueTransformer: criteriaValueTransformer
 });
 
 const criteriaGeo = z.object({
@@ -185,7 +185,7 @@ const criteriaGeo = z.object({
 	operator: operatorsGeo,
 	type: z.literal('GEO'),
 	valuePath: z.array(z.string()),
-	valueTransformer: fn.nullable().default(null)
+	valueTransformer: criteriaValueTransformer
 });
 
 const criteriaMap = z.object({
@@ -195,7 +195,7 @@ const criteriaMap = z.object({
 	operator: operatorsMap,
 	type: z.literal('MAP'),
 	valuePath: z.array(z.string()),
-	valueTransformer: fn.nullable().default(null)
+	valueTransformer: criteriaValueTransformer
 });
 
 const criteriaNumber = z.object({
@@ -206,7 +206,7 @@ const criteriaNumber = z.object({
 	operator: operatorsNumber,
 	type: z.literal('NUMBER'),
 	valuePath: z.array(z.string()),
-	valueTransformer: fn.nullable().default(null)
+	valueTransformer: criteriaValueTransformer
 });
 
 const criteriaObject = z.object({
@@ -216,7 +216,7 @@ const criteriaObject = z.object({
 	operator: operatorsObject,
 	type: z.literal('OBJECT'),
 	valuePath: z.array(z.string()),
-	valueTransformer: fn.nullable().default(null)
+	valueTransformer: criteriaValueTransformer
 });
 
 const criteriaSet = z.object({
@@ -228,7 +228,7 @@ const criteriaSet = z.object({
 	operator: operatorsSet,
 	type: z.literal('SET'),
 	valuePath: z.array(z.string()),
-	valueTransformer: fn.nullable().default(null)
+	valueTransformer: criteriaValueTransformer
 });
 
 const criteriaString = z.object({
@@ -240,7 +240,7 @@ const criteriaString = z.object({
 	operator: operatorsString,
 	type: z.literal('STRING'),
 	valuePath: z.array(z.string()),
-	valueTransformer: fn.nullable().default(null)
+	valueTransformer: criteriaValueTransformer
 });
 
 const criteria = z.discriminatedUnion('type', [
@@ -471,7 +471,7 @@ class FilterCriteria {
 		}
 
 		if (_.isFunction(criteria.valueTransformer)) {
-			value = criteria.valueTransformer(value);
+			value = criteria.valueTransformer(value, criteria);
 		}
 
 		if ('normalize' in criteria) {
