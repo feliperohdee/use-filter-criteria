@@ -200,7 +200,9 @@ const criteriaMap = z.object({
 
 const criteriaNumber = z.object({
 	defaultValue: z.number().default(0),
-	matchValue: matchValueGetter(z.union([z.number(), z.array(z.number())])),
+	matchValue: matchValueGetter(z.union([z.number(), z.array(z.number())]))
+		.nullable()
+		.default(null),
 	operator: operatorsNumber,
 	type: z.literal('NUMBER'),
 	valuePath: z.array(z.string()),
@@ -278,6 +280,29 @@ const schema = {
 };
 
 namespace FilterCriteria {
+	export type CriteriaArray = z.infer<typeof criteriaArray>;
+	export type CriteriaArrayInput = z.input<typeof criteriaArray>;
+	export type CriteriaBoolean = z.infer<typeof criteriaBoolean>;
+	export type CriteriaBooleanInput = z.input<typeof criteriaBoolean>;
+	export type CriteriaCriteria = z.infer<typeof criteriaCriteria>;
+	export type CriteriaCriteriaInput = z.input<typeof criteriaCriteria>;
+	export type CriteriaCustom = z.infer<typeof criteriaCustom>;
+	export type CriteriaCustomInput = z.input<typeof criteriaCustom>;
+	export type CriteriaDate = z.infer<typeof criteriaDate>;
+	export type CriteriaDateInput = z.input<typeof criteriaDate>;
+	export type CriteriaGeo = z.infer<typeof criteriaGeo>;
+	export type CriteriaGeoInput = z.input<typeof criteriaGeo>;
+	export type CriteriaMap = z.infer<typeof criteriaMap>;
+	export type CriteriaMapInput = z.input<typeof criteriaMap>;
+	export type CriteriaNumber = z.infer<typeof criteriaNumber>;
+	export type CriteriaNumberInput = z.input<typeof criteriaNumber>;
+	export type CriteriaObject = z.infer<typeof criteriaObject>;
+	export type CriteriaObjectInput = z.input<typeof criteriaObject>;
+	export type CriteriaSet = z.infer<typeof criteriaSet>;
+	export type CriteriaSetInput = z.input<typeof criteriaSet>;
+	export type CriteriaString = z.infer<typeof criteriaString>;
+	export type CriteriaStringInput = z.input<typeof criteriaString>;
+
 	export type Criteria = z.infer<typeof criteria>;
 	export type CriteriaInput = z.input<typeof criteria>;
 	export type CriteriaCustomPredicate = z.infer<typeof criteriaCustomPredicate>;
@@ -316,16 +341,18 @@ namespace FilterCriteria {
 	};
 }
 
-const criteriaFactory = (input: FilterCriteria.CriteriaInput): FilterCriteria.Criteria => {
-	return zDefault(criteria, input);
+const criteriaFactory = <T extends FilterCriteria.Criteria = FilterCriteria.Criteria>(input: FilterCriteria.CriteriaInput): T => {
+	return zDefault(criteria, input) as T;
 };
 
-const filterFactory = (input: FilterCriteria.FilterInput): FilterCriteria.Filter => {
-	return zDefault(filter, input);
+const filterFactory = <T extends FilterCriteria.Filter = FilterCriteria.Filter>(input: FilterCriteria.FilterInput): T => {
+	return zDefault(filter, input) as T;
 };
 
-const filterGroupFactory = (input: FilterCriteria.FilterGroupInput): FilterCriteria.FilterGroup => {
-	return zDefault(filterGroup, input);
+const filterGroupFactory = <T extends FilterCriteria.FilterGroup = FilterCriteria.FilterGroup>(
+	input: FilterCriteria.FilterGroupInput
+): T => {
+	return zDefault(filterGroup, input) as T;
 };
 
 class FilterCriteria {
@@ -611,11 +638,7 @@ class FilterCriteria {
 		}
 	}
 
-	private static async $applyCriteria(
-		value: any,
-		criteria: FilterCriteria.CriteriaInput & { type: 'CRITERIA' },
-		detailed: boolean = false
-	) {
+	private static async $applyCriteria(value: any, criteria: FilterCriteria.CriteriaCriteriaInput, detailed: boolean = false) {
 		const saved = this.savedCriteria.get(criteria.key);
 
 		if (!saved) {
@@ -1515,16 +1538,19 @@ class FilterCriteria {
 		return _.isMatch(obj, subObject);
 	}
 
-	static saveCriteria(
+	static saveCriteria<T extends FilterCriteria.Criteria>(
 		key: string,
-		criteria: FilterCriteria.Criteria,
-		transform: ((criteria: FilterCriteria.Criteria) => FilterCriteria.Criteria) | null = null
+		criteria: T,
+		transform: ((criteria: T) => FilterCriteria.Criteria) | null = null
 	): void {
 		if (criteria.type === 'CRITERIA') {
 			throw new Error('Cannot save criteria with type "CRITERIA"');
 		}
 
-		this.savedCriteria.set(key, { criteria, transform });
+		this.savedCriteria.set(key, {
+			criteria,
+			transform: transform as ((criteria: FilterCriteria.Criteria) => FilterCriteria.Criteria) | null
+		});
 	}
 
 	private static toRad(value: number): number {
