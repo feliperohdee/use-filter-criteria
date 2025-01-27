@@ -596,6 +596,28 @@ FilterCriteria.saveCriteria(
 	})
 );
 
+/* The `saveCriteria` method also accepts an optional transform function that can modify the criteria when it's used: */
+
+// Save criteria with a transform function
+FilterCriteria.saveCriteria(
+	'dynamicDateRange',
+	FilterCriteria.criteria({
+		type: 'DATE',
+		operator: 'BETWEEN',
+		valuePath: ['timestamp'],
+		matchValue: ['2024-01-01', '2024-12-31']
+	}),
+	criteria => {
+		// Transform function can modify any aspect of the criteria
+		const now = new Date();
+		const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+		return {
+			...criteria,
+			matchValue: [thirtyDaysAgo.toISOString(), now.toISOString()]
+		};
+	}
+);
+
 // Use the saved criteria by key with default values
 const basicFilter = {
 	operator: 'AND',

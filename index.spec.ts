@@ -1388,10 +1388,10 @@ describe('/index', () => {
 				]);
 
 				// @ts-expect-error
-				const savedCriteria = FilterCriteria.savedCriteria.get('test');
+				const saved = FilterCriteria.savedCriteria.get('test');
 
 				// @ts-expect-error
-				expect(FilterCriteria.applyCriteria).toHaveBeenCalledWith(testData[0], savedCriteria, true);
+				expect(FilterCriteria.applyCriteria).toHaveBeenCalledWith(testData[0], saved.criteria, true);
 				expect(predicate).toHaveBeenCalledWith(testData[0], null);
 
 				expect(res[0]).toEqual(false);
@@ -1418,13 +1418,13 @@ describe('/index', () => {
 				]);
 
 				// @ts-expect-error
-				const savedCriteria = FilterCriteria.savedCriteria.get('test');
+				const saved = FilterCriteria.savedCriteria.get('test');
 
 				// @ts-expect-error
 				expect(FilterCriteria.applyCriteria).toHaveBeenCalledWith(
 					testData[0],
 					{
-						...savedCriteria,
+						...saved?.criteria,
 						matchValue: 'JÓHN'
 					},
 					true
@@ -1440,14 +1440,26 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle with [operator, normalize, valuePath]', async () => {
+			it('should handle with [operator, normalize, valuePath] and transform', async () => {
+				const transform = vi.fn(criteria => {
+					if (criteria.type === 'CRITERIA') {
+						return {
+							...criteria,
+							valuePath: ['prefix', ...criteria.valuePath]
+						};
+					}
+
+					return criteria;
+				});
+
 				FilterCriteria.saveCriteria(
 					'test-string',
 					FilterCriteria.criteria({
 						type: 'STRING',
 						operator: 'STARTS-WITH',
 						valuePath: ['name']
-					})
+					}),
+					transform
 				);
 
 				const criteria = FilterCriteria.criteria({
@@ -1467,13 +1479,21 @@ describe('/index', () => {
 				]);
 
 				// @ts-expect-error
-				const savedCriteria = FilterCriteria.savedCriteria.get('test-string');
+				const saved = FilterCriteria.savedCriteria.get('test-string');
+
+				expect(transform).toHaveBeenCalledWith({
+					...saved?.criteria,
+					matchValue: 'John Doe',
+					normalize: false,
+					operator: 'EQUALS',
+					valuePath: ['name']
+				});
 
 				// @ts-expect-error
 				expect(FilterCriteria.applyCriteria).toHaveBeenCalledWith(
 					testData[0],
 					{
-						...savedCriteria,
+						...saved?.criteria,
 						matchValue: 'John Doe',
 						normalize: false,
 						operator: 'EQUALS',
@@ -3749,13 +3769,45 @@ describe('/index', () => {
 
 			// @ts-expect-error
 			expect(FilterCriteria.savedCriteria.get('test')).toEqual({
-				defaultValue: '',
-				matchValue: 'John',
-				normalize: true,
-				operator: 'EQUALS',
-				type: 'STRING',
-				valuePath: ['name'],
-				valueTransformer: null
+				criteria: {
+					defaultValue: '',
+					matchValue: 'John',
+					normalize: true,
+					operator: 'EQUALS',
+					type: 'STRING',
+					valuePath: ['name'],
+					valueTransformer: null
+				},
+				transform: null
+			});
+		});
+
+		it('should save criteria with transform', () => {
+			const transform = vi.fn();
+
+			FilterCriteria.saveCriteria(
+				'test',
+				FilterCriteria.criteria({
+					matchValue: 'John',
+					operator: 'EQUALS',
+					type: 'STRING',
+					valuePath: ['name']
+				}),
+				transform
+			);
+
+			// @ts-expect-error
+			expect(FilterCriteria.savedCriteria.get('test')).toEqual({
+				criteria: {
+					defaultValue: '',
+					matchValue: 'John',
+					normalize: true,
+					operator: 'EQUALS',
+					type: 'STRING',
+					valuePath: ['name'],
+					valueTransformer: null
+				},
+				transform
 			});
 		});
 

@@ -329,8 +329,14 @@ const filterGroupFactory = (input: FilterCriteria.FilterGroupInput): FilterCrite
 };
 
 class FilterCriteria {
-	private static savedCriteria: Map<string, FilterCriteria.Criteria> = new Map();
-	
+	private static savedCriteria: Map<
+		string,
+		{
+			criteria: FilterCriteria.Criteria;
+			transform: ((criteria: FilterCriteria.Criteria) => FilterCriteria.Criteria) | null;
+		}
+	> = new Map();
+
 	static criteria = criteriaFactory;
 	static filter = filterFactory;
 	static filterGroup = filterGroupFactory;
@@ -605,10 +611,14 @@ class FilterCriteria {
 		}
 	}
 
-	private static async $applyCriteria(value: any, criteria: FilterCriteria.CriteriaInput & { type: 'CRITERIA' }, detailed: boolean = false) {
-		const savedCriteria = this.savedCriteria.get(criteria.key);
+	private static async $applyCriteria(
+		value: any,
+		criteria: FilterCriteria.CriteriaInput & { type: 'CRITERIA' },
+		detailed: boolean = false
+	) {
+		const saved = this.savedCriteria.get(criteria.key);
 
-		if (!savedCriteria) {
+		if (!saved) {
 			return detailed
 				? {
 						matchValue: stringify(criteria.matchValue),
@@ -619,7 +629,7 @@ class FilterCriteria {
 				: false;
 		}
 
-		const newCriteria = { ...savedCriteria };
+		let newCriteria = { ...saved.criteria };
 
 		if (!_.isNil(criteria.normalize) && 'normalize' in newCriteria) {
 			newCriteria.normalize = criteria.normalize;
@@ -635,6 +645,10 @@ class FilterCriteria {
 
 		if (criteria.valuePath && _.size(criteria.valuePath) > 0 && 'valuePath' in newCriteria) {
 			newCriteria.valuePath = criteria.valuePath;
+		}
+
+		if (saved.transform && _.isFunction(saved.transform)) {
+			newCriteria = saved.transform(newCriteria);
 		}
 
 		return this.applyCriteria(value, newCriteria, detailed);
@@ -1410,7 +1424,7 @@ class FilterCriteria {
 		};
 
 		const savedCriteriaMap = Array.from(this.savedCriteria.entries()).reduce(
-			(acc, [key, criteria]) => {
+			(acc, [key, { criteria }]) => {
 				acc[key] = criteria;
 				return acc;
 			},
@@ -1501,12 +1515,16 @@ class FilterCriteria {
 		return _.isMatch(obj, subObject);
 	}
 
-	static saveCriteria(key: string, criteria: FilterCriteria.Criteria): void {
+	static saveCriteria(
+		key: string,
+		criteria: FilterCriteria.Criteria,
+		transform: ((criteria: FilterCriteria.Criteria) => FilterCriteria.Criteria) | null = null
+	): void {
 		if (criteria.type === 'CRITERIA') {
 			throw new Error('Cannot save criteria with type "CRITERIA"');
 		}
 
-		this.savedCriteria.set(key, criteria);
+		this.savedCriteria.set(key, { criteria, transform });
 	}
 
 	private static toRad(value: number): number {
