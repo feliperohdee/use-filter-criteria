@@ -509,7 +509,7 @@ describe('/index', () => {
 			});
 		});
 
-		it('should handle path inside array (multiple)', async () => {
+		it('should handle path traversal inside array (arrayBranching)', async () => {
 			const criteria = FilterCriteria.criteria({
 				matchValue: '1234567891',
 				operator: 'EQUALS',
@@ -530,6 +530,48 @@ describe('/index', () => {
 				passed: true,
 				reason: 'STRING criteria "EQUALS" check PASSED',
 				value: ['1234567890', '1234567891']
+			});
+		});
+
+		it('should handle match in array', async () => {
+			const criteria = FilterCriteria.criteria({
+				matchValue: 'jane doe',
+				operator: 'EQUALS',
+				type: 'STRING',
+				matchInArray: true,
+				normalize: true,
+				valuePath: ['names']
+			});
+
+			const testValue = {
+				names: ['John Smith', 'Jane Doe', 'Bob Johnson']
+			};
+
+			const res = await Promise.all([
+				// @ts-expect-error
+				FilterCriteria.applyCriteria(testValue, criteria),
+				// @ts-expect-error
+				FilterCriteria.applyCriteria(testValue, criteria, true),
+				// @ts-expect-error
+				FilterCriteria.applyCriteria(testValue, { ...criteria, matchInArray: false }),
+				// @ts-expect-error
+				FilterCriteria.applyCriteria(testValue, { ...criteria, matchInArray: false }, true)
+			]);
+
+			expect(res[0]).toEqual(true);
+			expect(res[1]).toEqual({
+				matchValue: 'jane-doe',
+				passed: true,
+				reason: 'STRING criteria "EQUALS" check PASSED',
+				value: ['john-smith', 'jane-doe', 'bob-johnson']
+			});
+
+			expect(res[2]).toEqual(false);
+			expect(res[3]).toEqual({
+				matchValue: 'jane-doe',
+				passed: false,
+				reason: 'STRING criteria "EQUALS" check FAILED',
+				value: ['john-smith', 'jane-doe', 'bob-johnson']
 			});
 		});
 
@@ -3179,6 +3221,30 @@ describe('/index', () => {
 				});
 			});
 
+			it('should handle CONTAINS operator with number', async () => {
+				const criteria = FilterCriteria.criteria({
+					matchValue: '456',
+					operator: 'CONTAINS',
+					type: 'STRING',
+					valuePath: ['phones', 'number']
+				});
+
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					matchValue: '456',
+					passed: true,
+					reason: 'STRING criteria "CONTAINS" check PASSED',
+					value: ['1234567890', '1234567891']
+				});
+			});
+
 			it('should handle ENDS-WITH operator', async () => {
 				const criteria = FilterCriteria.criteria({
 					matchValue: 'Doe',
@@ -3451,7 +3517,7 @@ describe('/index', () => {
 			it('should find string value', () => {
 				// @ts-expect-error
 				expect(FilterCriteria.findByPath(simpleObject, ['name'])).toEqual({
-					multiple: false,
+					arrayBranching: false,
 					value: 'John'
 				});
 			});
@@ -3459,7 +3525,7 @@ describe('/index', () => {
 			it('should find number value', () => {
 				// @ts-expect-error
 				expect(FilterCriteria.findByPath(simpleObject, ['age'])).toEqual({
-					multiple: false,
+					arrayBranching: false,
 					value: 30
 				});
 			});
@@ -3467,7 +3533,7 @@ describe('/index', () => {
 			it('should find boolean value', () => {
 				// @ts-expect-error
 				expect(FilterCriteria.findByPath(simpleObject, ['isActive'])).toEqual({
-					multiple: false,
+					arrayBranching: false,
 					value: true
 				});
 			});
@@ -3475,7 +3541,7 @@ describe('/index', () => {
 			it('should find null value', () => {
 				// @ts-expect-error
 				expect(FilterCriteria.findByPath(simpleObject, ['nullValue'])).toEqual({
-					multiple: false,
+					arrayBranching: false,
 					value: null
 				});
 			});
@@ -3483,7 +3549,7 @@ describe('/index', () => {
 			it('should return defaultValue for undefined value', () => {
 				// @ts-expect-error
 				expect(FilterCriteria.findByPath(simpleObject, ['undefinedValue'])).toEqual({
-					multiple: false,
+					arrayBranching: false,
 					value: undefined
 				});
 			});
@@ -3491,7 +3557,7 @@ describe('/index', () => {
 			it('should return defaultValue for non-existent path', () => {
 				// @ts-expect-error
 				expect(FilterCriteria.findByPath(simpleObject, ['nonexistent'])).toEqual({
-					multiple: false,
+					arrayBranching: false,
 					value: undefined
 				});
 			});
@@ -3513,7 +3579,7 @@ describe('/index', () => {
 			it('should find deeply nested value using dot notation', () => {
 				// @ts-expect-error
 				expect(FilterCriteria.findByPath(nestedObject, ['user', 'details', 'name'])).toEqual({
-					multiple: false,
+					arrayBranching: false,
 					value: 'John'
 				});
 			});
@@ -3521,7 +3587,7 @@ describe('/index', () => {
 			it('should find multiple levels deep value', () => {
 				// @ts-expect-error
 				expect(FilterCriteria.findByPath(nestedObject, ['user', 'details', 'address', 'street'])).toEqual({
-					multiple: false,
+					arrayBranching: false,
 					value: 'Main St'
 				});
 			});
@@ -3529,7 +3595,7 @@ describe('/index', () => {
 			it('should return undefined for invalid nested path', () => {
 				// @ts-expect-error
 				expect(FilterCriteria.findByPath(nestedObject, ['user', 'invalid', 'path'])).toEqual({
-					multiple: false,
+					arrayBranching: false,
 					value: undefined
 				});
 			});
@@ -3549,7 +3615,7 @@ describe('/index', () => {
 			it('should return simple array', () => {
 				// @ts-expect-error
 				expect(FilterCriteria.findByPath(arrayData, ['numbers'])).toEqual({
-					multiple: false,
+					arrayBranching: false,
 					value: [1, 2, 3]
 				});
 			});
@@ -3557,7 +3623,7 @@ describe('/index', () => {
 			it('should return nested arrays', () => {
 				// @ts-expect-error
 				expect(FilterCriteria.findByPath(arrayData, ['nested'])).toEqual({
-					multiple: false,
+					arrayBranching: false,
 					value: [
 						[4, 5],
 						[6, 7]
@@ -3568,7 +3634,7 @@ describe('/index', () => {
 			it('should return deeply nested arrays', () => {
 				// @ts-expect-error
 				expect(FilterCriteria.findByPath(arrayData, ['deepNested'])).toEqual({
-					multiple: false,
+					arrayBranching: false,
 					value: [[[8, 9]], [[10, 11]]]
 				});
 			});
@@ -3576,7 +3642,7 @@ describe('/index', () => {
 			it('should return mixed type arrays', () => {
 				// @ts-expect-error
 				expect(FilterCriteria.findByPath(arrayData, ['mixedArray'])).toEqual({
-					multiple: false,
+					arrayBranching: false,
 					value: [1, '2', true, null]
 				});
 			});
@@ -3599,7 +3665,7 @@ describe('/index', () => {
 			it('should find values across array of objects', () => {
 				// @ts-expect-error
 				expect(FilterCriteria.findByPath(objectArrays, ['users', 'name'])).toEqual({
-					multiple: true,
+					arrayBranching: true,
 					value: ['John', 'Jane']
 				});
 			});
@@ -3607,7 +3673,7 @@ describe('/index', () => {
 			it('should find and flatten nested arrays in objects', () => {
 				// @ts-expect-error
 				expect(FilterCriteria.findByPath(objectArrays, ['users', 'tags'])).toEqual({
-					multiple: true,
+					arrayBranching: true,
 					value: ['admin', 'user', 'user']
 				});
 			});
@@ -3615,7 +3681,7 @@ describe('/index', () => {
 			it('should traverse deeply nested object arrays', () => {
 				// @ts-expect-error
 				expect(FilterCriteria.findByPath(objectArrays, ['nested', 'groups', 'members', 'name'])).toEqual({
-					multiple: true,
+					arrayBranching: true,
 					value: ['Alice', 'Bob', 'Charlie']
 				});
 			});
@@ -3623,7 +3689,7 @@ describe('/index', () => {
 			it('should return empty array for invalid nested path', () => {
 				// @ts-expect-error
 				expect(FilterCriteria.findByPath(objectArrays, ['nested', 'groups', 'invalid'])).toEqual({
-					multiple: true,
+					arrayBranching: true,
 					value: []
 				});
 			});
@@ -3633,7 +3699,7 @@ describe('/index', () => {
 			it('should handle empty object', () => {
 				// @ts-expect-error
 				expect(FilterCriteria.findByPath({}, ['any', 'path'])).toEqual({
-					multiple: false,
+					arrayBranching: false,
 					value: undefined
 				});
 			});
@@ -3641,7 +3707,7 @@ describe('/index', () => {
 			it('should handle empty array', () => {
 				// @ts-expect-error
 				expect(FilterCriteria.findByPath([], ['any', 'path'])).toEqual({
-					multiple: false,
+					arrayBranching: false,
 					value: []
 				});
 			});
@@ -3649,7 +3715,7 @@ describe('/index', () => {
 			it('should handle empty path', () => {
 				// @ts-expect-error
 				expect(FilterCriteria.findByPath({ value: 1 }, [])).toEqual({
-					multiple: false,
+					arrayBranching: false,
 					value: { value: 1 }
 				});
 			});
@@ -3660,12 +3726,12 @@ describe('/index', () => {
 			it('should handle circular references', () => {
 				// @ts-expect-error
 				expect(FilterCriteria.findByPath(circularRef, ['a'])).toEqual({
-					multiple: false,
+					arrayBranching: false,
 					value: 1
 				});
 				// @ts-expect-error
 				expect(FilterCriteria.findByPath(circularRef, ['self', 'a'])).toEqual({
-					multiple: false,
+					arrayBranching: false,
 					value: 1
 				});
 			});
@@ -3679,17 +3745,17 @@ describe('/index', () => {
 			it('should handle special characters in path using bracket notation', () => {
 				// @ts-expect-error
 				expect(FilterCriteria.findByPath(specialChars, ['["key.with.dots"]'])).toEqual({
-					multiple: false,
+					arrayBranching: false,
 					value: 'value'
 				});
 				// @ts-expect-error
 				expect(FilterCriteria.findByPath(specialChars, ['["key-with-dashes"]'])).toEqual({
-					multiple: false,
+					arrayBranching: false,
 					value: 'value2'
 				});
 				// @ts-expect-error
 				expect(FilterCriteria.findByPath(specialChars, ['["@special!chars"]'])).toEqual({
-					multiple: false,
+					arrayBranching: false,
 					value: 'value3'
 				});
 			});
@@ -3698,6 +3764,16 @@ describe('/index', () => {
 
 	describe('inspect', () => {
 		it('should return a JSON string with operators and saved criteria', () => {
+			FilterCriteria.saveCriteria(
+				'test-boolean',
+				FilterCriteria.criteria({
+					matchInArray: false,
+					operator: 'IS-TRUE',
+					type: 'BOOLEAN',
+					valuePath: ['active']
+				})
+			);
+
 			// Save some test criteria
 			FilterCriteria.saveCriteria(
 				'test-string',
@@ -3705,15 +3781,6 @@ describe('/index', () => {
 					type: 'STRING',
 					operator: 'STARTS-WITH',
 					valuePath: ['name']
-				})
-			);
-
-			FilterCriteria.saveCriteria(
-				'test-boolean',
-				FilterCriteria.criteria({
-					type: 'BOOLEAN',
-					operator: 'IS-TRUE',
-					valuePath: ['active']
 				})
 			);
 
@@ -3799,22 +3866,23 @@ describe('/index', () => {
 
 			// Check saved criteria
 			expect(result.savedCriteria).toEqual({
+				'test-boolean': {
+					matchInArray: false,
+					matchValue: null,
+					operator: 'IS-TRUE',
+					type: 'BOOLEAN',
+					valueMapper: null,
+					valuePath: ['active']
+				},
 				'test-string': {
-					type: 'STRING',
-					operator: 'STARTS-WITH',
-					valuePath: ['name'],
 					defaultValue: '',
+					matchInArray: true,
 					matchValue: null,
 					normalize: true,
-					valueMapper: null
-				},
-				'test-boolean': {
-					type: 'BOOLEAN',
-					operator: 'IS-TRUE',
-					valuePath: ['active'],
-					defaultValue: undefined,
-					matchValue: null,
-					valueMapper: null
+					operator: 'STARTS-WITH',
+					type: 'STRING',
+					valueMapper: null,
+					valuePath: ['name']
 				}
 			});
 		});
@@ -4033,6 +4101,7 @@ describe('/index', () => {
 			FilterCriteria.saveCriteria(
 				'test',
 				FilterCriteria.criteria({
+					matchInArray: true,
 					matchValue: 'John',
 					operator: 'EQUALS',
 					type: 'STRING',
@@ -4044,6 +4113,7 @@ describe('/index', () => {
 			expect(FilterCriteria.savedCriteria.get('test')).toEqual({
 				criteria: {
 					defaultValue: '',
+					matchInArray: true,
 					matchValue: 'John',
 					normalize: true,
 					operator: 'EQUALS',
@@ -4062,6 +4132,7 @@ describe('/index', () => {
 			FilterCriteria.saveCriteria(
 				'test',
 				FilterCriteria.criteria({
+					matchInArray: true,
 					matchValue: 'John',
 					operator: 'EQUALS',
 					type: 'STRING',
@@ -4075,6 +4146,7 @@ describe('/index', () => {
 			expect(FilterCriteria.savedCriteria.get('test')).toEqual({
 				criteria: {
 					defaultValue: '',
+					matchInArray: true,
 					matchValue: 'John',
 					normalize: true,
 					operator: 'EQUALS',

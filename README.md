@@ -19,6 +19,7 @@ A TypeScript-based filtering engine that provides a flexible, type-safe way to f
 - 🎛️ **Flexible**: Customizable default values and source path resolution
 - 🔄 **Dynamic Values**: Support for dynamic value resolution using `$path` and custom functions
 - 📊 **Detailed Logging**: Optional detailed diagnostics for understanding filter results
+- 🎯 **Array Matching Control**: Fine-grained control over array matching behavior with `matchInArray` option
 
 ## Installation
 
@@ -54,15 +55,15 @@ const users = [
 ];
 
 // Simple number comparison
-const ageFilter = {
+const ageCriteria = FilterCriteria.criteria({
 	type: 'NUMBER',
 	operator: 'GREATER',
 	valuePath: ['age'],
 	matchValue: 25
-};
+});
 
 // Example using path inside array
-const locationFilter = {
+const locationCriteria = FilterCriteria.criteria({
 	type: 'GEO',
 	operator: 'IN-RADIUS',
 	valuePath: ['addresses', 'location'], // Will check all locations in the addresses array
@@ -72,48 +73,66 @@ const locationFilter = {
 		radius: 5,
 		unit: 'km'
 	}
-};
+});
+
+// Example using matchInArray: true (default)
+const matchInArrayTrue = FilterCriteria.criteria({
+	type: 'STRING',
+	matchInArray: true,
+	operator: 'STARTS-WITH',
+	valuePath: ['roles'], // Will check all elements in the roles array (check all strings in the array)
+	matchValue: 'adm'
+});
+
+// Example using matchInArray: false
+const matchInArrayFalse = FilterCriteria.criteria({
+	type: 'STRING',
+	matchInArray: false,
+	operator: 'EQUALS',
+	valuePath: ['roles'], // Will NOT check roles in the roles array, because matchInArray is false and roles is an array
+	matchValue: 'adm'
+});
 
 // Complex multi-criteria filter
-const complexFilter = {
+const complexFilter = FilterCriteria.filterGroup({
 	operator: 'AND',
 	filters: [
-		{
+		FilterCriteria.filter({
 			operator: 'AND',
 			criteria: [
-				{
+				FilterCriteria.criteria({
 					type: 'SET',
 					operator: 'INCLUDES-ANY',
 					valuePath: ['skills'],
 					matchValue: ['typescript', 'python']
-				},
-				{
+				}),
+				FilterCriteria.criteria({
 					type: 'BOOLEAN',
 					operator: 'EQUALS',
 					valuePath: ['active'],
 					matchValue: true
-				}
+				})
 			]
-		},
-		{
+		}),
+		FilterCriteria.filter({
 			operator: 'OR',
 			criteria: [
-				{
+				FilterCriteria.criteria({
 					type: 'STRING',
 					operator: 'CONTAINS',
 					valuePath: ['name'],
 					matchValue: 'john'
-				},
-				{
+				}),
+				FilterCriteria.criteria({
 					type: 'ARRAY',
 					operator: 'INCLUDES-ANY',
 					valuePath: ['roles'],
 					matchValue: ['admin']
-				}
+				})
 			]
-		}
+		})
 	]
-};
+});
 
 // Basic usage
 const matchingUsers = await FilterCriteria.matchMany(users, complexFilter);

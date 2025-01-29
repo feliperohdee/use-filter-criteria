@@ -120,6 +120,7 @@ const criteriaArray = z.object({
 
 const criteriaBoolean = z.object({
 	defaultValue: z.any().default(undefined),
+	matchInArray: z.boolean().default(true),
 	matchValue: matchValueGetter(z.any()).default(null),
 	operator: operatorsBoolean,
 	type: z.literal('BOOLEAN'),
@@ -134,6 +135,7 @@ const criteriaCustom = z.object({
 });
 
 const criteriaCriteria = z.object({
+	matchInArray: z.boolean().default(true),
 	matchValue: z.any().default(null),
 	normalize: z.boolean().default(true),
 	operator: z
@@ -158,6 +160,7 @@ const criteriaCriteria = z.object({
 
 const criteriaDate = z.object({
 	defaultValue: z.string().default(''),
+	matchInArray: z.boolean().default(true),
 	matchValue: matchValueGetter(z.union([datetime, z.tuple([datetime, datetime])])),
 	operator: operatorsDate,
 	type: z.literal('DATE'),
@@ -183,6 +186,7 @@ const criteriaGeo = z.object({
 
 const criteriaMap = z.object({
 	defaultValue: z.map(z.unknown(), z.unknown()).default(new Map()),
+	matchInArray: z.boolean().default(true),
 	matchValue: matchValueGetter(z.any()).default(null),
 	normalize: z.boolean().default(true),
 	operator: operatorsMap,
@@ -193,6 +197,7 @@ const criteriaMap = z.object({
 
 const criteriaNumber = z.object({
 	defaultValue: z.number().default(0),
+	matchInArray: z.boolean().default(true),
 	matchValue: matchValueGetter(z.union([z.number(), z.array(z.number())]))
 		.nullable()
 		.default(null),
@@ -204,6 +209,7 @@ const criteriaNumber = z.object({
 
 const criteriaObject = z.object({
 	defaultValue: z.record(z.unknown()).default({}),
+	matchInArray: z.boolean().default(true),
 	matchValue: matchValueGetter(z.any()).default(null),
 	normalize: z.boolean().default(true),
 	operator: operatorsObject,
@@ -214,6 +220,7 @@ const criteriaObject = z.object({
 
 const criteriaSet = z.object({
 	defaultValue: z.set(z.unknown()).default(new Set()),
+	matchInArray: z.boolean().default(true),
 	matchValue: matchValueGetter(z.union([z.array(z.unknown()), z.number(), z.string()]))
 		.nullable()
 		.default(null),
@@ -226,6 +233,7 @@ const criteriaSet = z.object({
 
 const criteriaString = z.object({
 	defaultValue: z.string().default(''),
+	matchInArray: z.boolean().default(true),
 	matchValue: matchValueGetter(z.union([z.string(), z.array(z.string()), z.instanceof(RegExp)]))
 		.nullable()
 		.default(null),
@@ -470,7 +478,7 @@ class FilterCriteria {
 			}
 
 			let passed = false;
-			let multiple = false;
+			let arrayBranching = false;
 
 			// value mapper
 			if ('valueMapper' in criteria && _.isFunction(criteria.valueMapper)) {
@@ -481,14 +489,14 @@ class FilterCriteria {
 				const found = this.findByPath(value, criteria.valuePath, criteria.defaultValue);
 
 				value = found.value;
-				multiple = found.multiple;
+				arrayBranching = found.arrayBranching;
 			}
 
 			if ('normalize' in criteria && criteria.normalize) {
 				value = this.normalize(value);
 			}
 
-			if (multiple) {
+			if (arrayBranching) {
 				passed = _.some(value, v => {
 					return this.evaluateCriteria(v, criteria, matchValue);
 				});
@@ -596,6 +604,16 @@ class FilterCriteria {
 	}
 
 	private static evaluateCriteria(value: any, criteria: FilterCriteria.CriteriaInput, matchValue: any): boolean {
+		if ('matchInArray' in criteria && criteria.matchInArray && _.isArray(value)) {
+			return _.some(value, item => {
+				return this.evaluateSingleCriteria(item, criteria, matchValue);
+			});
+		}
+
+		return this.evaluateSingleCriteria(value, criteria, matchValue);
+	}
+
+	private static evaluateSingleCriteria(value: any, criteria: FilterCriteria.CriteriaInput, matchValue: any): boolean {
 		switch (criteria.type) {
 			case 'ARRAY':
 				return this.applyArrayCriteria(value, criteria.operator, matchValue);
@@ -1222,6 +1240,8 @@ class FilterCriteria {
 	}
 
 	private static applyStringCriteria(value: string, operator: FilterCriteria.Operators['string'], matchValue: any): boolean {
+		value = stringify(value);
+
 		const validValue = _.isString(value);
 
 		if (!validValue) {
@@ -1346,15 +1366,19 @@ class FilterCriteria {
 		return result;
 	}
 
+	/*
+		findByPath function is designed to traverse nested data structures using 
+		a path array and track whether it encounters many possible paths during traversal.
+	*/
 	private static findByPath(
 		value: any,
 		path: string[],
 		defaultValue?: any
 	): {
-		multiple: boolean;
+		arrayBranching: boolean;
 		value: any[];
 	} {
-		let multiple = false;
+		let arrayBranching = false;
 
 		const iterate = (value: any, path: string[]): any | any[] => {
 			if (_.size(path) === 0) {
@@ -1370,13 +1394,13 @@ class FilterCriteria {
 			const [currentSegment, ...remainingPath] = path;
 			const mappedValue = _.get(value, currentSegment, defaultValue);
 
-			// If the current segment is an array and there are more segments in the path, looks like we have a multiple possible matches
+			// If the current segment is an array and there are more segments in the path, looks like we have many possible traversal paths
 			if (_.isArray(mappedValue) && _.size(remainingPath) > 0) {
-				multiple = true;
+				arrayBranching = true;
 			}
 
 			if (_.isUndefined(mappedValue)) {
-				return multiple ? [] : defaultValue;
+				return arrayBranching ? [] : defaultValue;
 			}
 
 			return iterate(mappedValue, remainingPath);
@@ -1385,7 +1409,7 @@ class FilterCriteria {
 		const newValue = iterate(value, path);
 
 		return {
-			multiple,
+			arrayBranching,
 			value: newValue
 		};
 	}
