@@ -14,7 +14,8 @@ A TypeScript-based filtering engine that provides a flexible, type-safe way to f
 - 🎨 **Rich Operators**: Comprehensive set of comparison and logical operators
 - 🌐 **Internationalization-Ready**: Built-in string normalization (accents, case, etc.)
 - 🔍 **Complex Queries**: Support for nested AND/OR logic combinations
-- 📍 **Geospatial**: Built-in support for geographic radius searches
+- 🌳 **Deep Path Resolution**: Supports searching through arrays and nested structures with automatic path resolution (e.g. `['users', 'addresses', 'location']` will search through all user addresses)
+- 📍 **Geospatial**: Built-in support for geographic radius searches, with flexible coordinate formats (object or tuple notation) and array traversal support for finding coordinates in nested data structures
 - 🎛️ **Flexible**: Customizable default values and source path resolution
 - 🔄 **Dynamic Values**: Support for dynamic value resolution using `$path` and custom functions
 - 📊 **Detailed Logging**: Optional detailed diagnostics for understanding filter results
@@ -38,11 +39,15 @@ const users = [
 		id: 1,
 		name: 'John Doe',
 		age: 30,
+		addresses: [
+			{ type: 'home', location: { lat: 40.7128, lng: -74.006 } },
+			{ type: 'work', location: { lat: 40.758, lng: -73.9855 } }
+		],
 		skills: new Set(['typescript', 'react']),
 		roles: ['admin', 'developer'],
 		active: true,
 		lastLogin: '2024-01-01T00:00:00Z',
-		location: { lat: 40.7128, lng: -74.006 },
+		location: { lat: 40.7128, lng: -74.006 }, // location can also be specified as tuple: [40.7128, -74.006],
 		metadata: new Map([['level', 'senior']])
 	}
 	// ... more users
@@ -54,6 +59,19 @@ const ageFilter = {
 	operator: 'GREATER',
 	valuePath: ['age'],
 	matchValue: 25
+};
+
+// Example using path inside array
+const locationFilter = {
+	type: 'GEO',
+	operator: 'IN-RADIUS',
+	valuePath: ['addresses', 'location'], // Will check all locations in the addresses array
+	matchValue: {
+		lat: 40.7128,
+		lng: -74.006,
+		radius: 5,
+		unit: 'km'
+	}
 };
 
 // Complex multi-criteria filter
@@ -445,7 +463,7 @@ const nestedResult = await FilterCriteria.match(users[0], nestedFilter, true);
 
 ### Map Operators
 
-- `CONTAINS`: Map's values object contains the specified value (using deep object comparision)
+- `CONTAINS`: Map's values object contains the specified value (using deep object comparison)
 - `HAS-KEY`: Map contains the specified key
 - `HAS-VALUE`: Map contains the specified value
 - `IS-EMPTY`: Map is empty
@@ -469,7 +487,7 @@ const nestedResult = await FilterCriteria.match(users[0], nestedFilter, true);
 
 ### Object Operators
 
-- `CONTAINS`: Object contains the specified value (using deep object comparision)
+- `CONTAINS`: Object contains the specified value (using deep object comparison)
 - `HAS-KEY`: Object contains the specified key
 - `HAS-VALUE`: Object contains the specified value
 - `IS-EMPTY`: Object is empty
@@ -596,9 +614,9 @@ FilterCriteria.saveCriteria(
 	})
 );
 
-/* The `saveCriteria` method also accepts an optional transform function that can modify the criteria when it's used: */
+/* The `saveCriteria` method also accepts an optional criteriaMapper function that can modify the criteria when it's used: */
 
-// Save criteria with a transform function
+// Save criteria with a criteriaMapper function
 FilterCriteria.saveCriteria(
 	'dynamicDateRange',
 	FilterCriteria.criteria({
@@ -608,7 +626,7 @@ FilterCriteria.saveCriteria(
 		matchValue: ['2024-01-01', '2024-12-31']
 	}),
 	criteria => {
-		// Transform function can modify any aspect of the criteria
+		// criteriaMapper function can modify any aspect of the criteria
 		const now = new Date();
 		const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 		return {
@@ -642,12 +660,13 @@ const customFilter = {
 			operator: 'AND',
 			criteria: [
 				{
-					type: 'CRITERIA',
 					key: 'containsKeyword',
-					valuePath: ['title'], // Override default valuePath
-					normalize: false, // Override normalize setting
+					matchValue: 'special-offer' // Override matchValue,
+					normalize: true, // Override normalize setting
 					operator: 'STARTS-WITH', // Override operator
-					matchValue: 'special-offer' // Override matchValue
+					type: 'CRITERIA',
+					valueMapper: (value: User) => value.name.toLowerCase(), // Override valueMapper
+					valuePath: ['title'] // Override default valuePath
 				}
 			]
 		}

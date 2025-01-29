@@ -10,11 +10,14 @@ const testData = [
 		age: 25,
 		createdAt: '2023-01-01T00:00:00Z',
 		id: 1,
-		location: { lat: 40.7128, lng: -74.006 },
 		map: new Map([['key-1', 'value-1']]),
 		name: 'John Doe',
 		null: null,
 		obj: { a: 1 },
+		phones: [
+			{ country: 'US', number: '1234567890' },
+			{ country: 'US', number: '1234567891' }
+		],
 		tags: ['developer', 'javascript'],
 		tagsSet: new Set(['developer', 'javascript'])
 	},
@@ -23,11 +26,14 @@ const testData = [
 		age: 30,
 		createdAt: '2023-03-01T00:00:00Z',
 		id: 2,
-		location: { lat: 34.0522, lng: -118.2437 },
 		map: new Map([['key-2', 'value-2']]),
 		name: 'Jane Smith',
 		null: null,
 		obj: { a: 2 },
+		phones: [
+			{ country: 'US', number: '1234567892' },
+			{ country: 'US', number: '1234567893' }
+		],
 		tags: ['designer', 'ui/ux'],
 		tagsSet: new Set(['designer', 'ui/ux'])
 	},
@@ -36,11 +42,14 @@ const testData = [
 		age: 35,
 		createdAt: '2023-06-01T00:00:00Z',
 		id: 3,
-		location: { lat: 51.5074, lng: -0.1278 },
 		map: new Map([['key-3', 'value-3']]),
 		name: 'John Smith',
 		null: null,
 		obj: { a: 3 },
+		phones: [
+			{ country: 'US', number: '1234567894' },
+			{ country: 'US', number: '1234567895' }
+		],
 		tags: ['developer', 'python'],
 		tagsSet: new Set(['developer', 'python'])
 	}
@@ -93,13 +102,13 @@ describe('/index', () => {
 							{
 								matchValue: 'jo_hn',
 								passed: false,
-								reason: 'String criteria "CONTAINS" check FAILED',
+								reason: 'STRING criteria "CONTAINS" check FAILED',
 								value: 'john-doe'
 							},
 							{
 								matchValue: 'john',
 								passed: true,
-								reason: 'String criteria "CONTAINS" check PASSED',
+								reason: 'STRING criteria "CONTAINS" check PASSED',
 								value: 'john-doe'
 							}
 						]
@@ -148,13 +157,13 @@ describe('/index', () => {
 							{
 								matchValue: 'jo_hn',
 								passed: false,
-								reason: 'String criteria "CONTAINS" check FAILED',
+								reason: 'STRING criteria "CONTAINS" check FAILED',
 								value: 'john-doe'
 							},
 							{
 								matchValue: 'john',
 								passed: true,
-								reason: 'String criteria "CONTAINS" check PASSED',
+								reason: 'STRING criteria "CONTAINS" check PASSED',
 								value: 'john-doe'
 							}
 						]
@@ -193,13 +202,13 @@ describe('/index', () => {
 					{
 						matchValue: 'jo_hn',
 						passed: false,
-						reason: 'String criteria "CONTAINS" check FAILED',
+						reason: 'STRING criteria "CONTAINS" check FAILED',
 						value: 'john-doe'
 					},
 					{
 						matchValue: 'john',
 						passed: true,
-						reason: 'String criteria "CONTAINS" check PASSED',
+						reason: 'STRING criteria "CONTAINS" check PASSED',
 						value: 'john-doe'
 					}
 				]
@@ -220,7 +229,7 @@ describe('/index', () => {
 			expect(res[1]).toEqual({
 				matchValue: 'john',
 				passed: true,
-				reason: 'String criteria "CONTAINS" check PASSED',
+				reason: 'STRING criteria "CONTAINS" check PASSED',
 				value: 'john-doe'
 			});
 		});
@@ -412,7 +421,7 @@ describe('/index', () => {
 			expect(res[1]).toEqual({
 				matchValue: JSON.stringify(['developer', 'javascript']),
 				passed: true,
-				reason: 'Array criteria "EXACTLY-MATCHES" check PASSED',
+				reason: 'ARRAY criteria "EXACTLY-MATCHES" check PASSED',
 				value: ['developer', 'javascript']
 			});
 		});
@@ -442,8 +451,38 @@ describe('/index', () => {
 			expect(res[1]).toEqual({
 				matchValue: JSON.stringify(['developer', 'javascript']),
 				passed: true,
-				reason: 'Array criteria "EXACTLY-MATCHES" check PASSED',
+				reason: 'ARRAY criteria "EXACTLY-MATCHES" check PASSED',
 				value: ['developer', 'javascript']
+			});
+		});
+
+		it('should handle valueMapper', async () => {
+			const valueMapper = vi.fn(value => {
+				return value.name;
+			});
+
+			const criteria = FilterCriteria.criteria({
+				operator: 'NOT-UNDEFINED',
+				type: 'BOOLEAN',
+				valueMapper,
+				valuePath: []
+			});
+
+			const res = await Promise.all([
+				// @ts-expect-error
+				FilterCriteria.applyCriteria(testData[0], criteria),
+				// @ts-expect-error
+				FilterCriteria.applyCriteria(testData[0], criteria, true)
+			]);
+
+			expect(valueMapper).toHaveBeenCalledWith(testData[0], criteria);
+
+			expect(res[0]).toEqual(true);
+			expect(res[1]).toEqual({
+				matchValue: 'null',
+				passed: true,
+				reason: 'BOOLEAN criteria "NOT-UNDEFINED" check PASSED',
+				value: 'John Doe'
 			});
 		});
 
@@ -465,21 +504,17 @@ describe('/index', () => {
 			expect(res[1]).toEqual({
 				matchValue: 'null',
 				passed: true,
-				reason: 'Boolean criteria "NOT-UNDEFINED" check PASSED',
+				reason: 'BOOLEAN criteria "NOT-UNDEFINED" check PASSED',
 				value: testData[0]
 			});
 		});
 
-		it('should handle valueTransformer', async () => {
-			const valueTransformer = vi.fn(value => {
-				return value.name;
-			});
-
+		it('should handle path inside array (multiple)', async () => {
 			const criteria = FilterCriteria.criteria({
-				operator: 'NOT-UNDEFINED',
-				type: 'BOOLEAN',
-				valuePath: [],
-				valueTransformer
+				matchValue: '1234567891',
+				operator: 'EQUALS',
+				type: 'STRING',
+				valuePath: ['phones', 'number']
 			});
 
 			const res = await Promise.all([
@@ -489,14 +524,12 @@ describe('/index', () => {
 				FilterCriteria.applyCriteria(testData[0], criteria, true)
 			]);
 
-			expect(valueTransformer).toHaveBeenCalledWith(testData[0], criteria);
-
 			expect(res[0]).toEqual(true);
 			expect(res[1]).toEqual({
-				matchValue: 'null',
+				matchValue: '1234567891',
 				passed: true,
-				reason: 'Boolean criteria "NOT-UNDEFINED" check PASSED',
-				value: 'John Doe'
+				reason: 'STRING criteria "EQUALS" check PASSED',
+				value: ['1234567890', '1234567891']
 			});
 		});
 
@@ -560,7 +593,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: JSON.stringify(['developer', 'javascript']),
 					passed: true,
-					reason: 'Array criteria "EXACTLY-MATCHES" check PASSED',
+					reason: 'ARRAY criteria "EXACTLY-MATCHES" check PASSED',
 					value: ['developer', 'javascript']
 				});
 			});
@@ -585,38 +618,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: JSON.stringify(['Develóper', 'JavaScript']),
 					passed: false,
-					reason: 'Array criteria "EXACTLY-MATCHES" check FAILED',
-					value: ['developer', 'javascript']
-				});
-			});
-
-			it('should handle EXACTLY-MATCHES operator with normalize function', async () => {
-				const normalize = vi.fn(() => {
-					return ['developer', 'javascript'];
-				});
-
-				const criteria = FilterCriteria.criteria({
-					matchValue: ['Develóper', 'JavaScript'],
-					normalize,
-					operator: 'EXACTLY-MATCHES',
-					type: 'ARRAY',
-					valuePath: ['tags']
-				});
-
-				const res = await Promise.all([
-					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
-
-				expect(normalize).toHaveBeenCalledWith(['Develóper', 'JavaScript']);
-				expect(normalize).toHaveBeenCalledWith(['developer', 'javascript']);
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
-					matchValue: JSON.stringify(['developer', 'javascript']),
-					passed: true,
-					reason: 'Array criteria "EXACTLY-MATCHES" check PASSED',
+					reason: 'ARRAY criteria "EXACTLY-MATCHES" check FAILED',
 					value: ['developer', 'javascript']
 				});
 			});
@@ -640,7 +642,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: 'developer',
 					passed: true,
-					reason: 'Array criteria "HAS" check PASSED',
+					reason: 'ARRAY criteria "HAS" check PASSED',
 					value: ['developer', 'javascript']
 				});
 			});
@@ -664,7 +666,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: JSON.stringify(['developer', 'javascript']),
 					passed: true,
-					reason: 'Array criteria "INCLUDES-ALL" check PASSED',
+					reason: 'ARRAY criteria "INCLUDES-ALL" check PASSED',
 					value: ['developer', 'javascript']
 				});
 			});
@@ -688,7 +690,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: JSON.stringify(['developer', 'inexistent']),
 					passed: true,
-					reason: 'Array criteria "INCLUDES-ANY" check PASSED',
+					reason: 'ARRAY criteria "INCLUDES-ANY" check PASSED',
 					value: ['developer', 'javascript']
 				});
 			});
@@ -712,7 +714,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: 'developer',
 					passed: true,
-					reason: 'Array criteria "HAS" check PASSED',
+					reason: 'ARRAY criteria "HAS" check PASSED',
 					value: ['developer', 'javascript']
 				});
 			});
@@ -735,7 +737,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: 'null',
 					passed: false,
-					reason: 'Array criteria "IS-EMPTY" check FAILED',
+					reason: 'ARRAY criteria "IS-EMPTY" check FAILED',
 					value: ['developer', 'javascript']
 				});
 			});
@@ -758,7 +760,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: 'null',
 					passed: true,
-					reason: 'Array criteria "NOT-EMPTY" check PASSED',
+					reason: 'ARRAY criteria "NOT-EMPTY" check PASSED',
 					value: ['developer', 'javascript']
 				});
 			});
@@ -782,7 +784,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: JSON.stringify(['developer', 'javascript']),
 					passed: false,
-					reason: 'Array criteria "NOT-INCLUDES-ALL" check FAILED',
+					reason: 'ARRAY criteria "NOT-INCLUDES-ALL" check FAILED',
 					value: ['developer', 'javascript']
 				});
 			});
@@ -806,7 +808,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: JSON.stringify(['developer', 'inexistent']),
 					passed: false,
-					reason: 'Array criteria "NOT-INCLUDES-ANY" check FAILED',
+					reason: 'ARRAY criteria "NOT-INCLUDES-ANY" check FAILED',
 					value: ['developer', 'javascript']
 				});
 			});
@@ -830,7 +832,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: '2',
 					passed: true,
-					reason: 'Array criteria "SIZE-EQUALS" check PASSED',
+					reason: 'ARRAY criteria "SIZE-EQUALS" check PASSED',
 					value: ['developer', 'javascript']
 				});
 			});
@@ -854,7 +856,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: '1',
 					passed: true,
-					reason: 'Array criteria "SIZE-GREATER" check PASSED',
+					reason: 'ARRAY criteria "SIZE-GREATER" check PASSED',
 					value: ['developer', 'javascript']
 				});
 			});
@@ -878,7 +880,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: '2',
 					passed: true,
-					reason: 'Array criteria "SIZE-GREATER-OR-EQUALS" check PASSED',
+					reason: 'ARRAY criteria "SIZE-GREATER-OR-EQUALS" check PASSED',
 					value: ['developer', 'javascript']
 				});
 			});
@@ -902,7 +904,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: '3',
 					passed: true,
-					reason: 'Array criteria "SIZE-LESS" check PASSED',
+					reason: 'ARRAY criteria "SIZE-LESS" check PASSED',
 					value: ['developer', 'javascript']
 				});
 			});
@@ -926,7 +928,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: '2',
 					passed: true,
-					reason: 'Array criteria "SIZE-LESS-OR-EQUALS" check PASSED',
+					reason: 'ARRAY criteria "SIZE-LESS-OR-EQUALS" check PASSED',
 					value: ['developer', 'javascript']
 				});
 			});
@@ -952,7 +954,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: JSON.stringify({ a: 1 }),
 					passed: true,
-					reason: 'Boolean criteria "EQUALS" check PASSED',
+					reason: 'BOOLEAN criteria "EQUALS" check PASSED',
 					value: { a: 1 }
 				});
 			});
@@ -976,7 +978,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: 'false',
 					passed: false,
-					reason: 'Boolean criteria "IS-FALSE" check FAILED',
+					reason: 'BOOLEAN criteria "IS-FALSE" check FAILED',
 					value: true
 				});
 			});
@@ -999,7 +1001,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: 'null',
 					passed: false,
-					reason: 'Boolean criteria "IS-FALSY" check FAILED',
+					reason: 'BOOLEAN criteria "IS-FALSY" check FAILED',
 					value: 'John Doe'
 				});
 			});
@@ -1022,7 +1024,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: 'null',
 					passed: true,
-					reason: 'Boolean criteria "IS-NIL" check PASSED',
+					reason: 'BOOLEAN criteria "IS-NIL" check PASSED',
 					value: null
 				});
 			});
@@ -1045,7 +1047,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: 'null',
 					passed: true,
-					reason: 'Boolean criteria "IS-NULL" check PASSED',
+					reason: 'BOOLEAN criteria "IS-NULL" check PASSED',
 					value: null
 				});
 			});
@@ -1068,7 +1070,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: 'null',
 					passed: true,
-					reason: 'Boolean criteria "IS-TRUE" check PASSED',
+					reason: 'BOOLEAN criteria "IS-TRUE" check PASSED',
 					value: true
 				});
 			});
@@ -1091,7 +1093,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: 'null',
 					passed: true,
-					reason: 'Boolean criteria "IS-TRUTHY" check PASSED',
+					reason: 'BOOLEAN criteria "IS-TRUTHY" check PASSED',
 					value: 'John Doe'
 				});
 			});
@@ -1114,7 +1116,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: 'null',
 					passed: true,
-					reason: 'Boolean criteria "IS-UNDEFINED" check PASSED',
+					reason: 'BOOLEAN criteria "IS-UNDEFINED" check PASSED',
 					value: undefined
 				});
 			});
@@ -1138,7 +1140,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: JSON.stringify({ a: 1 }),
 					passed: false,
-					reason: 'Boolean criteria "NOT-EQUALS" check FAILED',
+					reason: 'BOOLEAN criteria "NOT-EQUALS" check FAILED',
 					value: { a: 1 }
 				});
 			});
@@ -1161,7 +1163,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: 'null',
 					passed: false,
-					reason: 'Boolean criteria "NOT-NIL" check FAILED',
+					reason: 'BOOLEAN criteria "NOT-NIL" check FAILED',
 					value: null
 				});
 			});
@@ -1184,7 +1186,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: 'null',
 					passed: false,
-					reason: 'Boolean criteria "NOT-NULL" check FAILED',
+					reason: 'BOOLEAN criteria "NOT-NULL" check FAILED',
 					value: null
 				});
 			});
@@ -1207,7 +1209,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: 'null',
 					passed: false,
-					reason: 'Boolean criteria "NOT-UNDEFINED" check FAILED',
+					reason: 'BOOLEAN criteria "NOT-UNDEFINED" check FAILED',
 					value: undefined
 				});
 			});
@@ -1231,7 +1233,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: JSON.stringify({ a: 1 }),
 					passed: false,
-					reason: 'Boolean criteria "STRICT-EQUAL" check FAILED',
+					reason: 'BOOLEAN criteria "STRICT-EQUAL" check FAILED',
 					value: { a: 1 }
 				});
 			});
@@ -1255,101 +1257,8 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: JSON.stringify({ a: 1 }),
 					passed: true,
-					reason: 'Boolean criteria "STRICT-NOT-EQUAL" check PASSED',
+					reason: 'BOOLEAN criteria "STRICT-NOT-EQUAL" check PASSED',
 					value: { a: 1 }
-				});
-			});
-		});
-
-		describe('custom', () => {
-			it('should handle', async () => {
-				const predicate = vi.fn(async value => {
-					return _.startsWith(value.name, 'John');
-				});
-
-				const criteria = FilterCriteria.criteria({
-					predicate,
-					type: 'CUSTOM'
-				});
-
-				const res = await Promise.all([
-					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
-
-				expect(predicate).toHaveBeenCalledWith(testData[0], null);
-
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
-					matchValue: 'null',
-					passed: true,
-					reason: 'Custom predicate check PASSED',
-					value: testData[0]
-				});
-			});
-
-			it('should handle with matchValue', async () => {
-				const predicate = vi.fn(async (value, matchValue) => {
-					return _.startsWith(value.name, matchValue);
-				});
-
-				const criteria = FilterCriteria.criteria({
-					matchValue: 'John',
-					predicate,
-					type: 'CUSTOM'
-				});
-
-				const res = await Promise.all([
-					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
-
-				expect(predicate).toHaveBeenCalledWith(testData[0], 'John');
-
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
-					matchValue: 'John',
-					passed: true,
-					reason: 'Custom predicate check PASSED',
-					value: testData[0]
-				});
-			});
-
-			it('should handle with matchValue function', async () => {
-				const matchValue = vi.fn(() => {
-					return 'John';
-				});
-
-				const predicate = vi.fn(async (value, matchValue) => {
-					return _.startsWith(value.name, matchValue);
-				});
-
-				const criteria = FilterCriteria.criteria({
-					matchValue,
-					predicate,
-					type: 'CUSTOM'
-				});
-
-				const res = await Promise.all([
-					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
-
-				expect(matchValue).toHaveBeenCalledWith(testData[0]);
-				expect(predicate).toHaveBeenCalledWith(testData[0], 'John');
-
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
-					matchValue: 'John',
-					passed: true,
-					reason: 'Custom predicate check PASSED',
-					value: testData[0]
 				});
 			});
 		});
@@ -1398,7 +1307,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: 'null',
 					passed: false,
-					reason: 'Custom predicate check FAILED',
+					reason: 'CUSTOM predicate check FAILED',
 					value: testData[0]
 				});
 			});
@@ -1435,13 +1344,13 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: 'JÓHN',
 					passed: true,
-					reason: 'Custom predicate check PASSED',
+					reason: 'CUSTOM predicate check PASSED',
 					value: testData[0]
 				});
 			});
 
-			it('should handle with [operator, normalize, valuePath] and transform', async () => {
-				const transform = vi.fn(criteria => {
+			it('should handle with [operator, normalize, valuePath, valueMapper] and criteriaMapper', async () => {
+				const criteriaMapper = vi.fn(criteria => {
 					if (criteria.type === 'CRITERIA') {
 						return {
 							...criteria,
@@ -1452,6 +1361,10 @@ describe('/index', () => {
 					return criteria;
 				});
 
+				const valueMapper = vi.fn(value => {
+					return value;
+				});
+
 				FilterCriteria.saveCriteria(
 					'test-string',
 					FilterCriteria.criteria({
@@ -1459,7 +1372,7 @@ describe('/index', () => {
 						operator: 'STARTS-WITH',
 						valuePath: ['name']
 					}),
-					transform
+					criteriaMapper
 				);
 
 				const criteria = FilterCriteria.criteria({
@@ -1468,6 +1381,7 @@ describe('/index', () => {
 					normalize: false,
 					operator: 'EQUALS',
 					type: 'CRITERIA',
+					valueMapper,
 					valuePath: ['name']
 				});
 
@@ -1481,11 +1395,12 @@ describe('/index', () => {
 				// @ts-expect-error
 				const saved = FilterCriteria.savedCriteria.get('test-string');
 
-				expect(transform).toHaveBeenCalledWith({
+				expect(criteriaMapper).toHaveBeenCalledWith({
 					...saved?.criteria,
 					matchValue: 'John Doe',
 					normalize: false,
 					operator: 'EQUALS',
+					valueMapper,
 					valuePath: ['name']
 				});
 
@@ -1497,16 +1412,26 @@ describe('/index', () => {
 						matchValue: 'John Doe',
 						normalize: false,
 						operator: 'EQUALS',
+						valueMapper,
 						valuePath: ['name']
 					},
 					true
 				);
 
+				expect(valueMapper).toHaveBeenCalledWith(testData[0], {
+					...saved?.criteria,
+					matchValue: 'John Doe',
+					normalize: false,
+					operator: 'EQUALS',
+					valueMapper,
+					valuePath: ['name']
+				});
+
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
 					matchValue: 'John Doe',
 					passed: true,
-					reason: 'String criteria "EQUALS" check PASSED',
+					reason: 'STRING criteria "EQUALS" check PASSED',
 					value: 'John Doe'
 				});
 			});
@@ -1530,6 +1455,99 @@ describe('/index', () => {
 					passed: false,
 					reason: 'Criteria "inexistent" not found',
 					value: null
+				});
+			});
+		});
+
+		describe('custom', () => {
+			it('should handle', async () => {
+				const predicate = vi.fn(async value => {
+					return _.startsWith(value.name, 'John');
+				});
+
+				const criteria = FilterCriteria.criteria({
+					predicate,
+					type: 'CUSTOM'
+				});
+
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
+
+				expect(predicate).toHaveBeenCalledWith(testData[0], null);
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					matchValue: 'null',
+					passed: true,
+					reason: 'CUSTOM predicate check PASSED',
+					value: testData[0]
+				});
+			});
+
+			it('should handle with matchValue', async () => {
+				const predicate = vi.fn(async (value, matchValue) => {
+					return _.startsWith(value.name, matchValue);
+				});
+
+				const criteria = FilterCriteria.criteria({
+					matchValue: 'John',
+					predicate,
+					type: 'CUSTOM'
+				});
+
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
+
+				expect(predicate).toHaveBeenCalledWith(testData[0], 'John');
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					matchValue: 'John',
+					passed: true,
+					reason: 'CUSTOM predicate check PASSED',
+					value: testData[0]
+				});
+			});
+
+			it('should handle with matchValue function', async () => {
+				const matchValue = vi.fn(() => {
+					return 'John';
+				});
+
+				const predicate = vi.fn(async (value, matchValue) => {
+					return _.startsWith(value.name, matchValue);
+				});
+
+				const criteria = FilterCriteria.criteria({
+					matchValue,
+					predicate,
+					type: 'CUSTOM'
+				});
+
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
+
+				expect(matchValue).toHaveBeenCalledWith(testData[0]);
+				expect(predicate).toHaveBeenCalledWith(testData[0], 'John');
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					matchValue: 'John',
+					passed: true,
+					reason: 'CUSTOM predicate check PASSED',
+					value: testData[0]
 				});
 			});
 		});
@@ -1567,7 +1585,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: '2023-01-01T00:00:00+00:01',
 					passed: true,
-					reason: 'Date criteria "AFTER" check PASSED',
+					reason: 'DATE criteria "AFTER" check PASSED',
 					value: '2023-01-01T00:00:00Z'
 				});
 			});
@@ -1591,7 +1609,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: '2023-01-01T00:00:00Z',
 					passed: true,
-					reason: 'Date criteria "AFTER-OR-EQUALS" check PASSED',
+					reason: 'DATE criteria "AFTER-OR-EQUALS" check PASSED',
 					value: '2023-01-01T00:00:00Z'
 				});
 			});
@@ -1615,7 +1633,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: '2023-01-01T00:00:00-00:01',
 					passed: true,
-					reason: 'Date criteria "BEFORE" check PASSED',
+					reason: 'DATE criteria "BEFORE" check PASSED',
 					value: '2023-01-01T00:00:00Z'
 				});
 			});
@@ -1657,7 +1675,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: JSON.stringify(['2023-01-01T00:00:00Z', '2023-01-01T00:00:00Z']),
 					passed: true,
-					reason: 'Date criteria "BETWEEN" check PASSED',
+					reason: 'DATE criteria "BETWEEN" check PASSED',
 					value: '2023-01-01T00:00:00Z'
 				});
 			});
@@ -1723,7 +1741,7 @@ describe('/index', () => {
 						unit: 'km'
 					}),
 					passed: false,
-					reason: 'Geo criteria "IN-RADIUS" check FAILED',
+					reason: 'GEO criteria "IN-RADIUS" check FAILED',
 					value: { lat: 34.0522, lng: -118.2437 }
 				});
 
@@ -1736,8 +1754,72 @@ describe('/index', () => {
 						unit: 'km'
 					}),
 					passed: true,
-					reason: 'Geo criteria "IN-RADIUS" check PASSED',
+					reason: 'GEO criteria "IN-RADIUS" check PASSED',
 					value: { lat: 40.7357, lng: -74.1724 }
+				});
+			});
+
+			it('should handle IN-RADIUS operator with km unit (number array)', async () => {
+				// From New York
+				const criteria = FilterCriteria.criteria({
+					matchValue: {
+						lat: 40.7128,
+						lng: -74.006,
+						radius: 100,
+						unit: 'km'
+					},
+					operator: 'IN-RADIUS',
+					type: 'GEO',
+					valuePath: ['location']
+				});
+
+				// Los Angeles is ~3936km from NY, should not be in the radius
+				const LAPoint = {
+					location: [34.0522, -118.2437]
+				};
+
+				// Newark is ~16km from NY, should be in the radius
+				const newarkPoint = {
+					location: [40.7357, -74.1724]
+				};
+
+				const resLA = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(LAPoint, criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(LAPoint, criteria, true)
+				]);
+				const resNewark = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(newarkPoint, criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(newarkPoint, criteria, true)
+				]);
+
+				expect(resLA[0]).toEqual(false);
+				expect(resLA[1]).toEqual({
+					matchValue: JSON.stringify({
+						lat: 40.7128,
+						lng: -74.006,
+						radius: 100,
+						unit: 'km'
+					}),
+					passed: false,
+					reason: 'GEO criteria "IN-RADIUS" check FAILED',
+					value: [34.0522, -118.2437]
+				});
+
+				expect(resNewark[0]).toEqual(true);
+				expect(resNewark[1]).toEqual({
+					matchValue: JSON.stringify({
+						lat: 40.7128,
+						lng: -74.006,
+						radius: 100,
+						unit: 'km'
+					}),
+					passed: true,
+					reason: 'GEO criteria "IN-RADIUS" check PASSED',
+					value: [40.7357, -74.1724]
 				});
 			});
 
@@ -1787,7 +1869,7 @@ describe('/index', () => {
 						unit: 'mi'
 					}),
 					passed: false,
-					reason: 'Geo criteria "IN-RADIUS" check FAILED',
+					reason: 'GEO criteria "IN-RADIUS" check FAILED',
 					value: { lat: 34.0522, lng: -118.2437 }
 				});
 
@@ -1800,7 +1882,7 @@ describe('/index', () => {
 						unit: 'mi'
 					}),
 					passed: true,
-					reason: 'Geo criteria "IN-RADIUS" check PASSED',
+					reason: 'GEO criteria "IN-RADIUS" check PASSED',
 					value: { lat: 40.7357, lng: -74.1724 }
 				});
 			});
@@ -1860,7 +1942,7 @@ describe('/index', () => {
 						unit: 'km'
 					}),
 					passed: true,
-					reason: 'Geo criteria "NOT-IN-RADIUS" check PASSED',
+					reason: 'GEO criteria "NOT-IN-RADIUS" check PASSED',
 					value: { lat: 34.0522, lng: -118.2437 }
 				});
 
@@ -1873,7 +1955,7 @@ describe('/index', () => {
 						unit: 'mi'
 					}),
 					passed: true,
-					reason: 'Geo criteria "NOT-IN-RADIUS" check PASSED',
+					reason: 'GEO criteria "NOT-IN-RADIUS" check PASSED',
 					value: { lat: 34.0522, lng: -118.2437 }
 				});
 			});
@@ -1911,44 +1993,8 @@ describe('/index', () => {
 						unit: 'km'
 					}),
 					passed: true,
-					reason: 'Geo criteria "IN-RADIUS" check PASSED',
+					reason: 'GEO criteria "IN-RADIUS" check PASSED',
 					value: { lat: 40.7357, lng: -74.1724 }
-				});
-			});
-
-			it('should handle getCoordinates', async () => {
-				const criteria = FilterCriteria.criteria({
-					getCoordinates: {
-						lat: ['location', 'lat'],
-						lng: ['location', 'lng']
-					},
-					matchValue: {
-						lat: 40.7128,
-						lng: -74.006
-					},
-					operator: 'IN-RADIUS',
-					type: 'GEO',
-					valuePath: ['location']
-				});
-
-				const res = await Promise.all([
-					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
-
-				expect(res[0]).toEqual(false);
-				expect(res[1]).toEqual({
-					matchValue: JSON.stringify({
-						lat: 40.7128,
-						lng: -74.006,
-						radius: 0,
-						unit: 'km'
-					}),
-					passed: false,
-					reason: 'Geo criteria "IN-RADIUS" check FAILED',
-					value: { lat: 0, lng: 0 }
 				});
 			});
 		});
@@ -1986,7 +2032,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: JSON.stringify({ 'key-1': 'value-1' }),
 					passed: true,
-					reason: 'Map criteria "CONTAINS" check PASSED',
+					reason: 'MAP criteria "CONTAINS" check PASSED',
 					value: new Map([['key-1', 'value-1']])
 				});
 			});
@@ -2011,7 +2057,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: 'key-1',
 					passed: true,
-					reason: 'Map criteria "HAS-KEY" check PASSED',
+					reason: 'MAP criteria "HAS-KEY" check PASSED',
 					value: new Map([['key-1', 'value-1']])
 				});
 			});
@@ -2036,7 +2082,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: 'KÉY-1',
 					passed: false,
-					reason: 'Map criteria "HAS-KEY" check FAILED',
+					reason: 'MAP criteria "HAS-KEY" check FAILED',
 					value: new Map([['key-1', 'value-1']])
 				});
 			});
@@ -2060,7 +2106,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: 'value-1',
 					passed: true,
-					reason: 'Map criteria "HAS-VALUE" check PASSED',
+					reason: 'MAP criteria "HAS-VALUE" check PASSED',
 					value: new Map([['key-1', 'value-1']])
 				});
 			});
@@ -2083,7 +2129,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: 'null',
 					passed: false,
-					reason: 'Map criteria "IS-EMPTY" check FAILED',
+					reason: 'MAP criteria "IS-EMPTY" check FAILED',
 					value: new Map([['key-1', 'value-1']])
 				});
 			});
@@ -2106,7 +2152,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: 'null',
 					passed: true,
-					reason: 'Map criteria "NOT-EMPTY" check PASSED',
+					reason: 'MAP criteria "NOT-EMPTY" check PASSED',
 					value: new Map([['key-1', 'value-1']])
 				});
 			});
@@ -2130,7 +2176,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: '1',
 					passed: true,
-					reason: 'Map criteria "SIZE-EQUALS" check PASSED',
+					reason: 'MAP criteria "SIZE-EQUALS" check PASSED',
 					value: new Map([['key-1', 'value-1']])
 				});
 			});
@@ -2154,7 +2200,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: '0',
 					passed: true,
-					reason: 'Map criteria "SIZE-GREATER" check PASSED',
+					reason: 'MAP criteria "SIZE-GREATER" check PASSED',
 					value: new Map([['key-1', 'value-1']])
 				});
 			});
@@ -2178,7 +2224,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: '1',
 					passed: true,
-					reason: 'Map criteria "SIZE-GREATER-OR-EQUALS" check PASSED',
+					reason: 'MAP criteria "SIZE-GREATER-OR-EQUALS" check PASSED',
 					value: new Map([['key-1', 'value-1']])
 				});
 			});
@@ -2202,7 +2248,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: '2',
 					passed: true,
-					reason: 'Map criteria "SIZE-LESS" check PASSED',
+					reason: 'MAP criteria "SIZE-LESS" check PASSED',
 					value: new Map([['key-1', 'value-1']])
 				});
 			});
@@ -2226,7 +2272,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: '1',
 					passed: true,
-					reason: 'Map criteria "SIZE-LESS-OR-EQUALS" check PASSED',
+					reason: 'MAP criteria "SIZE-LESS-OR-EQUALS" check PASSED',
 					value: new Map([['key-1', 'value-1']])
 				});
 			});
@@ -2265,7 +2311,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: JSON.stringify([25, 30]),
 					passed: true,
-					reason: 'Number criteria "BETWEEN" check PASSED',
+					reason: 'NUMBER criteria "BETWEEN" check PASSED',
 					value: 25
 				});
 			});
@@ -2289,7 +2335,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: '25',
 					passed: true,
-					reason: 'Number criteria "EQUALS" check PASSED',
+					reason: 'NUMBER criteria "EQUALS" check PASSED',
 					value: 25
 				});
 			});
@@ -2313,7 +2359,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: '20',
 					passed: true,
-					reason: 'Number criteria "GREATER" check PASSED',
+					reason: 'NUMBER criteria "GREATER" check PASSED',
 					value: 25
 				});
 			});
@@ -2337,7 +2383,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: '25',
 					passed: true,
-					reason: 'Number criteria "GREATER-OR-EQUALS" check PASSED',
+					reason: 'NUMBER criteria "GREATER-OR-EQUALS" check PASSED',
 					value: 25
 				});
 			});
@@ -2361,7 +2407,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: JSON.stringify([15, 25, 30]),
 					passed: true,
-					reason: 'Number criteria "IN" check PASSED',
+					reason: 'NUMBER criteria "IN" check PASSED',
 					value: 25
 				});
 			});
@@ -2385,7 +2431,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: '30',
 					passed: true,
-					reason: 'Number criteria "LESS" check PASSED',
+					reason: 'NUMBER criteria "LESS" check PASSED',
 					value: 25
 				});
 			});
@@ -2409,7 +2455,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: '30',
 					passed: true,
-					reason: 'Number criteria "LESS-OR-EQUALS" check PASSED',
+					reason: 'NUMBER criteria "LESS-OR-EQUALS" check PASSED',
 					value: 25
 				});
 			});
@@ -2433,7 +2479,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: '30',
 					passed: true,
-					reason: 'Number criteria "NOT-EQUALS" check PASSED',
+					reason: 'NUMBER criteria "NOT-EQUALS" check PASSED',
 					value: 25
 				});
 			});
@@ -2472,7 +2518,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: JSON.stringify({ a: 1 }),
 					passed: true,
-					reason: 'Object criteria "CONTAINS" check PASSED',
+					reason: 'OBJECT criteria "CONTAINS" check PASSED',
 					value: { a: 1 }
 				});
 			});
@@ -2497,7 +2543,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: 'a',
 					passed: true,
-					reason: 'Object criteria "HAS-KEY" check PASSED',
+					reason: 'OBJECT criteria "HAS-KEY" check PASSED',
 					value: { a: 1 }
 				});
 			});
@@ -2522,7 +2568,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: 'KÉY-1',
 					passed: false,
-					reason: 'Object criteria "HAS-KEY" check FAILED',
+					reason: 'OBJECT criteria "HAS-KEY" check FAILED',
 					value: { a: 1 }
 				});
 			});
@@ -2546,7 +2592,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: '1',
 					passed: true,
-					reason: 'Object criteria "HAS-VALUE" check PASSED',
+					reason: 'OBJECT criteria "HAS-VALUE" check PASSED',
 					value: { a: 1 }
 				});
 			});
@@ -2569,7 +2615,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: 'null',
 					passed: false,
-					reason: 'Object criteria "IS-EMPTY" check FAILED',
+					reason: 'OBJECT criteria "IS-EMPTY" check FAILED',
 					value: { a: 1 }
 				});
 			});
@@ -2592,7 +2638,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: 'null',
 					passed: true,
-					reason: 'Object criteria "NOT-EMPTY" check PASSED',
+					reason: 'OBJECT criteria "NOT-EMPTY" check PASSED',
 					value: { a: 1 }
 				});
 			});
@@ -2616,7 +2662,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: '1',
 					passed: true,
-					reason: 'Object criteria "SIZE-EQUALS" check PASSED',
+					reason: 'OBJECT criteria "SIZE-EQUALS" check PASSED',
 					value: { a: 1 }
 				});
 			});
@@ -2640,7 +2686,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: '0',
 					passed: true,
-					reason: 'Object criteria "SIZE-GREATER" check PASSED',
+					reason: 'OBJECT criteria "SIZE-GREATER" check PASSED',
 					value: { a: 1 }
 				});
 			});
@@ -2664,7 +2710,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: '1',
 					passed: true,
-					reason: 'Object criteria "SIZE-GREATER-OR-EQUALS" check PASSED',
+					reason: 'OBJECT criteria "SIZE-GREATER-OR-EQUALS" check PASSED',
 					value: { a: 1 }
 				});
 			});
@@ -2688,7 +2734,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: '2',
 					passed: true,
-					reason: 'Object criteria "SIZE-LESS" check PASSED',
+					reason: 'OBJECT criteria "SIZE-LESS" check PASSED',
 					value: { a: 1 }
 				});
 			});
@@ -2712,7 +2758,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: '1',
 					passed: true,
-					reason: 'Object criteria "SIZE-LESS-OR-EQUALS" check PASSED',
+					reason: 'OBJECT criteria "SIZE-LESS-OR-EQUALS" check PASSED',
 					value: { a: 1 }
 				});
 			});
@@ -2752,7 +2798,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: JSON.stringify(['developer', 'javascript']),
 					passed: true,
-					reason: 'Set criteria "EXACTLY-MATCHES" check PASSED',
+					reason: 'SET criteria "EXACTLY-MATCHES" check PASSED',
 					value: new Set(['developer', 'javascript'])
 				});
 			});
@@ -2777,7 +2823,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: JSON.stringify(['Develóper', 'JavaScript']),
 					passed: false,
-					reason: 'Set criteria "EXACTLY-MATCHES" check FAILED',
+					reason: 'SET criteria "EXACTLY-MATCHES" check FAILED',
 					value: new Set(['developer', 'javascript'])
 				});
 			});
@@ -2801,7 +2847,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: 'developer',
 					passed: true,
-					reason: 'Set criteria "HAS" check PASSED',
+					reason: 'SET criteria "HAS" check PASSED',
 					value: new Set(['developer', 'javascript'])
 				});
 			});
@@ -2825,7 +2871,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: JSON.stringify(['developer', 'javascript']),
 					passed: true,
-					reason: 'Set criteria "INCLUDES-ALL" check PASSED',
+					reason: 'SET criteria "INCLUDES-ALL" check PASSED',
 					value: new Set(['developer', 'javascript'])
 				});
 			});
@@ -2849,7 +2895,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: JSON.stringify(['developer', 'javascript']),
 					passed: true,
-					reason: 'Set criteria "INCLUDES-ANY" check PASSED',
+					reason: 'SET criteria "INCLUDES-ANY" check PASSED',
 					value: new Set(['developer', 'javascript'])
 				});
 			});
@@ -2872,7 +2918,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: 'null',
 					passed: false,
-					reason: 'Set criteria "IS-EMPTY" check FAILED',
+					reason: 'SET criteria "IS-EMPTY" check FAILED',
 					value: new Set(['developer', 'javascript'])
 				});
 			});
@@ -2895,7 +2941,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: 'null',
 					passed: true,
-					reason: 'Set criteria "NOT-EMPTY" check PASSED',
+					reason: 'SET criteria "NOT-EMPTY" check PASSED',
 					value: new Set(['developer', 'javascript'])
 				});
 			});
@@ -2919,7 +2965,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: JSON.stringify(['developer', 'javascript']),
 					passed: false,
-					reason: 'Set criteria "NOT-INCLUDES-ALL" check FAILED',
+					reason: 'SET criteria "NOT-INCLUDES-ALL" check FAILED',
 					value: new Set(['developer', 'javascript'])
 				});
 			});
@@ -2943,7 +2989,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: JSON.stringify(['developer', 'javascript']),
 					passed: false,
-					reason: 'Set criteria "NOT-INCLUDES-ANY" check FAILED',
+					reason: 'SET criteria "NOT-INCLUDES-ANY" check FAILED',
 					value: new Set(['developer', 'javascript'])
 				});
 			});
@@ -2967,7 +3013,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: '2',
 					passed: true,
-					reason: 'Set criteria "SIZE-EQUALS" check PASSED',
+					reason: 'SET criteria "SIZE-EQUALS" check PASSED',
 					value: new Set(['developer', 'javascript'])
 				});
 			});
@@ -2991,7 +3037,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: '1',
 					passed: true,
-					reason: 'Set criteria "SIZE-GREATER" check PASSED',
+					reason: 'SET criteria "SIZE-GREATER" check PASSED',
 					value: new Set(['developer', 'javascript'])
 				});
 			});
@@ -3015,7 +3061,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: '2',
 					passed: true,
-					reason: 'Set criteria "SIZE-GREATER-OR-EQUALS" check PASSED',
+					reason: 'SET criteria "SIZE-GREATER-OR-EQUALS" check PASSED',
 					value: new Set(['developer', 'javascript'])
 				});
 			});
@@ -3039,7 +3085,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: '3',
 					passed: true,
-					reason: 'Set criteria "SIZE-LESS" check PASSED',
+					reason: 'SET criteria "SIZE-LESS" check PASSED',
 					value: new Set(['developer', 'javascript'])
 				});
 			});
@@ -3063,7 +3109,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: '2',
 					passed: true,
-					reason: 'Set criteria "SIZE-LESS-OR-EQUALS" check PASSED',
+					reason: 'SET criteria "SIZE-LESS-OR-EQUALS" check PASSED',
 					value: new Set(['developer', 'javascript'])
 				});
 			});
@@ -3103,7 +3149,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: 'doe',
 					passed: true,
-					reason: 'String criteria "CONTAINS" check PASSED',
+					reason: 'STRING criteria "CONTAINS" check PASSED',
 					value: 'john-doe'
 				});
 			});
@@ -3128,39 +3174,8 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: 'doe',
 					passed: false,
-					reason: 'String criteria "CONTAINS" check FAILED',
+					reason: 'STRING criteria "CONTAINS" check FAILED',
 					value: 'John Doe'
-				});
-			});
-
-			it('should handle CONTAINS operator with normalize function', async () => {
-				const normalize = vi.fn((value: string) => {
-					return value.toUpperCase();
-				});
-
-				const criteria = FilterCriteria.criteria({
-					matchValue: 'DOE',
-					normalize,
-					operator: 'CONTAINS',
-					type: 'STRING',
-					valuePath: ['name']
-				});
-
-				const res = await Promise.all([
-					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
-
-				expect(normalize).toHaveBeenCalledWith('John Doe');
-
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
-					matchValue: 'DOE',
-					passed: true,
-					reason: 'String criteria "CONTAINS" check PASSED',
-					value: 'JOHN DOE'
 				});
 			});
 
@@ -3183,7 +3198,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: 'doe',
 					passed: true,
-					reason: 'String criteria "ENDS-WITH" check PASSED',
+					reason: 'STRING criteria "ENDS-WITH" check PASSED',
 					value: 'john-doe'
 				});
 			});
@@ -3207,7 +3222,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: 'john-doe',
 					passed: true,
-					reason: 'String criteria "EQUALS" check PASSED',
+					reason: 'STRING criteria "EQUALS" check PASSED',
 					value: 'john-doe'
 				});
 			});
@@ -3232,7 +3247,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: JSON.stringify(['doe', 'john-doe', 'john']),
 					passed: true,
-					reason: 'String criteria "IN" check PASSED',
+					reason: 'STRING criteria "IN" check PASSED',
 					value: 'john-doe'
 				});
 			});
@@ -3255,7 +3270,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: 'null',
 					passed: false,
-					reason: 'String criteria "IS-EMPTY" check FAILED',
+					reason: 'STRING criteria "IS-EMPTY" check FAILED',
 					value: 'john-doe'
 				});
 			});
@@ -3279,7 +3294,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: '/john/i',
 					passed: true,
-					reason: 'String criteria "MATCHES-REGEX" check PASSED',
+					reason: 'STRING criteria "MATCHES-REGEX" check PASSED',
 					value: 'john-doe'
 				});
 			});
@@ -3303,7 +3318,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: 'john',
 					passed: true,
-					reason: 'String criteria "STARTS-WITH" check PASSED',
+					reason: 'STRING criteria "STARTS-WITH" check PASSED',
 					value: 'john-doe'
 				});
 			});
@@ -3346,13 +3361,13 @@ describe('/index', () => {
 					{
 						matchValue: 'jo_hn',
 						passed: false,
-						reason: 'String criteria "CONTAINS" check FAILED',
+						reason: 'STRING criteria "CONTAINS" check FAILED',
 						value: 'John Doe'
 					},
 					{
 						matchValue: 'john',
 						passed: false,
-						reason: 'String criteria "CONTAINS" check FAILED',
+						reason: 'STRING criteria "CONTAINS" check FAILED',
 						value: 'John Doe'
 					}
 				]
@@ -3419,6 +3434,264 @@ describe('/index', () => {
 			expect(FilterCriteria.convertToFilterGroupInput(filterGroupInput)).toEqual({
 				input: filterGroupInput,
 				level: 'filter-group'
+			});
+		});
+	});
+
+	describe('findByPath', () => {
+		describe('basic object traversal', () => {
+			const simpleObject = {
+				name: 'John',
+				age: 30,
+				isActive: true,
+				nullValue: null,
+				undefinedValue: undefined
+			};
+
+			it('should find string value', () => {
+				// @ts-expect-error
+				expect(FilterCriteria.findByPath(simpleObject, ['name'])).toEqual({
+					multiple: false,
+					value: 'John'
+				});
+			});
+
+			it('should find number value', () => {
+				// @ts-expect-error
+				expect(FilterCriteria.findByPath(simpleObject, ['age'])).toEqual({
+					multiple: false,
+					value: 30
+				});
+			});
+
+			it('should find boolean value', () => {
+				// @ts-expect-error
+				expect(FilterCriteria.findByPath(simpleObject, ['isActive'])).toEqual({
+					multiple: false,
+					value: true
+				});
+			});
+
+			it('should find null value', () => {
+				// @ts-expect-error
+				expect(FilterCriteria.findByPath(simpleObject, ['nullValue'])).toEqual({
+					multiple: false,
+					value: null
+				});
+			});
+
+			it('should return defaultValue for undefined value', () => {
+				// @ts-expect-error
+				expect(FilterCriteria.findByPath(simpleObject, ['undefinedValue'])).toEqual({
+					multiple: false,
+					value: undefined
+				});
+			});
+
+			it('should return defaultValue for non-existent path', () => {
+				// @ts-expect-error
+				expect(FilterCriteria.findByPath(simpleObject, ['nonexistent'])).toEqual({
+					multiple: false,
+					value: undefined
+				});
+			});
+		});
+
+		describe('nested object traversal', () => {
+			const nestedObject = {
+				user: {
+					details: {
+						name: 'John',
+						address: {
+							street: 'Main St',
+							number: 123
+						}
+					}
+				}
+			};
+
+			it('should find deeply nested value using dot notation', () => {
+				// @ts-expect-error
+				expect(FilterCriteria.findByPath(nestedObject, ['user', 'details', 'name'])).toEqual({
+					multiple: false,
+					value: 'John'
+				});
+			});
+
+			it('should find multiple levels deep value', () => {
+				// @ts-expect-error
+				expect(FilterCriteria.findByPath(nestedObject, ['user', 'details', 'address', 'street'])).toEqual({
+					multiple: false,
+					value: 'Main St'
+				});
+			});
+
+			it('should return undefined for invalid nested path', () => {
+				// @ts-expect-error
+				expect(FilterCriteria.findByPath(nestedObject, ['user', 'invalid', 'path'])).toEqual({
+					multiple: false,
+					value: undefined
+				});
+			});
+		});
+
+		describe('array traversal', () => {
+			const arrayData = {
+				numbers: [1, 2, 3],
+				nested: [
+					[4, 5],
+					[6, 7]
+				],
+				deepNested: [[[8, 9]], [[10, 11]]],
+				mixedArray: [1, '2', true, null]
+			};
+
+			it('should return simple array', () => {
+				// @ts-expect-error
+				expect(FilterCriteria.findByPath(arrayData, ['numbers'])).toEqual({
+					multiple: false,
+					value: [1, 2, 3]
+				});
+			});
+
+			it('should return nested arrays', () => {
+				// @ts-expect-error
+				expect(FilterCriteria.findByPath(arrayData, ['nested'])).toEqual({
+					multiple: false,
+					value: [
+						[4, 5],
+						[6, 7]
+					]
+				});
+			});
+
+			it('should return deeply nested arrays', () => {
+				// @ts-expect-error
+				expect(FilterCriteria.findByPath(arrayData, ['deepNested'])).toEqual({
+					multiple: false,
+					value: [[[8, 9]], [[10, 11]]]
+				});
+			});
+
+			it('should return mixed type arrays', () => {
+				// @ts-expect-error
+				expect(FilterCriteria.findByPath(arrayData, ['mixedArray'])).toEqual({
+					multiple: false,
+					value: [1, '2', true, null]
+				});
+			});
+		});
+
+		describe('object arrays traversal', () => {
+			const objectArrays = {
+				users: [
+					{ id: 1, name: 'John', tags: ['admin', 'user'] },
+					{ id: 2, name: 'Jane', tags: ['user'] }
+				],
+				nested: {
+					groups: [
+						{ id: 1, members: [{ name: 'Alice' }, { name: 'Bob' }] },
+						{ id: 2, members: [{ name: 'Charlie' }] }
+					]
+				}
+			};
+
+			it('should find values across array of objects', () => {
+				// @ts-expect-error
+				expect(FilterCriteria.findByPath(objectArrays, ['users', 'name'])).toEqual({
+					multiple: true,
+					value: ['John', 'Jane']
+				});
+			});
+
+			it('should find and flatten nested arrays in objects', () => {
+				// @ts-expect-error
+				expect(FilterCriteria.findByPath(objectArrays, ['users', 'tags'])).toEqual({
+					multiple: true,
+					value: ['admin', 'user', 'user']
+				});
+			});
+
+			it('should traverse deeply nested object arrays', () => {
+				// @ts-expect-error
+				expect(FilterCriteria.findByPath(objectArrays, ['nested', 'groups', 'members', 'name'])).toEqual({
+					multiple: true,
+					value: ['Alice', 'Bob', 'Charlie']
+				});
+			});
+
+			it('should return empty array for invalid nested path', () => {
+				// @ts-expect-error
+				expect(FilterCriteria.findByPath(objectArrays, ['nested', 'groups', 'invalid'])).toEqual({
+					multiple: true,
+					value: []
+				});
+			});
+		});
+
+		describe('edge cases', () => {
+			it('should handle empty object', () => {
+				// @ts-expect-error
+				expect(FilterCriteria.findByPath({}, ['any', 'path'])).toEqual({
+					multiple: false,
+					value: undefined
+				});
+			});
+
+			it('should handle empty array', () => {
+				// @ts-expect-error
+				expect(FilterCriteria.findByPath([], ['any', 'path'])).toEqual({
+					multiple: false,
+					value: []
+				});
+			});
+
+			it('should handle empty path', () => {
+				// @ts-expect-error
+				expect(FilterCriteria.findByPath({ value: 1 }, [])).toEqual({
+					multiple: false,
+					value: { value: 1 }
+				});
+			});
+
+			const circularRef: any = { a: 1 };
+			circularRef.self = circularRef;
+
+			it('should handle circular references', () => {
+				// @ts-expect-error
+				expect(FilterCriteria.findByPath(circularRef, ['a'])).toEqual({
+					multiple: false,
+					value: 1
+				});
+				// @ts-expect-error
+				expect(FilterCriteria.findByPath(circularRef, ['self', 'a'])).toEqual({
+					multiple: false,
+					value: 1
+				});
+			});
+
+			const specialChars = {
+				'key.with.dots': 'value',
+				'key-with-dashes': 'value2',
+				'@special!chars': 'value3'
+			};
+
+			it('should handle special characters in path using bracket notation', () => {
+				// @ts-expect-error
+				expect(FilterCriteria.findByPath(specialChars, ['["key.with.dots"]'])).toEqual({
+					multiple: false,
+					value: 'value'
+				});
+				// @ts-expect-error
+				expect(FilterCriteria.findByPath(specialChars, ['["key-with-dashes"]'])).toEqual({
+					multiple: false,
+					value: 'value2'
+				});
+				// @ts-expect-error
+				expect(FilterCriteria.findByPath(specialChars, ['["@special!chars"]'])).toEqual({
+					multiple: false,
+					value: 'value3'
+				});
 			});
 		});
 	});
@@ -3533,7 +3806,7 @@ describe('/index', () => {
 					defaultValue: '',
 					matchValue: null,
 					normalize: true,
-					valueTransformer: null
+					valueMapper: null
 				},
 				'test-boolean': {
 					type: 'BOOLEAN',
@@ -3541,7 +3814,7 @@ describe('/index', () => {
 					valuePath: ['active'],
 					defaultValue: undefined,
 					matchValue: null,
-					valueTransformer: null
+					valueMapper: null
 				}
 			});
 		});
@@ -3775,15 +4048,16 @@ describe('/index', () => {
 					normalize: true,
 					operator: 'EQUALS',
 					type: 'STRING',
-					valuePath: ['name'],
-					valueTransformer: null
+					valueMapper: null,
+					valuePath: ['name']
 				},
-				transform: null
+				criteriaMapper: null
 			});
 		});
 
-		it('should save criteria with transform', () => {
-			const transform = vi.fn();
+		it('should save criteria with criteriaMapper', () => {
+			const criteriaMapper = vi.fn();
+			const valueMapper = vi.fn();
 
 			FilterCriteria.saveCriteria(
 				'test',
@@ -3791,9 +4065,10 @@ describe('/index', () => {
 					matchValue: 'John',
 					operator: 'EQUALS',
 					type: 'STRING',
+					valueMapper,
 					valuePath: ['name']
 				}),
-				transform
+				criteriaMapper
 			);
 
 			// @ts-expect-error
@@ -3804,10 +4079,10 @@ describe('/index', () => {
 					normalize: true,
 					operator: 'EQUALS',
 					type: 'STRING',
-					valuePath: ['name'],
-					valueTransformer: null
+					valueMapper,
+					valuePath: ['name']
 				},
-				transform
+				criteriaMapper
 			});
 		});
 

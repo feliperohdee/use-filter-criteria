@@ -1,18 +1,18 @@
 import _ from 'lodash';
 
-const isStringArray = (value: any) => {
+const isStringArray = (value: any): value is string[] => {
 	return _.isArray(value) && _.every(value, _.isString);
 };
 
-const isNumberArray = (value: any) => {
+const isNumberArray = (value: any): value is number[] => {
 	return _.isArray(value) && _.every(value, _.isNumber);
 };
 
-const objectContainKeys = (obj: any, keys: string[]) => {
+const objectContainKeys = (value: any, keys: string[]): value is Record<string, any> => {
 	return (
-		_.isPlainObject(obj) &&
+		_.isPlainObject(value) &&
 		_.every(keys, key => {
-			return key in obj;
+			return key in value;
 		})
 	);
 };
