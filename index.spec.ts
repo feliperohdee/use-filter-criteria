@@ -1391,7 +1391,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle with [operator, normalize, valuePath, valueMapper] and criteriaMapper', async () => {
+			it('should handle with [matchInArray, operator, normalize, valuePath, valueMapper] and criteriaMapper', async () => {
 				const criteriaMapper = vi.fn(criteria => {
 					if (criteria.type === 'CRITERIA') {
 						return {
@@ -1418,6 +1418,7 @@ describe('/index', () => {
 				);
 
 				const criteria = FilterCriteria.criteria({
+					matchInArray: false,
 					key: 'test-string',
 					matchValue: 'John Doe',
 					normalize: false,
@@ -1439,6 +1440,7 @@ describe('/index', () => {
 
 				expect(criteriaMapper).toHaveBeenCalledWith({
 					...saved?.criteria,
+					matchInArray: false,
 					matchValue: 'John Doe',
 					normalize: false,
 					operator: 'EQUALS',
@@ -1451,6 +1453,7 @@ describe('/index', () => {
 					testData[0],
 					{
 						...saved?.criteria,
+						matchInArray: false,
 						matchValue: 'John Doe',
 						normalize: false,
 						operator: 'EQUALS',
@@ -1462,6 +1465,7 @@ describe('/index', () => {
 
 				expect(valueMapper).toHaveBeenCalledWith(testData[0], {
 					...saved?.criteria,
+					matchInArray: false,
 					matchValue: 'John Doe',
 					normalize: false,
 					operator: 'EQUALS',

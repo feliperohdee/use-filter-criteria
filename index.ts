@@ -552,6 +552,10 @@ class FilterCriteria {
 			newCriteria.operator = criteria.operator;
 		}
 
+		if (_.isBoolean(criteria.matchInArray) && 'matchInArray' in newCriteria) {
+			newCriteria.matchInArray = criteria.matchInArray;
+		}
+
 		if (criteria.matchValue) {
 			newCriteria.matchValue = criteria.matchValue;
 		}

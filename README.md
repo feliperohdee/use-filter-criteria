@@ -76,25 +76,25 @@ const locationCriteria = FilterCriteria.criteria({
 });
 
 // Example using matchInArray: true (default)
-const matchInArrayTrue = FilterCriteria.criteria({
+const rolesStartsWithCriteria = FilterCriteria.criteria({
 	type: 'STRING',
 	matchInArray: true,
 	operator: 'STARTS-WITH',
-	valuePath: ['roles'], // Will check all elements in the roles array (check all strings in the array)
+	valuePath: ['roles'],
 	matchValue: 'adm'
 });
 
 // Example using matchInArray: false
-const matchInArrayFalse = FilterCriteria.criteria({
+const rolesEqualsCriteria = FilterCriteria.criteria({
 	type: 'STRING',
 	matchInArray: false,
 	operator: 'EQUALS',
-	valuePath: ['roles'], // Will NOT check roles in the roles array, because matchInArray is false and roles is an array
+	valuePath: ['roles'],
 	matchValue: 'adm'
 });
 
 // Complex multi-criteria filter
-const complexFilter = FilterCriteria.filterGroup({
+const complexFilterGroup = FilterCriteria.filterGroup({
 	operator: 'AND',
 	filters: [
 		FilterCriteria.filter({
@@ -135,11 +135,11 @@ const complexFilter = FilterCriteria.filterGroup({
 });
 
 // Basic usage
-const matchingUsers = await FilterCriteria.matchMany(users, complexFilter);
+const matchingUsers = await FilterCriteria.matchMany(users, complexFilterGroup);
 console.log(matchingUsers);
 
 // With detailed logging
-const detailedResult = await FilterCriteria.match(users[0], complexFilter, true);
+const detailedResult = await FilterCriteria.match(users[0], complexFilterGroup, true);
 console.log(detailedResult);
 ```
 
@@ -152,14 +152,14 @@ The library supports three levels of filter complexity to match your needs:
 For basic, single-condition filtering:
 
 ```typescript
-const simpleCriteria = {
+const ageCriteria = FilterCriteria.criteria({
 	type: 'NUMBER',
 	operator: 'GREATER',
 	valuePath: ['age'],
 	matchValue: 25
-};
+});
 
-const result = await FilterCriteria.match(data, simpleCriteria);
+const result = await FilterCriteria.match(data, ageCriteria);
 ```
 
 ### 2. Filter Input
@@ -167,25 +167,25 @@ const result = await FilterCriteria.match(data, simpleCriteria);
 For grouping multiple criteria with a logical operator:
 
 ```typescript
-const filterInput = {
+const userFilterCriteria = FilterCriteria.filter({
 	operator: 'AND',
 	criteria: [
-		{
+		FilterCriteria.criteria({
 			type: 'NUMBER',
 			operator: 'GREATER',
 			valuePath: ['age'],
 			matchValue: 25
-		},
-		{
+		}),
+		FilterCriteria.criteria({
 			type: 'STRING',
 			operator: 'CONTAINS',
 			valuePath: ['name'],
 			matchValue: 'john'
-		}
+		})
 	]
-};
+});
 
-const result = await FilterCriteria.match(data, filterInput);
+const result = await FilterCriteria.match(data, userFilterCriteria);
 ```
 
 ### 3. Filter Group Input
@@ -193,41 +193,41 @@ const result = await FilterCriteria.match(data, filterInput);
 For complex filtering with multiple filters and nested logic:
 
 ```typescript
-const filterGroupInput = {
+const complexFilterCriteria = FilterCriteria.filterGroup({
 	operator: 'OR',
 	filters: [
-		{
+		FilterCriteria.filter({
 			operator: 'AND',
 			criteria: [
-				{
+				FilterCriteria.criteria({
 					type: 'NUMBER',
 					operator: 'GREATER',
 					valuePath: ['age'],
 					matchValue: 25
-				},
-				{
+				}),
+				FilterCriteria.criteria({
 					type: 'SET',
 					operator: 'INCLUDES-ALL',
 					valuePath: ['skills'],
 					matchValue: ['typescript']
-				}
+				})
 			]
-		},
-		{
+		}),
+		FilterCriteria.filter({
 			operator: 'OR',
 			criteria: [
-				{
+				FilterCriteria.criteria({
 					type: 'STRING',
 					operator: 'MATCHES-REGEX',
 					valuePath: ['name'],
 					matchValue: /^john/i
-				}
+				})
 			]
-		}
+		})
 	]
-};
+});
 
-const result = await FilterCriteria.match(data, filterGroupInput);
+const result = await FilterCriteria.match(data, complexFilterCriteria);
 ```
 
 Each input format supports all the filter types and operators described in the "Supported Filter Types" section. The choice between them depends on your filtering complexity needs:
@@ -268,24 +268,24 @@ Here are examples showing how to use detailed logging with different filter type
 
 ```typescript
 // String filter with detailed logging
-const stringFilter = {
+const stringFilterCriteria = FilterCriteria.filterGroup({
 	operator: 'AND',
 	filters: [
-		{
+		FilterCriteria.filter({
 			operator: 'AND',
 			criteria: [
-				{
+				FilterCriteria.criteria({
 					type: 'STRING',
 					operator: 'CONTAINS',
 					valuePath: ['name'],
 					matchValue: 'john'
-				}
+				})
 			]
-		}
+		})
 	]
-};
+});
 
-const stringResult = await FilterCriteria.match(users[0], stringFilter, true);
+const stringResult = await FilterCriteria.match(users[0], stringFilterCriteria, true);
 /* Output:
 {
   operator: 'AND',
@@ -306,13 +306,13 @@ const stringResult = await FilterCriteria.match(users[0], stringFilter, true);
 */
 
 // Geographic filter with detailed logging
-const geoFilter = {
+const geoFilterCriteria = FilterCriteria.filterGroup({
 	operator: 'AND',
 	filters: [
-		{
+		FilterCriteria.filter({
 			operator: 'AND',
 			criteria: [
-				{
+				FilterCriteria.criteria({
 					type: 'GEO',
 					operator: 'IN-RADIUS',
 					valuePath: ['location'],
@@ -322,13 +322,13 @@ const geoFilter = {
 						radius: 10,
 						unit: 'km'
 					}
-				}
+				})
 			]
-		}
+		})
 	]
-};
+});
 
-const geoResult = await FilterCriteria.match(users[0], geoFilter, true);
+const geoResult = await FilterCriteria.match(users[0], geoFilterCriteria, true);
 /* Output shows detailed radius check results:
 {
   operator: 'AND',
@@ -354,39 +354,39 @@ const geoResult = await FilterCriteria.match(users[0], geoFilter, true);
 */
 
 // Complex nested filter with detailed logging
-const nestedFilter = {
+const nestedFilterCriteria = FilterCriteria.filterGroup({
 	operator: 'OR',
 	filters: [
-		{
+		FilterCriteria.filter({
 			operator: 'AND',
 			criteria: [
-				{
+				FilterCriteria.criteria({
 					type: 'NUMBER',
 					operator: 'GREATER',
 					valuePath: ['age'],
 					matchValue: 25
-				},
-				{
+				}),
+				FilterCriteria.criteria({
 					type: 'SET',
 					operator: 'INCLUDES-ALL',
 					valuePath: ['skills'],
 					matchValue: ['typescript']
-				}
+				})
 			]
-		},
-		{
+		}),
+		FilterCriteria.filter({
 			operator: 'OR',
 			criteria: [
-				{
+				FilterCriteria.criteria({
 					type: 'STRING',
 					operator: 'MATCHES-REGEX',
 					valuePath: ['name'],
 					matchValue: /^john/i
-				}
+				})
 			]
-		}
+		})
 	]
-};
+});
 
 const nestedResult = await FilterCriteria.match(users[0], nestedFilter, true);
 /* Output shows the complete evaluation tree:
@@ -561,47 +561,52 @@ const userLoader = new DataLoader(async userIds => {
 });
 
 // Create a filter using the loader
-const batchedFilter = {
+const batchedCriteria = FilterCriteria.filterGroup({
 	operator: 'AND',
-	criteria: [
-		{
-			type: 'CUSTOM',
-			predicate: async user => userLoader.load(user.id)
-		},
-		{
-			type: 'CUSTOM',
-			predicate: async user => userLoader.load(user.id)
-		}
+	filters: [
+		FilterCriteria.filter({
+			operator: 'AND',
+			criteria: [
+				FilterCriteria.criteria({
+					type: 'CUSTOM',
+					predicate: async user => userLoader.load(user.id)
+				}),
+				FilterCriteria.criteria({
+					type: 'CUSTOM',
+					predicate: async user => userLoader.load(user.id)
+				})
+			]
+		})
 	]
-};
+});
 
 // Apply the filter with concurrency control
-const results = await FilterCriteria.matchMany(users, batchedFilter, 2); // Process 2 items concurrently
+const results = await FilterCriteria.matchMany(users, batchedCriteria, 2);
 ```
 
-#### 2. Inline Custom Functions
+### 2. Inline Custom Functions
 
 You can define custom filter functions directly in your criteria:
 
 ```typescript
-const customFilter = {
+const customFunctionCriteria = FilterCriteria.filterGroup({
 	operator: 'AND',
 	filters: [
-		{
+		FilterCriteria.filter({
 			operator: 'AND',
 			criteria: [
-				{
+				FilterCriteria.criteria({
 					type: 'CUSTOM',
 					predicate: async (item, matchValue) => {
 						// Your custom logic here
 						return item.someProperty > matchValue;
 					},
 					matchValue: 10
-				}
+				})
 			]
-		}
+		})
 	]
-};
+});
 ```
 
 ### 3. Saved Custom Criteria
@@ -656,64 +661,64 @@ FilterCriteria.saveCriteria(
 );
 
 // Use the saved criteria by key with default values
-const basicFilter = {
+const basicFilterCriteria = FilterCriteria.filterGroup({
 	operator: 'AND',
 	filters: [
-		{
+		FilterCriteria.filter({
 			operator: 'AND',
 			criteria: [
-				{
+				FilterCriteria.criteria({
 					type: 'CRITERIA',
 					key: 'isHighValueUser'
-				}
+				})
 			]
-		}
+		})
 	]
-};
+});
 
 // Override saved criteria properties
-const customFilter = {
+const customFilterCriteria = FilterCriteria.filterGroup({
 	operator: 'AND',
 	filters: [
-		{
+		FilterCriteria.filter({
 			operator: 'AND',
 			criteria: [
-				{
+				FilterCriteria.criteria({
 					key: 'containsKeyword',
-					matchValue: 'special-offer' // Override matchValue,
-					normalize: true, // Override normalize setting
-					operator: 'STARTS-WITH', // Override operator
+					matchValue: 'special-offer',
+					normalize: true,
+					operator: 'STARTS-WITH',
 					type: 'CRITERIA',
-					valueMapper: (value: User) => value.name.toLowerCase(), // Override valueMapper
-					valuePath: ['title'] // Override default valuePath
-				}
+					valueMapper: (value: User) => value.name.toLowerCase(),
+					valuePath: ['title']
+				})
 			]
-		}
+		})
 	]
-};
+});
 
 // Multiple saved criteria in a single filter
-const combinedFilter = {
+const combinedFilterCriteria = FilterCriteria.filterGroup({
 	operator: 'AND',
 	filters: [
-		{
+		FilterCriteria.filter({
 			operator: 'AND',
 			criteria: [
-				{
+				FilterCriteria.criteria({
 					type: 'CRITERIA',
 					key: 'isHighValueUser',
-					matchValue: 2000 // Higher threshold
-				},
-				{
+					matchValue: 2000
+				}),
+				FilterCriteria.criteria({
 					type: 'CRITERIA',
 					key: 'containsKeyword',
-					valuePath: ['tags'], // Search in tags instead
-					matchValue: 'vip' // Different keyword
-				}
+					valuePath: ['tags'],
+					matchValue: 'vip'
+				})
 			]
-		}
+		})
 	]
-};
+});
 ```
 
 When using saved criteria, you can:
@@ -748,41 +753,41 @@ const data = [
 ];
 
 // Filter by Set contents
-const setFilter = {
+const setFilter = FilterCriteria.filterGroup({
 	operator: 'AND',
 	filters: [
-		{
+		FilterCriteria.filter({
 			operator: 'AND',
 			criteria: [
-				{
+				FilterCriteria.criteria({
 					type: 'SET',
 					operator: 'INCLUDES-ALL',
 					valuePath: ['skills'],
 					matchValue: ['typescript', 'react'],
 					normalize: true // Optional: normalize string values
-				}
+				})
 			]
-		}
+		})
 	]
-};
+});
 
 // Filter by Map contents
-const mapFilter = {
+const mapFilter = FilterCriteria.filterGroup({
 	operator: 'AND',
 	filters: [
-		{
+		FilterCriteria.filter({
 			operator: 'AND',
 			criteria: [
-				{
+				FilterCriteria.criteria({
 					type: 'MAP',
 					operator: 'HAS-KEY',
 					valuePath: ['metadata'],
 					matchValue: 'level'
-				}
+				})
 			]
-		}
+		})
 	]
-};
+});
 ```
 
 ### Dynamic Values Using $path
@@ -796,22 +801,22 @@ const data = [
 	}
 ];
 
-const filter = {
+const filter = FilterCriteria.filterGroup({
 	operator: 'AND',
 	filters: [
-		{
+		FilterCriteria.filter({
 			operator: 'AND',
 			criteria: [
-				{
+				FilterCriteria.criteria({
 					type: 'SET',
 					operator: 'INCLUDES-ALL',
 					valuePath: ['actualSkills'],
 					matchValue: { $path: ['requiredSkills'] } // Compare actualSkills with requiredSkills
-				}
+				})
 			]
-		}
+		})
 	]
-};
+});
 ```
 
 ### Dynamic Values Using Custom Functions
@@ -825,13 +830,13 @@ const data = [
 	}
 ];
 
-const filter = {
+const filter = FilterCriteria.filterGroup({
 	operator: 'AND',
 	filters: [
-		{
+		FilterCriteria.filter({
 			operator: 'AND',
 			criteria: [
-				{
+				FilterCriteria.criteria({
 					type: 'DATE',
 					operator: 'BETWEEN',
 					valuePath: ['createdAt'],
@@ -841,11 +846,11 @@ const filter = {
 						oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
 						return [oneMonthAgo.toISOString(), item.createdAt];
 					}
-				}
+				})
 			]
-		}
+		})
 	]
-};
+});
 ```
 
 ## TypeScript Support
@@ -862,7 +867,7 @@ type FilterGroup = FilterCriteria.FilterGroup;
 
 ## Inspect Functionality
 
-The `FilterCriteria.inspect()` method provides a way to introspect the current state of the filter criteria system. It returns a stringified JSON object containing:
+The `FilterCriteria.inspect()` method provides a way to introspect the current state of the filter criteria system:
 
 1. All available operators for each data type
 2. All currently saved criteria
