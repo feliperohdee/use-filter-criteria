@@ -8,23 +8,11 @@ import { isNumberArray, isStringArray, objectContainKeys, stringify } from './ut
 const datetime = z.string().datetime({ offset: true });
 const logicalOperator = z.enum(['AND', 'OR']);
 const matchValueGetter = <T extends z.ZodSchema>(schema: T) => {
-	return schema
-		.or(
-			z
-				.function()
-				.args(
-					z.object({
-						criteria: z.any(),
-						value: z.any()
-					})
-				)
-				.returns(schema)
-		)
-		.or(
-			z.object({
-				$path: z.array(z.string())
-			})
-		);
+	return schema.or(z.function().args(z.any()).returns(schema)).or(
+		z.object({
+			$path: z.array(z.string())
+		})
+	);
 };
 
 const operatorsArray = z.enum([
@@ -466,7 +454,8 @@ class FilterCriteria {
 	private static async applyCriteria(
 		value: any,
 		criteria: FilterCriteria.CriteriaInput,
-		detailed: boolean = false
+		detailed: boolean = false,
+		context: Map<string, any> = new Map()
 	): Promise<boolean | FilterCriteria.CriteriaResult> {
 		if (criteria.type === 'ALIAS') {
 			return this.$applyAlias(value, criteria, detailed);
@@ -485,7 +474,7 @@ class FilterCriteria {
 			criteria.matchValue = _.get(value, criteria.matchValue.$path);
 		} else if (_.isFunction(criteria.matchValue)) {
 			// custom match value
-			criteria.matchValue = criteria.matchValue({ criteria, value });
+			criteria.matchValue = criteria.matchValue({ context, criteria, value });
 		}
 
 		try {
@@ -510,15 +499,15 @@ class FilterCriteria {
 			}
 
 			if ('criteriaMapper' in criteria && _.isFunction(criteria.criteriaMapper)) {
-				criteria = criteria.criteriaMapper({ criteria, value });
+				criteria = criteria.criteriaMapper({ context, criteria, value });
 
 				if (criteria.type === 'ALIAS' || criteria.type === 'CUSTOM') {
-					return this.applyCriteria(value, criteria, detailed);
+					return this.applyCriteria(value, criteria, detailed, context);
 				}
 			}
 
 			if ('valueMapper' in criteria && _.isFunction(criteria.valueMapper)) {
-				value = criteria.valueMapper({ criteria, value });
+				value = criteria.valueMapper({ context, criteria, value });
 			}
 
 			if ('valuePath' in criteria && _.isArray(criteria.valuePath) && _.size(criteria.valuePath) > 0) {

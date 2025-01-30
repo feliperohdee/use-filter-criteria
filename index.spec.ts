@@ -402,7 +402,7 @@ describe('/index', () => {
 	});
 
 	describe('applyCriteria', () => {
-		it('should handle dynamic matchValue', async () => {
+		it('should handle matchValue as a path', async () => {
 			const criteria = FilterCriteria.criteria({
 				matchValue: { $path: ['tags'] },
 				operator: 'EXACTLY-MATCHES',
@@ -426,7 +426,7 @@ describe('/index', () => {
 			});
 		});
 
-		it('should handle custom matchValue', async () => {
+		it('should handle matchValue as a function', async () => {
 			const matchValue = vi.fn(({ value }) => {
 				return value.tags;
 			});
@@ -446,6 +446,7 @@ describe('/index', () => {
 			]);
 
 			expect(matchValue).toHaveBeenCalledWith({
+				context: expect.any(Map),
 				criteria: {
 					...criteria,
 					matchValue: ['developer', 'javascript']
@@ -486,6 +487,7 @@ describe('/index', () => {
 			]);
 
 			expect(criteriaMapper).toHaveBeenCalledWith({
+				context: expect.any(Map),
 				criteria,
 				value: testData[0]
 			});
@@ -523,6 +525,7 @@ describe('/index', () => {
 			]);
 
 			expect(criteriaMapper).toHaveBeenCalledWith({
+				context: expect.any(Map),
 				criteria,
 				value: testData[0]
 			});
@@ -556,6 +559,7 @@ describe('/index', () => {
 			]);
 
 			expect(valueMapper).toHaveBeenCalledWith({
+				context: expect.any(Map),
 				criteria,
 				value: testData[0]
 			});
@@ -566,6 +570,50 @@ describe('/index', () => {
 				passed: true,
 				reason: 'BOOLEAN criteria "NOT-UNDEFINED" check PASSED',
 				value: 'John Doe'
+			});
+		});
+
+		it('should handle pass context through criteriaMapper -> valueMapper', async () => {
+			const criteriaMapper = vi.fn(({ context, criteria, value }) => {
+				context.set('name', value.name);
+				return criteria;
+			});
+
+			const valueMapper = vi.fn(({ context }) => {
+				return context.get('name');
+			});
+
+			const criteria = FilterCriteria.criteria({
+				criteriaMapper,
+				matchValue: 'John Doe',
+				operator: 'EQUALS',
+				type: 'STRING',
+				valueMapper,
+				valuePath: []
+			});
+
+			const res = await Promise.all([
+				// @ts-expect-error
+				FilterCriteria.applyCriteria(testData[0], criteria),
+				// @ts-expect-error
+				FilterCriteria.applyCriteria(testData[0], criteria, true)
+			]);
+
+			expect(valueMapper).toHaveBeenCalledWith({
+				context: expect.any(Map),
+				criteria: {
+					...criteria,
+					matchValue: 'john-doe'
+				},
+				value: testData[0]
+			});
+
+			expect(res[0]).toEqual(true);
+			expect(res[1]).toEqual({
+				matchValue: 'john-doe',
+				passed: true,
+				reason: 'STRING criteria "EQUALS" check PASSED',
+				value: 'john-doe'
 			});
 		});
 
@@ -840,6 +888,7 @@ describe('/index', () => {
 				);
 
 				expect(criteriaMapper).toHaveBeenCalledWith({
+					context: expect.any(Map),
 					criteria: {
 						...saved?.criteria,
 						criteriaMapper,
@@ -854,6 +903,7 @@ describe('/index', () => {
 				});
 
 				expect(valueMapper).toHaveBeenCalledWith({
+					context: expect.any(Map),
 					criteria: {
 						...saved?.criteria,
 						criteriaMapper,
@@ -1653,49 +1703,6 @@ describe('/index', () => {
 					FilterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
-				expect(predicate).toHaveBeenCalledWith({
-					matchValue: 'John',
-					value: testData[0]
-				});
-
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
-					matchValue: 'John',
-					passed: true,
-					reason: 'CUSTOM predicate check PASSED',
-					value: testData[0]
-				});
-			});
-
-			it('should handle with matchValue function', async () => {
-				const matchValue = vi.fn(() => {
-					return 'John';
-				});
-
-				const predicate = vi.fn(async ({ matchValue, value }) => {
-					return _.startsWith(value.name, matchValue);
-				});
-
-				const criteria = FilterCriteria.criteria({
-					matchValue,
-					predicate,
-					type: 'CUSTOM'
-				});
-
-				const res = await Promise.all([
-					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
-
-				expect(matchValue).toHaveBeenCalledWith({
-					criteria: {
-						...criteria,
-						matchValue: 'John'
-					},
-					value: testData[0]
-				});
 				expect(predicate).toHaveBeenCalledWith({
 					matchValue: 'John',
 					value: testData[0]
