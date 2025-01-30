@@ -641,14 +641,10 @@ FilterCriteria.saveCriteria(
 );
 
 // Reference saved criteria using an alias
-const filterCriteria = FilterCriteria.criteria({
-	alias: 'isHighValueUser',
-	type: 'CUSTOM'
-});
+const filterCriteria = FilterCriteria.alias('isHighValueUser');
 
 // Override properties when using saved criteria
-const customizedCriteria = FilterCriteria.criteria({
-	alias: 'containsKeyword',
+const customizedCriteria = FilterCriteria.alias('containsKeyword', {
 	type: 'STRING',
 	matchValue: 'special-offer', // Override the default matchValue
 	normalize: true,
@@ -661,13 +657,11 @@ const customizedCriteria = FilterCriteria.criteria({
 const combinedFilter = FilterCriteria.filter({
 	operator: 'AND',
 	criteria: [
-		FilterCriteria.criteria({
-			alias: 'isHighValueUser',
+		FilterCriteria.alias('isHighValueUser', {
 			type: 'CUSTOM',
 			matchValue: 2000 // Override matchValue for this instance
 		}),
-		FilterCriteria.criteria({
-			alias: 'containsKeyword',
+		FilterCriteria.alias('containsKeyword', {
 			type: 'STRING',
 			valuePath: ['tags'],
 			matchValue: 'vip'

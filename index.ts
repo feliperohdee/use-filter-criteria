@@ -240,7 +240,7 @@ const criteriaString = z.object({
 		.nullable()
 		.default(null),
 	normalize: z.boolean().default(true),
-	operator: operatorsString.default('CONTAINS'),
+	operator: operatorsString.default('EQUALS'),
 	type: z.literal('STRING'),
 	valueMapper: criteriaMapper,
 	valuePath: z.array(z.string()).default([])
@@ -343,6 +343,16 @@ namespace FilterCriteria {
 
 type DistributiveOmit<T, K extends keyof any> = T extends any ? Omit<T, K> : never;
 
+const aliasFactory = <T extends FilterCriteria.Criteria = FilterCriteria.Criteria>(
+	alias: string,
+	input: DistributiveOmit<FilterCriteria.CriteriaInput, 'criteriaMapper' | 'valueMapper'> & {
+		criteriaMapper?: (input: { context: Map<string, any>; criteria: T; value: any }) => any;
+		valueMapper?: (input: { context: Map<string, any>; criteria: T; value: any }) => any;
+	}
+): T => {
+	return { ...input, alias } as T;
+};
+
 const criteriaFactory = <T extends FilterCriteria.Criteria = FilterCriteria.Criteria>(
 	input: DistributiveOmit<FilterCriteria.CriteriaInput, 'criteriaMapper' | 'valueMapper'> & {
 		criteriaMapper?: (input: { context: Map<string, any>; criteria: T; value: any }) => any;
@@ -365,6 +375,7 @@ const filterGroupFactory = <T extends FilterCriteria.FilterGroup = FilterCriteri
 class FilterCriteria {
 	private static savedCriteria: Map<string, { criteria: FilterCriteria.Criteria }> = new Map();
 
+	static alias = aliasFactory;
 	static criteria = criteriaFactory;
 	static filter = filterFactory;
 	static filterGroup = filterGroupFactory;
@@ -551,51 +562,62 @@ class FilterCriteria {
 		detailed: boolean,
 		context: Map<string, any>
 	) {
-		const saved = this.savedCriteria.get(`${criteria.alias} / ${criteria.type}`);
+		const saved = this.savedCriteria.get(criteria.alias);
 
 		if (!saved) {
 			return detailed
 				? {
-						matchValue: stringify(criteria.matchValue),
+						matchValue: stringify(criteria.matchValue || null),
 						passed: false,
-						reason: `Criteria "${criteria.alias} / ${criteria.type}" not found`,
+						reason: `Criteria "${criteria.alias}" not found`,
+						value: null
+					}
+				: false;
+		}
+
+		if (saved.criteria.type !== criteria.type) {
+			return detailed
+				? {
+						matchValue: stringify(criteria.matchValue || null),
+						passed: false,
+						reason: `Criteria "${criteria.alias}" type mismatch`,
 						value: null
 					}
 				: false;
 		}
 
 		// ensure immutable
-		let newCriteria = { ...saved.criteria };
+		let savedCriteria = { ...saved.criteria };
 
-		if ('criteriaMapper' in criteria && criteria.criteriaMapper && 'criteriaMapper' in newCriteria) {
-			newCriteria.criteriaMapper = criteria.criteriaMapper;
+		if ('criteriaMapper' in criteria && criteria.criteriaMapper && 'criteriaMapper' in savedCriteria) {
+			savedCriteria.criteriaMapper = criteria.criteriaMapper;
 		}
 
-		if ('normalize' in criteria && _.isBoolean(criteria.normalize) && 'normalize' in newCriteria) {
-			newCriteria.normalize = criteria.normalize;
+		if ('normalize' in criteria && _.isBoolean(criteria.normalize) && 'normalize' in savedCriteria) {
+			savedCriteria.normalize = criteria.normalize;
 		}
 
-		if ('operator' in criteria && criteria.operator && 'operator' in newCriteria) {
-			newCriteria.operator = criteria.operator;
+		if ('operator' in criteria && criteria.operator && 'operator' in savedCriteria) {
+			savedCriteria.operator = criteria.operator;
 		}
 
-		if ('matchInArray' in criteria && _.isBoolean(criteria.matchInArray) && 'matchInArray' in newCriteria) {
-			newCriteria.matchInArray = criteria.matchInArray;
+		if ('matchInArray' in criteria && _.isBoolean(criteria.matchInArray) && 'matchInArray' in savedCriteria) {
+			savedCriteria.matchInArray = criteria.matchInArray;
 		}
 
 		if ('matchValue' in criteria && criteria.matchValue) {
-			newCriteria.matchValue = criteria.matchValue;
+			savedCriteria.matchValue = criteria.matchValue;
 		}
 
-		if ('valueMapper' in criteria && criteria.valueMapper && 'valueMapper' in newCriteria) {
-			newCriteria.valueMapper = criteria.valueMapper;
+		if ('valueMapper' in criteria && criteria.valueMapper && 'valueMapper' in savedCriteria) {
+			savedCriteria.valueMapper = criteria.valueMapper;
 		}
 
-		if ('valuePath' in criteria && criteria.valuePath && _.size(criteria.valuePath) > 0 && 'valuePath' in newCriteria) {
-			newCriteria.valuePath = criteria.valuePath;
+		if ('valuePath' in criteria && criteria.valuePath && _.size(criteria.valuePath) > 0 && 'valuePath' in savedCriteria) {
+			savedCriteria.valuePath = criteria.valuePath;
 		}
 
-		return this.applyCriteria(value, newCriteria, detailed, context, true);
+		return this.applyCriteria(value, savedCriteria, detailed, context, true);
 	}
 
 	private static async applyFilter(
@@ -1555,7 +1577,7 @@ class FilterCriteria {
 			throw new Error('Alias is required');
 		}
 
-		this.savedCriteria.set(`${criteria.alias} / ${criteria.type}`, {
+		this.savedCriteria.set(criteria.alias, {
 			criteria
 		});
 	}

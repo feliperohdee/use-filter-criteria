@@ -753,18 +753,13 @@ describe('/index', () => {
 		});
 
 		describe('alias', () => {
-			let predicate: Mock;
-
 			beforeEach(() => {
-				predicate = vi.fn(async ({ matchValue, value }) => {
-					return _.startsWith(FilterCriteria.normalize(value.name), FilterCriteria.normalize(matchValue));
-				});
-
 				FilterCriteria.saveCriteria(
 					FilterCriteria.criteria({
 						alias: 'test',
-						type: 'CUSTOM',
-						predicate
+						operator: 'STARTS-WITH',
+						type: 'STRING',
+						valuePath: ['name']
 					})
 				);
 
@@ -773,9 +768,9 @@ describe('/index', () => {
 			});
 
 			it('should handle', async () => {
-				const criteria = FilterCriteria.criteria({
-					alias: 'test',
-					type: 'CUSTOM'
+				const criteria = FilterCriteria.alias('test', {
+					matchValue: 'JOHN',
+					type: 'STRING'
 				});
 
 				const res = await Promise.all([
@@ -786,63 +781,26 @@ describe('/index', () => {
 				]);
 
 				// @ts-expect-error
-				const saved = FilterCriteria.savedCriteria.get('test / CUSTOM');
-
-				// @ts-expect-error
-				expect(FilterCriteria.applyCriteria).toHaveBeenCalledWith(testData[0], saved.criteria, true, expect.any(Map), true);
-				expect(predicate).toHaveBeenCalledWith({
-					matchValue: null,
-					value: testData[0]
-				});
-
-				expect(res[0]).toEqual(false);
-				expect(res[1]).toEqual({
-					matchValue: 'null',
-					passed: false,
-					reason: 'CUSTOM predicate check FAILED',
-					value: testData[0]
-				});
-			});
-
-			it('should handle with matchValue', async () => {
-				const criteria = FilterCriteria.criteria({
-					alias: 'test',
-					matchValue: 'JÓHN',
-					type: 'CUSTOM'
-				});
-
-				const res = await Promise.all([
-					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
-
-				// @ts-expect-error
-				const saved = FilterCriteria.savedCriteria.get('test / CUSTOM');
+				const saved = FilterCriteria.savedCriteria.get('test');
 
 				// @ts-expect-error
 				expect(FilterCriteria.applyCriteria).toHaveBeenCalledWith(
 					testData[0],
 					{
 						...saved?.criteria,
-						matchValue: 'JÓHN'
+						matchValue: 'JOHN'
 					},
 					true,
 					expect.any(Map),
 					true
 				);
-				expect(predicate).toHaveBeenCalledWith({
-					matchValue: 'JÓHN',
-					value: testData[0]
-				});
 
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
-					matchValue: 'JÓHN',
+					matchValue: 'john',
 					passed: true,
-					reason: 'CUSTOM predicate check PASSED',
-					value: testData[0]
+					reason: 'STRING criteria "STARTS-WITH" check PASSED',
+					value: 'john-doe'
 				});
 			});
 
@@ -857,20 +815,19 @@ describe('/index', () => {
 
 				FilterCriteria.saveCriteria(
 					FilterCriteria.criteria({
-						alias: 'test-string',
+						alias: 'test',
 						type: 'STRING',
 						operator: 'STARTS-WITH',
 						valuePath: ['name']
 					})
 				);
 
-				const criteria = FilterCriteria.criteria({
-					alias: 'test-string',
+				const criteria = FilterCriteria.alias('test', {
 					criteriaMapper,
 					matchInArray: false,
 					matchValue: 'John Doe',
 					normalize: false,
-					operator: 'EQUALS',
+					operator: 'CONTAINS',
 					type: 'STRING',
 					valueMapper,
 					valuePath: ['name']
@@ -884,7 +841,7 @@ describe('/index', () => {
 				]);
 
 				// @ts-expect-error
-				const saved = FilterCriteria.savedCriteria.get('test-string / STRING');
+				const saved = FilterCriteria.savedCriteria.get('test');
 
 				// @ts-expect-error
 				expect(FilterCriteria.applyCriteria).toHaveBeenCalledWith(
@@ -895,7 +852,7 @@ describe('/index', () => {
 						matchInArray: false,
 						matchValue: 'John Doe',
 						normalize: false,
-						operator: 'EQUALS',
+						operator: 'CONTAINS',
 						valueMapper,
 						valuePath: ['name']
 					},
@@ -912,7 +869,7 @@ describe('/index', () => {
 						matchInArray: false,
 						matchValue: 'John Doe',
 						normalize: false,
-						operator: 'EQUALS',
+						operator: 'CONTAINS',
 						valueMapper,
 						valuePath: ['name']
 					},
@@ -927,7 +884,7 @@ describe('/index', () => {
 						matchInArray: false,
 						matchValue: 'John Doe',
 						normalize: false,
-						operator: 'EQUALS',
+						operator: 'CONTAINS',
 						valueMapper,
 						valuePath: ['name']
 					},
@@ -938,14 +895,13 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: 'John Doe',
 					passed: true,
-					reason: 'STRING criteria "EQUALS" check PASSED',
+					reason: 'STRING criteria "CONTAINS" check PASSED',
 					value: 'John Doe'
 				});
 			});
 
 			it('should handle inexistent', async () => {
-				const criteria = FilterCriteria.criteria({
-					alias: 'inexistent',
+				const criteria = FilterCriteria.alias('inexistent', {
 					type: 'CUSTOM'
 				});
 
@@ -960,7 +916,28 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: 'null',
 					passed: false,
-					reason: 'Criteria "inexistent / CUSTOM" not found',
+					reason: 'Criteria "inexistent" not found',
+					value: null
+				});
+			});
+
+			it('should handle type mismatch', async () => {
+				const criteria = FilterCriteria.alias('test', {
+					type: 'CUSTOM'
+				});
+
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
+
+				expect(res[0]).toEqual(false);
+				expect(res[1]).toEqual({
+					matchValue: 'null',
+					passed: false,
+					reason: 'Criteria "test" type mismatch',
 					value: null
 				});
 			});
@@ -4001,7 +3978,7 @@ describe('/index', () => {
 
 			// Check saved criteria
 			expect(result.savedCriteria).toEqual({
-				'test-boolean / BOOLEAN': {
+				'test-boolean': {
 					alias: 'test-boolean',
 					criteriaMapper: null,
 					matchInArray: false,
@@ -4011,7 +3988,7 @@ describe('/index', () => {
 					valueMapper: null,
 					valuePath: ['active']
 				},
-				'test-string / STRING': {
+				'test-string': {
 					alias: 'test-string',
 					criteriaMapper: null,
 					defaultValue: '',
@@ -4028,6 +4005,7 @@ describe('/index', () => {
 
 		it('should return empty savedCriteria when no criteria are saved', () => {
 			const result = JSON.parse(FilterCriteria.inspect());
+
 			expect(result.savedCriteria).toEqual({});
 			expect(Object.keys(result.operators).length).toBe(9); // Check that operators are still present
 		});
@@ -4249,7 +4227,7 @@ describe('/index', () => {
 			);
 
 			// @ts-expect-error
-			expect(FilterCriteria.savedCriteria.get('test / STRING')).toEqual({
+			expect(FilterCriteria.savedCriteria.get('test')).toEqual({
 				criteria: {
 					alias: 'test',
 					criteriaMapper: null,
