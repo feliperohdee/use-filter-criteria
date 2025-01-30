@@ -5,19 +5,26 @@ import { promiseFilter } from 'use-async-helpers';
 
 import { isNumberArray, isStringArray, objectContainKeys, stringify } from './util';
 
-const criteriaCustomPredicate = z
-	.function()
-	.args(z.any(), z.any())
-	.returns(z.union([z.boolean(), z.promise(z.boolean())]));
-
 const datetime = z.string().datetime({ offset: true });
 const logicalOperator = z.enum(['AND', 'OR']);
 const matchValueGetter = <T extends z.ZodSchema>(schema: T) => {
-	return schema.or(z.function().args(z.any()).returns(schema)).or(
-		z.object({
-			$path: z.array(z.string())
-		})
-	);
+	return schema
+		.or(
+			z
+				.function()
+				.args(
+					z.object({
+						criteria: z.any(),
+						value: z.any()
+					})
+				)
+				.returns(schema)
+		)
+		.or(
+			z.object({
+				$path: z.array(z.string())
+			})
+		);
 };
 
 const operatorsArray = z.enum([
@@ -107,34 +114,19 @@ const operators = {
 	string: operatorsString
 };
 
-const criteriaValueMapper = z.function().args(z.any(), z.any()).returns(z.any()).nullable().default(null);
-const criteriaArray = z.object({
-	defaultValue: z.array(z.unknown()).default([]),
-	matchValue: matchValueGetter(z.any()).default(null),
-	normalize: z.boolean().default(true),
-	operator: operatorsArray,
-	type: z.literal('ARRAY'),
-	valueMapper: criteriaValueMapper,
-	valuePath: z.array(z.string())
-});
+const criteriaCustomPredicate = z
+	.function()
+	.args(
+		z.object({
+			matchValue: z.any(),
+			value: z.any()
+		})
+	)
+	.returns(z.union([z.boolean(), z.promise(z.boolean())]));
 
-const criteriaBoolean = z.object({
-	defaultValue: z.any().default(undefined),
-	matchInArray: z.boolean().default(true),
-	matchValue: matchValueGetter(z.any()).default(null),
-	operator: operatorsBoolean,
-	type: z.literal('BOOLEAN'),
-	valueMapper: criteriaValueMapper,
-	valuePath: z.array(z.string())
-});
-
-const criteriaCustom = z.object({
-	matchValue: z.any().default(null),
-	predicate: criteriaCustomPredicate,
-	type: z.literal('CUSTOM')
-});
-
-const criteriaCriteria = z.object({
+const criteriaMapper = z.function().args(z.any()).returns(z.any()).nullable().default(null).optional();
+const criteriaAlias = z.object({
+	criteriaMapper,
 	matchInArray: z.boolean().default(true),
 	matchValue: z.any().default(null),
 	normalize: z.boolean().default(true),
@@ -153,22 +145,52 @@ const criteriaCriteria = z.object({
 		.nullable()
 		.default(null),
 	key: z.string(),
-	type: z.literal('CRITERIA'),
-	valueMapper: criteriaValueMapper,
+	type: z.literal('ALIAS'),
+	valueMapper: criteriaMapper,
 	valuePath: z.array(z.string()).default([])
 });
 
+const criteriaArray = z.object({
+	criteriaMapper,
+	defaultValue: z.array(z.unknown()).default([]),
+	matchValue: matchValueGetter(z.any()).default(null),
+	normalize: z.boolean().default(true),
+	operator: operatorsArray,
+	type: z.literal('ARRAY'),
+	valueMapper: criteriaMapper,
+	valuePath: z.array(z.string())
+});
+
+const criteriaBoolean = z.object({
+	criteriaMapper,
+	defaultValue: z.any().default(undefined),
+	matchInArray: z.boolean().default(true),
+	matchValue: matchValueGetter(z.any()).default(null),
+	operator: operatorsBoolean,
+	type: z.literal('BOOLEAN'),
+	valueMapper: criteriaMapper,
+	valuePath: z.array(z.string())
+});
+
+const criteriaCustom = z.object({
+	matchValue: z.any().default(null),
+	predicate: criteriaCustomPredicate,
+	type: z.literal('CUSTOM')
+});
+
 const criteriaDate = z.object({
+	criteriaMapper,
 	defaultValue: z.string().default(''),
 	matchInArray: z.boolean().default(true),
 	matchValue: matchValueGetter(z.union([datetime, z.tuple([datetime, datetime])])),
 	operator: operatorsDate,
 	type: z.literal('DATE'),
-	valueMapper: criteriaValueMapper,
+	valueMapper: criteriaMapper,
 	valuePath: z.array(z.string())
 });
 
 const criteriaGeo = z.object({
+	criteriaMapper,
 	defaultValue: z.record(z.number()).default({ lat: 0, lng: 0 }),
 	matchValue: matchValueGetter(
 		z.object({
@@ -180,22 +202,24 @@ const criteriaGeo = z.object({
 	),
 	operator: operatorsGeo,
 	type: z.literal('GEO'),
-	valueMapper: criteriaValueMapper,
+	valueMapper: criteriaMapper,
 	valuePath: z.array(z.string())
 });
 
 const criteriaMap = z.object({
+	criteriaMapper,
 	defaultValue: z.map(z.unknown(), z.unknown()).default(new Map()),
 	matchInArray: z.boolean().default(true),
 	matchValue: matchValueGetter(z.any()).default(null),
 	normalize: z.boolean().default(true),
 	operator: operatorsMap,
 	type: z.literal('MAP'),
-	valueMapper: criteriaValueMapper,
+	valueMapper: criteriaMapper,
 	valuePath: z.array(z.string())
 });
 
 const criteriaNumber = z.object({
+	criteriaMapper,
 	defaultValue: z.number().default(0),
 	matchInArray: z.boolean().default(true),
 	matchValue: matchValueGetter(z.union([z.number(), z.array(z.number())]))
@@ -203,22 +227,24 @@ const criteriaNumber = z.object({
 		.default(null),
 	operator: operatorsNumber,
 	type: z.literal('NUMBER'),
-	valueMapper: criteriaValueMapper,
+	valueMapper: criteriaMapper,
 	valuePath: z.array(z.string())
 });
 
 const criteriaObject = z.object({
+	criteriaMapper,
 	defaultValue: z.record(z.unknown()).default({}),
 	matchInArray: z.boolean().default(true),
 	matchValue: matchValueGetter(z.any()).default(null),
 	normalize: z.boolean().default(true),
 	operator: operatorsObject,
 	type: z.literal('OBJECT'),
-	valueMapper: criteriaValueMapper,
+	valueMapper: criteriaMapper,
 	valuePath: z.array(z.string())
 });
 
 const criteriaSet = z.object({
+	criteriaMapper,
 	defaultValue: z.set(z.unknown()).default(new Set()),
 	matchInArray: z.boolean().default(true),
 	matchValue: matchValueGetter(z.union([z.array(z.unknown()), z.number(), z.string()]))
@@ -227,11 +253,12 @@ const criteriaSet = z.object({
 	normalize: z.boolean().default(true),
 	operator: operatorsSet,
 	type: z.literal('SET'),
-	valueMapper: criteriaValueMapper,
+	valueMapper: criteriaMapper,
 	valuePath: z.array(z.string())
 });
 
 const criteriaString = z.object({
+	criteriaMapper,
 	defaultValue: z.string().default(''),
 	matchInArray: z.boolean().default(true),
 	matchValue: matchValueGetter(z.union([z.string(), z.array(z.string()), z.instanceof(RegExp)]))
@@ -240,15 +267,15 @@ const criteriaString = z.object({
 	normalize: z.boolean().default(true),
 	operator: operatorsString,
 	type: z.literal('STRING'),
-	valueMapper: criteriaValueMapper,
+	valueMapper: criteriaMapper,
 	valuePath: z.array(z.string())
 });
 
 const criteria = z.discriminatedUnion('type', [
+	criteriaAlias,
 	criteriaArray,
 	criteriaBoolean,
 	criteriaCustom,
-	criteriaCriteria,
 	criteriaDate,
 	criteriaGeo,
 	criteriaMap,
@@ -276,17 +303,16 @@ const schema = {
 	criteriaCustomPredicate,
 	filter,
 	filterGroup,
-	logicalOperator,
 	matchInput
 };
 
 namespace FilterCriteria {
+	export type CriteriaAlias = z.infer<typeof criteriaAlias>;
+	export type CriteriaAliasInput = z.input<typeof criteriaAlias>;
 	export type CriteriaArray = z.infer<typeof criteriaArray>;
 	export type CriteriaArrayInput = z.input<typeof criteriaArray>;
 	export type CriteriaBoolean = z.infer<typeof criteriaBoolean>;
 	export type CriteriaBooleanInput = z.input<typeof criteriaBoolean>;
-	export type CriteriaCriteria = z.infer<typeof criteriaCriteria>;
-	export type CriteriaCriteriaInput = z.input<typeof criteriaCriteria>;
 	export type CriteriaCustom = z.infer<typeof criteriaCustom>;
 	export type CriteriaCustomInput = z.input<typeof criteriaCustom>;
 	export type CriteriaDate = z.infer<typeof criteriaDate>;
@@ -305,8 +331,9 @@ namespace FilterCriteria {
 	export type CriteriaStringInput = z.input<typeof criteriaString>;
 
 	export type Criteria = z.infer<typeof criteria>;
-	export type CriteriaInput = z.input<typeof criteria>;
 	export type CriteriaCustomPredicate = z.infer<typeof criteriaCustomPredicate>;
+	export type CriteriaInput = z.input<typeof criteria>;
+	export type CriteriaMapper = z.infer<typeof criteriaMapper>;
 	export type CriteriaResult = {
 		matchValue: string;
 		passed: boolean;
@@ -342,7 +369,14 @@ namespace FilterCriteria {
 	};
 }
 
-const criteriaFactory = <T extends FilterCriteria.Criteria = FilterCriteria.Criteria>(input: FilterCriteria.CriteriaInput): T => {
+type DistributiveOmit<T, K extends keyof any> = T extends any ? Omit<T, K> : never;
+
+const criteriaFactory = <T extends FilterCriteria.Criteria = FilterCriteria.Criteria>(
+	input: DistributiveOmit<FilterCriteria.CriteriaInput, 'criteriaMapper' | 'valueMapper'> & {
+		criteriaMapper?: (input: { criteria: T; value: any }) => any;
+		valueMapper?: (input: { criteria: T; value: any }) => any;
+	}
+): T => {
 	return zDefault(criteria, input) as T;
 };
 
@@ -357,13 +391,7 @@ const filterGroupFactory = <T extends FilterCriteria.FilterGroup = FilterCriteri
 };
 
 class FilterCriteria {
-	private static savedCriteria: Map<
-		string,
-		{
-			criteria: FilterCriteria.Criteria;
-			criteriaMapper: ((criteria: FilterCriteria.Criteria) => FilterCriteria.Criteria) | null;
-		}
-	> = new Map();
+	private static savedCriteria: Map<string, { criteria: FilterCriteria.Criteria }> = new Map();
 
 	static criteria = criteriaFactory;
 	static filter = filterFactory;
@@ -440,36 +468,33 @@ class FilterCriteria {
 		criteria: FilterCriteria.CriteriaInput,
 		detailed: boolean = false
 	): Promise<boolean | FilterCriteria.CriteriaResult> {
-		if (criteria.type === 'CRITERIA') {
-			return this.$applyCriteria(value, criteria, detailed);
+		if (criteria.type === 'ALIAS') {
+			return this.$applyAlias(value, criteria, detailed);
 		}
 
-		let { matchValue } = criteria;
+		// ensure immutable
+		criteria = { ...criteria };
 
 		// dynamic match value
 		if (
-			_.isPlainObject(matchValue) &&
-			'$path' in matchValue &&
-			_.isArray(matchValue.$path) &&
+			_.isPlainObject(criteria.matchValue) &&
+			'$path' in criteria.matchValue &&
+			_.isArray(criteria.matchValue.$path) &&
 			(_.isArray(value) || _.isPlainObject(value))
 		) {
-			matchValue = _.get(value, matchValue.$path);
-		} else if (_.isFunction(matchValue)) {
+			criteria.matchValue = _.get(value, criteria.matchValue.$path);
+		} else if (_.isFunction(criteria.matchValue)) {
 			// custom match value
-			matchValue = matchValue(value);
-		}
-
-		if ('normalize' in criteria && criteria.normalize) {
-			matchValue = this.normalize(matchValue);
+			criteria.matchValue = criteria.matchValue({ criteria, value });
 		}
 
 		try {
 			if (criteria.type === 'CUSTOM') {
-				const passed = await this.applyCustomCriteria(value, criteria.predicate, matchValue);
+				const passed = await this.applyCustomCriteria(value, criteria.predicate, criteria.matchValue);
 
 				return detailed
 					? {
-							matchValue: stringify(matchValue),
+							matchValue: stringify(criteria.matchValue),
 							passed,
 							reason: `CUSTOM predicate check ${passed ? 'PASSED' : 'FAILED'}`,
 							value
@@ -480,12 +505,23 @@ class FilterCriteria {
 			let passed = false;
 			let arrayBranching = false;
 
-			// value mapper
-			if ('valueMapper' in criteria && _.isFunction(criteria.valueMapper)) {
-				value = criteria.valueMapper(value, criteria);
+			if ('normalize' in criteria && criteria.normalize) {
+				criteria.matchValue = this.normalize(criteria.matchValue);
 			}
 
-			if (_.isArray(criteria.valuePath) && _.size(criteria.valuePath) > 0) {
+			if ('criteriaMapper' in criteria && _.isFunction(criteria.criteriaMapper)) {
+				criteria = criteria.criteriaMapper({ criteria, value });
+
+				if (criteria.type === 'ALIAS' || criteria.type === 'CUSTOM') {
+					return this.applyCriteria(value, criteria, detailed);
+				}
+			}
+
+			if ('valueMapper' in criteria && _.isFunction(criteria.valueMapper)) {
+				value = criteria.valueMapper({ criteria, value });
+			}
+
+			if ('valuePath' in criteria && _.isArray(criteria.valuePath) && _.size(criteria.valuePath) > 0) {
 				const found = this.findByPath(value, criteria.valuePath, criteria.defaultValue);
 
 				value = found.value;
@@ -498,15 +534,15 @@ class FilterCriteria {
 
 			if (arrayBranching) {
 				passed = _.some(value, v => {
-					return this.evaluateCriteria(v, criteria, matchValue);
+					return this.evaluateCriteria(v, criteria);
 				});
 			} else {
-				passed = this.evaluateCriteria(value, criteria, matchValue);
+				passed = this.evaluateCriteria(value, criteria);
 			}
 
 			if (detailed) {
 				return {
-					matchValue: stringify(matchValue),
+					matchValue: stringify(criteria.matchValue),
 					passed,
 					reason: `${criteria.type} criteria "${criteria.operator}" check ${passed ? 'PASSED' : 'FAILED'}`,
 					value
@@ -517,7 +553,7 @@ class FilterCriteria {
 		} catch (err) {
 			if (detailed) {
 				return {
-					matchValue: stringify(matchValue),
+					matchValue: stringify(criteria.matchValue),
 					passed: false,
 					reason: (err as Error).message,
 					value
@@ -528,7 +564,7 @@ class FilterCriteria {
 		}
 	}
 
-	private static async $applyCriteria(value: any, criteria: FilterCriteria.CriteriaCriteriaInput, detailed: boolean) {
+	private static async $applyAlias(value: any, criteria: FilterCriteria.CriteriaAliasInput, detailed: boolean) {
 		const saved = this.savedCriteria.get(criteria.key);
 
 		if (!saved) {
@@ -542,9 +578,14 @@ class FilterCriteria {
 				: false;
 		}
 
+		// ensure immutable
 		let newCriteria = { ...saved.criteria };
 
-		if (!_.isNil(criteria.normalize) && 'normalize' in newCriteria) {
+		if (criteria.criteriaMapper && 'criteriaMapper' in newCriteria) {
+			newCriteria.criteriaMapper = criteria.criteriaMapper;
+		}
+
+		if (_.isBoolean(criteria.normalize) && 'normalize' in newCriteria) {
 			newCriteria.normalize = criteria.normalize;
 		}
 
@@ -560,16 +601,12 @@ class FilterCriteria {
 			newCriteria.matchValue = criteria.matchValue;
 		}
 
-		if (criteria.valuePath && _.size(criteria.valuePath) > 0 && 'valuePath' in newCriteria) {
-			newCriteria.valuePath = criteria.valuePath;
-		}
-
 		if (criteria.valueMapper && 'valueMapper' in newCriteria) {
 			newCriteria.valueMapper = criteria.valueMapper;
 		}
 
-		if (saved.criteriaMapper && _.isFunction(saved.criteriaMapper)) {
-			newCriteria = saved.criteriaMapper(newCriteria);
+		if (criteria.valuePath && _.size(criteria.valuePath) > 0 && 'valuePath' in newCriteria) {
+			newCriteria.valuePath = criteria.valuePath;
 		}
 
 		return this.applyCriteria(value, newCriteria, detailed);
@@ -607,36 +644,36 @@ class FilterCriteria {
 		return passed;
 	}
 
-	private static evaluateCriteria(value: any, criteria: FilterCriteria.CriteriaInput, matchValue: any): boolean {
+	private static evaluateCriteria(value: any, criteria: FilterCriteria.CriteriaInput): boolean {
 		if ('matchInArray' in criteria && criteria.matchInArray && _.isArray(value)) {
 			return _.some(value, item => {
-				return this.evaluateSingleCriteria(item, criteria, matchValue);
+				return this.evaluateSingleCriteria(item, criteria);
 			});
 		}
 
-		return this.evaluateSingleCriteria(value, criteria, matchValue);
+		return this.evaluateSingleCriteria(value, criteria);
 	}
 
-	private static evaluateSingleCriteria(value: any, criteria: FilterCriteria.CriteriaInput, matchValue: any): boolean {
+	private static evaluateSingleCriteria(value: any, criteria: FilterCriteria.CriteriaInput): boolean {
 		switch (criteria.type) {
 			case 'ARRAY':
-				return this.applyArrayCriteria(value, criteria.operator, matchValue);
+				return this.applyArrayCriteria(value, criteria.operator, criteria.matchValue);
 			case 'BOOLEAN':
-				return this.applyBooleanCriteria(value, criteria.operator, matchValue);
+				return this.applyBooleanCriteria(value, criteria.operator, criteria.matchValue);
 			case 'DATE':
-				return this.applyDateCriteria(value, criteria.operator, matchValue);
+				return this.applyDateCriteria(value, criteria.operator, criteria.matchValue);
 			case 'GEO':
-				return this.applyGeoCriteria(value, criteria.operator, matchValue);
+				return this.applyGeoCriteria(value, criteria.operator, criteria.matchValue);
 			case 'MAP':
-				return this.applyMapCriteria(value, criteria.operator, matchValue);
+				return this.applyMapCriteria(value, criteria.operator, criteria.matchValue);
 			case 'NUMBER':
-				return this.applyNumberCriteria(value, criteria.operator, matchValue);
+				return this.applyNumberCriteria(value, criteria.operator, criteria.matchValue);
 			case 'OBJECT':
-				return this.applyObjectCriteria(value, criteria.operator, matchValue);
+				return this.applyObjectCriteria(value, criteria.operator, criteria.matchValue);
 			case 'SET':
-				return this.applySetCriteria(value, criteria.operator, matchValue);
+				return this.applySetCriteria(value, criteria.operator, criteria.matchValue);
 			case 'STRING':
-				return this.applyStringCriteria(value, criteria.operator, matchValue);
+				return this.applyStringCriteria(value, criteria.operator, criteria.matchValue);
 			default:
 				throw new Error('Unknown criteria type');
 		}
@@ -825,7 +862,7 @@ class FilterCriteria {
 		predicate: FilterCriteria.CriteriaCustomPredicate,
 		matchValue: any
 	): boolean | Promise<boolean> {
-		return predicate(value, matchValue);
+		return predicate({ matchValue, value });
 	}
 
 	private static applyDateCriteria(value: string, operator: FilterCriteria.Operators['date'], matchValue: any): boolean {
@@ -1523,18 +1560,13 @@ class FilterCriteria {
 		return _.isMatch(obj, subObject);
 	}
 
-	static saveCriteria<T extends FilterCriteria.Criteria>(
-		key: string,
-		criteria: T,
-		criteriaMapper: ((criteria: T) => FilterCriteria.Criteria) | null = null
-	): void {
-		if (criteria.type === 'CRITERIA') {
-			throw new Error('Cannot save criteria with type "CRITERIA"');
+	static saveCriteria<T extends FilterCriteria.Criteria>(key: string, criteria: T): void {
+		if (criteria.type === 'ALIAS') {
+			throw new Error('Cannot save criteria with type "ALIAS"');
 		}
 
 		this.savedCriteria.set(key, {
-			criteria,
-			criteriaMapper: criteriaMapper as ((criteria: FilterCriteria.Criteria) => FilterCriteria.Criteria) | null
+			criteria
 		});
 	}
 

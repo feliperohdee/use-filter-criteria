@@ -16,6 +16,8 @@ A TypeScript-based filtering engine that provides a flexible, type-safe way to f
 - 🔍 **Complex Queries**: Support for nested AND/OR logic combinations
 - 🌳 **Deep Path Resolution**: Supports searching through arrays and nested structures with automatic path resolution (e.g. `['users', 'addresses', 'location']` will search through all user addresses)
 - 📍 **Geospatial**: Built-in support for geographic radius searches, with flexible coordinate formats (object or tuple notation) and array traversal support for finding coordinates in nested data structures
+- 🛠️ **Criteria Mapping**: Dynamic criteria modification during evaluation through the criteriaMapper function
+- ⚡ **Aliases**: Save and reuse criteria configurations with the ability to override properties when referenced
 - 🎛️ **Flexible**: Customizable default values and source path resolution
 - 🔄 **Dynamic Values**: Support for dynamic value resolution using `$path` and custom functions
 - 📊 **Detailed Logging**: Optional detailed diagnostics for understanding filter results
@@ -611,7 +613,7 @@ const customFunctionCriteria = FilterCriteria.filterGroup({
 
 ### 3. Saved Custom Criteria
 
-You can save reusable custom criteria that can be referenced by key:
+You can save reusable criteria that can be referenced by key using aliases:
 
 ```typescript
 // Save a custom criteria
@@ -619,8 +621,8 @@ FilterCriteria.saveCriteria(
 	'isHighValueUser',
 	FilterCriteria.criteria({
 		type: 'CUSTOM',
-		predicate: async (item, matchValue) => {
-			return item.purchases > matchValue && item.membershipLevel === 'premium';
+		predicate: async ({ value, matchValue }) => {
+			return value.purchases > matchValue && value.membershipLevel === 'premium';
 		},
 		matchValue: 1000
 	})
@@ -638,29 +640,7 @@ FilterCriteria.saveCriteria(
 	})
 );
 
-/* The `saveCriteria` method also accepts an optional criteriaMapper function that can modify the criteria when it's used: */
-
-// Save criteria with a criteriaMapper function
-FilterCriteria.saveCriteria(
-	'dynamicDateRange',
-	FilterCriteria.criteria({
-		type: 'DATE',
-		operator: 'BETWEEN',
-		valuePath: ['timestamp'],
-		matchValue: ['2024-01-01', '2024-12-31']
-	}),
-	criteria => {
-		// criteriaMapper function can modify any aspect of the criteria
-		const now = new Date();
-		const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-		return {
-			...criteria,
-			matchValue: [thirtyDaysAgo.toISOString(), now.toISOString()]
-		};
-	}
-);
-
-// Use the saved criteria by key with default values
+// Use the saved criteria by reference using an alias
 const basicFilterCriteria = FilterCriteria.filterGroup({
 	operator: 'AND',
 	filters: [
@@ -668,7 +648,7 @@ const basicFilterCriteria = FilterCriteria.filterGroup({
 			operator: 'AND',
 			criteria: [
 				FilterCriteria.criteria({
-					type: 'CRITERIA',
+					type: 'ALIAS',
 					key: 'isHighValueUser'
 				})
 			]
@@ -676,7 +656,7 @@ const basicFilterCriteria = FilterCriteria.filterGroup({
 	]
 });
 
-// Override saved criteria properties
+// Override saved criteria properties when using the alias
 const customFilterCriteria = FilterCriteria.filterGroup({
 	operator: 'AND',
 	filters: [
@@ -688,8 +668,8 @@ const customFilterCriteria = FilterCriteria.filterGroup({
 					matchValue: 'special-offer',
 					normalize: true,
 					operator: 'STARTS-WITH',
-					type: 'CRITERIA',
-					valueMapper: (value: User) => value.name.toLowerCase(),
+					type: 'ALIAS',
+					valueMapper: ({ value }) => value.name.toLowerCase(),
 					valuePath: ['title']
 				})
 			]
@@ -697,7 +677,7 @@ const customFilterCriteria = FilterCriteria.filterGroup({
 	]
 });
 
-// Multiple saved criteria in a single filter
+// Multiple saved criteria references in a single filter
 const combinedFilterCriteria = FilterCriteria.filterGroup({
 	operator: 'AND',
 	filters: [
@@ -705,12 +685,12 @@ const combinedFilterCriteria = FilterCriteria.filterGroup({
 			operator: 'AND',
 			criteria: [
 				FilterCriteria.criteria({
-					type: 'CRITERIA',
+					type: 'ALIAS',
 					key: 'isHighValueUser',
 					matchValue: 2000
 				}),
 				FilterCriteria.criteria({
-					type: 'CRITERIA',
+					type: 'ALIAS',
 					key: 'containsKeyword',
 					valuePath: ['tags'],
 					matchValue: 'vip'
@@ -721,14 +701,14 @@ const combinedFilterCriteria = FilterCriteria.filterGroup({
 });
 ```
 
-When using saved criteria, you can:
+When using aliases to saved criteria, you can:
 
-- Use them as-is by just referencing their key
+- Reference saved criteria by key using the 'ALIAS' type
 - Override any of their properties (valuePath, normalize, operator, matchValue)
-- Combine multiple saved criteria in a single filter
-- Mix saved criteria with regular criteria in the same filter
+- Combine multiple aliases in a single filter
+- Mix aliases with regular criteria in the same filter
 
-Note: You cannot save a criteria of type "CRITERIA" (no nested saved criteria references).
+Note: You cannot save a criteria of type "ALIAS" (no nested saved criteria references).
 
 Custom criteria can be:
 
@@ -789,6 +769,41 @@ const mapFilter = FilterCriteria.filterGroup({
 	]
 });
 ```
+
+### Using Criteria Mappers
+
+The library supports criteria mapping through the `criteriaMapper` option. This allows you to dynamically modify criteria during evaluation:
+
+```typescript
+const filter = FilterCriteria.criteria({
+	type: 'STRING',
+	operator: 'CONTAINS',
+	valuePath: ['name'],
+	matchValue: 'john',
+	criteriaMapper: ({ criteria, value }) => {
+		// You can return a modified criteria based on the current value
+		return {
+			...criteria,
+			normalize: value.shouldNormalize || false,
+			matchValue: value.searchTerm || criteria.matchValue
+		};
+	}
+});
+```
+
+The `criteriaMapper` function receives:
+
+- The current criteria configuration
+- The value being evaluated
+- Must return a modified criteria object
+
+This is useful for:
+
+- Dynamically adjusting criteria based on the data being evaluated
+- Implementing complex filtering logic
+- Creating adaptive filters that change behavior based on context
+
+Note: The `criteriaMapper` function can return any valid criteria type, including changing the criteria type entirely. However, it cannot return an ALIAS type criteria.
 
 ### Dynamic Values Using $path
 

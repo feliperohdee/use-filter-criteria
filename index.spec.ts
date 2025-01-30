@@ -325,8 +325,8 @@ describe('/index', () => {
 				});
 
 				const userLoader = new DataLoader(fn);
-				const predicate = vi.fn(user => {
-					return userLoader.load(user.id);
+				const predicate = vi.fn(({ value }) => {
+					return userLoader.load(value.id);
 				});
 
 				const input = FilterCriteria.filter({
@@ -427,7 +427,7 @@ describe('/index', () => {
 		});
 
 		it('should handle custom matchValue', async () => {
-			const matchValue = vi.fn(value => {
+			const matchValue = vi.fn(({ value }) => {
 				return value.tags;
 			});
 
@@ -445,7 +445,13 @@ describe('/index', () => {
 				FilterCriteria.applyCriteria(testData[0], criteria, true)
 			]);
 
-			expect(matchValue).toHaveBeenCalledWith(testData[0]);
+			expect(matchValue).toHaveBeenCalledWith({
+				criteria: {
+					...criteria,
+					matchValue: ['developer', 'javascript']
+				},
+				value: testData[0]
+			});
 
 			expect(res[0]).toEqual(true);
 			expect(res[1]).toEqual({
@@ -456,8 +462,82 @@ describe('/index', () => {
 			});
 		});
 
+		it('should handle criteriaMapper', async () => {
+			const criteriaMapper = vi.fn(({ criteria }) => {
+				return {
+					...criteria,
+					criteriaMapper: null
+				};
+			});
+
+			const criteria = FilterCriteria.criteria({
+				criteriaMapper,
+				matchValue: ['developer', 'javascript'],
+				operator: 'EXACTLY-MATCHES',
+				type: 'ARRAY',
+				valuePath: ['tags']
+			});
+
+			const res = await Promise.all([
+				// @ts-expect-error
+				FilterCriteria.applyCriteria(testData[0], criteria),
+				// @ts-expect-error
+				FilterCriteria.applyCriteria(testData[0], criteria, true)
+			]);
+
+			expect(criteriaMapper).toHaveBeenCalledWith({
+				criteria,
+				value: testData[0]
+			});
+
+			expect(res[0]).toEqual(true);
+			expect(res[1]).toEqual({
+				matchValue: JSON.stringify(['developer', 'javascript']),
+				passed: true,
+				reason: 'ARRAY criteria "EXACTLY-MATCHES" check PASSED',
+				value: ['developer', 'javascript']
+			});
+		});
+
+		it('should handle criteriaMapper returning CUSTOM', async () => {
+			const criteriaMapper = vi.fn(() => {
+				return FilterCriteria.criteria({
+					predicate: () => true,
+					type: 'CUSTOM'
+				});
+			});
+
+			// must match false
+			const criteria = FilterCriteria.criteria({
+				criteriaMapper,
+				operator: 'IS-EMPTY',
+				type: 'ARRAY',
+				valuePath: ['tags']
+			});
+
+			const res = await Promise.all([
+				// @ts-expect-error
+				FilterCriteria.applyCriteria(testData[0], criteria),
+				// @ts-expect-error
+				FilterCriteria.applyCriteria(testData[0], criteria, true)
+			]);
+
+			expect(criteriaMapper).toHaveBeenCalledWith({
+				criteria,
+				value: testData[0]
+			});
+
+			expect(res[0]).toEqual(true);
+			expect(res[1]).toEqual({
+				matchValue: 'null',
+				passed: true,
+				reason: 'CUSTOM predicate check PASSED',
+				value: testData[0]
+			});
+		});
+
 		it('should handle valueMapper', async () => {
-			const valueMapper = vi.fn(value => {
+			const valueMapper = vi.fn(({ value }) => {
 				return value.name;
 			});
 
@@ -475,7 +555,10 @@ describe('/index', () => {
 				FilterCriteria.applyCriteria(testData[0], criteria, true)
 			]);
 
-			expect(valueMapper).toHaveBeenCalledWith(testData[0], criteria);
+			expect(valueMapper).toHaveBeenCalledWith({
+				criteria,
+				value: testData[0]
+			});
 
 			expect(res[0]).toEqual(true);
 			expect(res[1]).toEqual({
@@ -598,6 +681,221 @@ describe('/index', () => {
 				passed: false,
 				reason: 'Unknown criteria type',
 				value: 'John Doe'
+			});
+		});
+
+		describe('alias', () => {
+			let predicate: Mock;
+
+			beforeEach(() => {
+				predicate = vi.fn(async ({ matchValue, value }) => {
+					return _.startsWith(FilterCriteria.normalize(value.name), FilterCriteria.normalize(matchValue));
+				});
+
+				FilterCriteria.saveCriteria(
+					'test',
+					FilterCriteria.criteria({
+						type: 'CUSTOM',
+						predicate
+					})
+				);
+
+				// @ts-expect-error
+				vi.spyOn(FilterCriteria, 'applyCriteria');
+			});
+
+			it('should handle', async () => {
+				const criteria = FilterCriteria.criteria({
+					key: 'test',
+					type: 'ALIAS'
+				});
+
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
+
+				// @ts-expect-error
+				const saved = FilterCriteria.savedCriteria.get('test');
+
+				// @ts-expect-error
+				expect(FilterCriteria.applyCriteria).toHaveBeenCalledWith(testData[0], saved.criteria, true);
+				expect(predicate).toHaveBeenCalledWith({
+					matchValue: null,
+					value: testData[0]
+				});
+
+				expect(res[0]).toEqual(false);
+				expect(res[1]).toEqual({
+					matchValue: 'null',
+					passed: false,
+					reason: 'CUSTOM predicate check FAILED',
+					value: testData[0]
+				});
+			});
+
+			it('should handle with matchValue', async () => {
+				const criteria = FilterCriteria.criteria({
+					key: 'test',
+					matchValue: 'JÓHN',
+					type: 'ALIAS'
+				});
+
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
+
+				// @ts-expect-error
+				const saved = FilterCriteria.savedCriteria.get('test');
+
+				// @ts-expect-error
+				expect(FilterCriteria.applyCriteria).toHaveBeenCalledWith(
+					testData[0],
+					{
+						...saved?.criteria,
+						matchValue: 'JÓHN'
+					},
+					true
+				);
+				expect(predicate).toHaveBeenCalledWith({
+					matchValue: 'JÓHN',
+					value: testData[0]
+				});
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					matchValue: 'JÓHN',
+					passed: true,
+					reason: 'CUSTOM predicate check PASSED',
+					value: testData[0]
+				});
+			});
+
+			it('should handle with [criteriaMapper, matchInArray, operator, normalize, valuePath, valueMapper]', async () => {
+				const criteriaMapper = vi.fn(({ criteria }) => {
+					if (criteria.type === 'ALIAS') {
+						return {
+							...criteria,
+							valuePath: ['prefix', ...criteria.valuePath]
+						};
+					}
+
+					return criteria;
+				});
+
+				const valueMapper = vi.fn(({ value }) => {
+					return value;
+				});
+
+				FilterCriteria.saveCriteria(
+					'test-string',
+					FilterCriteria.criteria({
+						type: 'STRING',
+						operator: 'STARTS-WITH',
+						valuePath: ['name']
+					})
+				);
+
+				const criteria = FilterCriteria.criteria({
+					criteriaMapper,
+					matchInArray: false,
+					key: 'test-string',
+					matchValue: 'John Doe',
+					normalize: false,
+					operator: 'EQUALS',
+					type: 'ALIAS',
+					valueMapper,
+					valuePath: ['name']
+				});
+
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
+
+				// @ts-expect-error
+				const saved = FilterCriteria.savedCriteria.get('test-string');
+
+				// @ts-expect-error
+				expect(FilterCriteria.applyCriteria).toHaveBeenCalledWith(
+					testData[0],
+					{
+						...saved?.criteria,
+						criteriaMapper,
+						matchInArray: false,
+						matchValue: 'John Doe',
+						normalize: false,
+						operator: 'EQUALS',
+						valueMapper,
+						valuePath: ['name']
+					},
+					true
+				);
+
+				expect(criteriaMapper).toHaveBeenCalledWith({
+					criteria: {
+						...saved?.criteria,
+						criteriaMapper,
+						matchInArray: false,
+						matchValue: 'John Doe',
+						normalize: false,
+						operator: 'EQUALS',
+						valueMapper,
+						valuePath: ['name']
+					},
+					value: testData[0]
+				});
+
+				expect(valueMapper).toHaveBeenCalledWith({
+					criteria: {
+						...saved?.criteria,
+						criteriaMapper,
+						matchInArray: false,
+						matchValue: 'John Doe',
+						normalize: false,
+						operator: 'EQUALS',
+						valueMapper,
+						valuePath: ['name']
+					},
+					value: testData[0]
+				});
+
+				expect(res[0]).toEqual(true);
+				expect(res[1]).toEqual({
+					matchValue: 'John Doe',
+					passed: true,
+					reason: 'STRING criteria "EQUALS" check PASSED',
+					value: 'John Doe'
+				});
+			});
+
+			it('should handle inexistent', async () => {
+				const criteria = FilterCriteria.criteria({
+					key: 'inexistent',
+					type: 'ALIAS'
+				});
+
+				const res = await Promise.all([
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria),
+					// @ts-expect-error
+					FilterCriteria.applyCriteria(testData[0], criteria, true)
+				]);
+
+				expect(res[0]).toEqual(false);
+				expect(res[1]).toEqual({
+					matchValue: 'null',
+					passed: false,
+					reason: 'Criteria "inexistent" not found',
+					value: null
+				});
 			});
 		});
 
@@ -1305,209 +1603,9 @@ describe('/index', () => {
 			});
 		});
 
-		describe('criteria', () => {
-			let predicate: Mock;
-
-			beforeEach(() => {
-				predicate = vi.fn(async (value, matchValue) => {
-					return _.startsWith(FilterCriteria.normalize(value.name), FilterCriteria.normalize(matchValue));
-				});
-
-				FilterCriteria.saveCriteria(
-					'test',
-					FilterCriteria.criteria({
-						type: 'CUSTOM',
-						predicate
-					})
-				);
-
-				// @ts-expect-error
-				vi.spyOn(FilterCriteria, 'applyCriteria');
-			});
-
-			it('should handle', async () => {
-				const criteria = FilterCriteria.criteria({
-					key: 'test',
-					type: 'CRITERIA'
-				});
-
-				const res = await Promise.all([
-					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
-
-				// @ts-expect-error
-				const saved = FilterCriteria.savedCriteria.get('test');
-
-				// @ts-expect-error
-				expect(FilterCriteria.applyCriteria).toHaveBeenCalledWith(testData[0], saved.criteria, true);
-				expect(predicate).toHaveBeenCalledWith(testData[0], null);
-
-				expect(res[0]).toEqual(false);
-				expect(res[1]).toEqual({
-					matchValue: 'null',
-					passed: false,
-					reason: 'CUSTOM predicate check FAILED',
-					value: testData[0]
-				});
-			});
-
-			it('should handle with matchValue', async () => {
-				const criteria = FilterCriteria.criteria({
-					key: 'test',
-					matchValue: 'JÓHN',
-					type: 'CRITERIA'
-				});
-
-				const res = await Promise.all([
-					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
-
-				// @ts-expect-error
-				const saved = FilterCriteria.savedCriteria.get('test');
-
-				// @ts-expect-error
-				expect(FilterCriteria.applyCriteria).toHaveBeenCalledWith(
-					testData[0],
-					{
-						...saved?.criteria,
-						matchValue: 'JÓHN'
-					},
-					true
-				);
-				expect(predicate).toHaveBeenCalledWith(testData[0], 'JÓHN');
-
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
-					matchValue: 'JÓHN',
-					passed: true,
-					reason: 'CUSTOM predicate check PASSED',
-					value: testData[0]
-				});
-			});
-
-			it('should handle with [matchInArray, operator, normalize, valuePath, valueMapper] and criteriaMapper', async () => {
-				const criteriaMapper = vi.fn(criteria => {
-					if (criteria.type === 'CRITERIA') {
-						return {
-							...criteria,
-							valuePath: ['prefix', ...criteria.valuePath]
-						};
-					}
-
-					return criteria;
-				});
-
-				const valueMapper = vi.fn(value => {
-					return value;
-				});
-
-				FilterCriteria.saveCriteria(
-					'test-string',
-					FilterCriteria.criteria({
-						type: 'STRING',
-						operator: 'STARTS-WITH',
-						valuePath: ['name']
-					}),
-					criteriaMapper
-				);
-
-				const criteria = FilterCriteria.criteria({
-					matchInArray: false,
-					key: 'test-string',
-					matchValue: 'John Doe',
-					normalize: false,
-					operator: 'EQUALS',
-					type: 'CRITERIA',
-					valueMapper,
-					valuePath: ['name']
-				});
-
-				const res = await Promise.all([
-					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
-
-				// @ts-expect-error
-				const saved = FilterCriteria.savedCriteria.get('test-string');
-
-				expect(criteriaMapper).toHaveBeenCalledWith({
-					...saved?.criteria,
-					matchInArray: false,
-					matchValue: 'John Doe',
-					normalize: false,
-					operator: 'EQUALS',
-					valueMapper,
-					valuePath: ['name']
-				});
-
-				// @ts-expect-error
-				expect(FilterCriteria.applyCriteria).toHaveBeenCalledWith(
-					testData[0],
-					{
-						...saved?.criteria,
-						matchInArray: false,
-						matchValue: 'John Doe',
-						normalize: false,
-						operator: 'EQUALS',
-						valueMapper,
-						valuePath: ['name']
-					},
-					true
-				);
-
-				expect(valueMapper).toHaveBeenCalledWith(testData[0], {
-					...saved?.criteria,
-					matchInArray: false,
-					matchValue: 'John Doe',
-					normalize: false,
-					operator: 'EQUALS',
-					valueMapper,
-					valuePath: ['name']
-				});
-
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
-					matchValue: 'John Doe',
-					passed: true,
-					reason: 'STRING criteria "EQUALS" check PASSED',
-					value: 'John Doe'
-				});
-			});
-
-			it('should handle inexistent', async () => {
-				const criteria = FilterCriteria.criteria({
-					key: 'inexistent',
-					type: 'CRITERIA'
-				});
-
-				const res = await Promise.all([
-					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
-
-				expect(res[0]).toEqual(false);
-				expect(res[1]).toEqual({
-					matchValue: 'null',
-					passed: false,
-					reason: 'Criteria "inexistent" not found',
-					value: null
-				});
-			});
-		});
-
 		describe('custom', () => {
 			it('should handle', async () => {
-				const predicate = vi.fn(async value => {
+				const predicate = vi.fn(async ({ value }) => {
 					return _.startsWith(value.name, 'John');
 				});
 
@@ -1523,7 +1621,10 @@ describe('/index', () => {
 					FilterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
-				expect(predicate).toHaveBeenCalledWith(testData[0], null);
+				expect(predicate).toHaveBeenCalledWith({
+					matchValue: null,
+					value: testData[0]
+				});
 
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
@@ -1535,7 +1636,7 @@ describe('/index', () => {
 			});
 
 			it('should handle with matchValue', async () => {
-				const predicate = vi.fn(async (value, matchValue) => {
+				const predicate = vi.fn(async ({ matchValue, value }) => {
 					return _.startsWith(value.name, matchValue);
 				});
 
@@ -1552,7 +1653,10 @@ describe('/index', () => {
 					FilterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
-				expect(predicate).toHaveBeenCalledWith(testData[0], 'John');
+				expect(predicate).toHaveBeenCalledWith({
+					matchValue: 'John',
+					value: testData[0]
+				});
 
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
@@ -1568,7 +1672,7 @@ describe('/index', () => {
 					return 'John';
 				});
 
-				const predicate = vi.fn(async (value, matchValue) => {
+				const predicate = vi.fn(async ({ matchValue, value }) => {
 					return _.startsWith(value.name, matchValue);
 				});
 
@@ -1585,8 +1689,17 @@ describe('/index', () => {
 					FilterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
-				expect(matchValue).toHaveBeenCalledWith(testData[0]);
-				expect(predicate).toHaveBeenCalledWith(testData[0], 'John');
+				expect(matchValue).toHaveBeenCalledWith({
+					criteria: {
+						...criteria,
+						matchValue: 'John'
+					},
+					value: testData[0]
+				});
+				expect(predicate).toHaveBeenCalledWith({
+					matchValue: 'John',
+					value: testData[0]
+				});
 
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
@@ -3871,6 +3984,7 @@ describe('/index', () => {
 			// Check saved criteria
 			expect(result.savedCriteria).toEqual({
 				'test-boolean': {
+					criteriaMapper: null,
 					matchInArray: false,
 					matchValue: null,
 					operator: 'IS-TRUE',
@@ -3879,6 +3993,7 @@ describe('/index', () => {
 					valuePath: ['active']
 				},
 				'test-string': {
+					criteriaMapper: null,
 					defaultValue: '',
 					matchInArray: true,
 					matchValue: null,
@@ -4116,6 +4231,7 @@ describe('/index', () => {
 			// @ts-expect-error
 			expect(FilterCriteria.savedCriteria.get('test')).toEqual({
 				criteria: {
+					criteriaMapper: null,
 					defaultValue: '',
 					matchInArray: true,
 					matchValue: 'John',
@@ -4124,57 +4240,23 @@ describe('/index', () => {
 					type: 'STRING',
 					valueMapper: null,
 					valuePath: ['name']
-				},
-				criteriaMapper: null
+				}
 			});
 		});
 
-		it('should save criteria with criteriaMapper', () => {
-			const criteriaMapper = vi.fn();
-			const valueMapper = vi.fn();
-
-			FilterCriteria.saveCriteria(
-				'test',
-				FilterCriteria.criteria({
-					matchInArray: true,
-					matchValue: 'John',
-					operator: 'EQUALS',
-					type: 'STRING',
-					valueMapper,
-					valuePath: ['name']
-				}),
-				criteriaMapper
-			);
-
-			// @ts-expect-error
-			expect(FilterCriteria.savedCriteria.get('test')).toEqual({
-				criteria: {
-					defaultValue: '',
-					matchInArray: true,
-					matchValue: 'John',
-					normalize: true,
-					operator: 'EQUALS',
-					type: 'STRING',
-					valueMapper,
-					valuePath: ['name']
-				},
-				criteriaMapper
-			});
-		});
-
-		it('should not save criteria with type "CRITERIA"', () => {
+		it('should not save criteria with type "ALIAS"', () => {
 			try {
 				FilterCriteria.saveCriteria(
 					'test',
 					FilterCriteria.criteria({
 						key: 'test',
-						type: 'CRITERIA'
+						type: 'ALIAS'
 					})
 				);
 
 				throw new Error('Expected to throw');
 			} catch (err) {
-				expect(err).toEqual(new Error('Cannot save criteria with type "CRITERIA"'));
+				expect(err).toEqual(new Error('Cannot save criteria with type "ALIAS"'));
 			}
 		});
 	});
