@@ -361,8 +361,8 @@ type DistributiveOmit<T, K extends keyof any> = T extends any ? Omit<T, K> : nev
 
 const criteriaFactory = <T extends FilterCriteria.Criteria = FilterCriteria.Criteria>(
 	input: DistributiveOmit<FilterCriteria.CriteriaInput, 'criteriaMapper' | 'valueMapper'> & {
-		criteriaMapper?: (input: { criteria: T; value: any }) => any;
-		valueMapper?: (input: { criteria: T; value: any }) => any;
+		criteriaMapper?: (input: { context: Map<string, any>; criteria: T; value: any }) => any;
+		valueMapper?: (input: { context: Map<string, any>; criteria: T; value: any }) => any;
 	}
 ): T => {
 	return zDefault(criteria, input) as T;
