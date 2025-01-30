@@ -426,7 +426,7 @@ describe('/index', () => {
 			});
 		});
 
-		it('should handle matchValue as a function', async () => {
+		it('should handle matchValue as function', async () => {
 			const matchValue = vi.fn(({ value }) => {
 				return value.tags;
 			});
@@ -547,8 +547,7 @@ describe('/index', () => {
 			const criteria = FilterCriteria.criteria({
 				operator: 'NOT-UNDEFINED',
 				type: 'BOOLEAN',
-				valueMapper,
-				valuePath: []
+				valueMapper
 			});
 
 			const res = await Promise.all([
@@ -588,8 +587,7 @@ describe('/index', () => {
 				matchValue: 'John Doe',
 				operator: 'EQUALS',
 				type: 'STRING',
-				valueMapper,
-				valuePath: []
+				valueMapper
 			});
 
 			const res = await Promise.all([
@@ -617,11 +615,10 @@ describe('/index', () => {
 			});
 		});
 
-		it('should handle empty valuePath', async () => {
+		it('should handle no valuePath', async () => {
 			const criteria = FilterCriteria.criteria({
 				operator: 'NOT-UNDEFINED',
-				type: 'BOOLEAN',
-				valuePath: []
+				type: 'BOOLEAN'
 			});
 
 			const res = await Promise.all([
@@ -636,6 +633,29 @@ describe('/index', () => {
 				matchValue: 'null',
 				passed: true,
 				reason: 'BOOLEAN criteria "NOT-UNDEFINED" check PASSED',
+				value: testData[0]
+			});
+		});
+
+		it('should handle no operator', async () => {
+			const criteria = FilterCriteria.criteria({
+				// @ts-expect-error
+				operator: '',
+				type: 'BOOLEAN'
+			});
+
+			const res = await Promise.all([
+				// @ts-expect-error
+				FilterCriteria.applyCriteria(testData[0], criteria),
+				// @ts-expect-error
+				FilterCriteria.applyCriteria(testData[0], criteria, true)
+			]);
+
+			expect(res[0]).toEqual(false);
+			expect(res[1]).toEqual({
+				matchValue: 'null',
+				passed: false,
+				reason: 'Unknown criteria operator',
 				value: testData[0]
 			});
 		});
@@ -741,8 +761,8 @@ describe('/index', () => {
 				});
 
 				FilterCriteria.saveCriteria(
-					'test',
 					FilterCriteria.criteria({
+						alias: 'test',
 						type: 'CUSTOM',
 						predicate
 					})
@@ -754,8 +774,8 @@ describe('/index', () => {
 
 			it('should handle', async () => {
 				const criteria = FilterCriteria.criteria({
-					key: 'test',
-					type: 'ALIAS'
+					alias: 'test',
+					type: 'CUSTOM'
 				});
 
 				const res = await Promise.all([
@@ -766,10 +786,10 @@ describe('/index', () => {
 				]);
 
 				// @ts-expect-error
-				const saved = FilterCriteria.savedCriteria.get('test');
+				const saved = FilterCriteria.savedCriteria.get('test / CUSTOM');
 
 				// @ts-expect-error
-				expect(FilterCriteria.applyCriteria).toHaveBeenCalledWith(testData[0], saved.criteria, true);
+				expect(FilterCriteria.applyCriteria).toHaveBeenCalledWith(testData[0], saved.criteria, true, expect.any(Map), true);
 				expect(predicate).toHaveBeenCalledWith({
 					matchValue: null,
 					value: testData[0]
@@ -786,9 +806,9 @@ describe('/index', () => {
 
 			it('should handle with matchValue', async () => {
 				const criteria = FilterCriteria.criteria({
-					key: 'test',
+					alias: 'test',
 					matchValue: 'JÓHN',
-					type: 'ALIAS'
+					type: 'CUSTOM'
 				});
 
 				const res = await Promise.all([
@@ -799,7 +819,7 @@ describe('/index', () => {
 				]);
 
 				// @ts-expect-error
-				const saved = FilterCriteria.savedCriteria.get('test');
+				const saved = FilterCriteria.savedCriteria.get('test / CUSTOM');
 
 				// @ts-expect-error
 				expect(FilterCriteria.applyCriteria).toHaveBeenCalledWith(
@@ -808,6 +828,8 @@ describe('/index', () => {
 						...saved?.criteria,
 						matchValue: 'JÓHN'
 					},
+					true,
+					expect.any(Map),
 					true
 				);
 				expect(predicate).toHaveBeenCalledWith({
@@ -824,15 +846,8 @@ describe('/index', () => {
 				});
 			});
 
-			it('should handle with [criteriaMapper, matchInArray, operator, normalize, valuePath, valueMapper]', async () => {
+			it('should override [criteriaMapper, matchInArray, operator, normalize, valuePath, valueMapper]', async () => {
 				const criteriaMapper = vi.fn(({ criteria }) => {
-					if (criteria.type === 'ALIAS') {
-						return {
-							...criteria,
-							valuePath: ['prefix', ...criteria.valuePath]
-						};
-					}
-
 					return criteria;
 				});
 
@@ -841,8 +856,8 @@ describe('/index', () => {
 				});
 
 				FilterCriteria.saveCriteria(
-					'test-string',
 					FilterCriteria.criteria({
+						alias: 'test-string',
 						type: 'STRING',
 						operator: 'STARTS-WITH',
 						valuePath: ['name']
@@ -850,13 +865,13 @@ describe('/index', () => {
 				);
 
 				const criteria = FilterCriteria.criteria({
+					alias: 'test-string',
 					criteriaMapper,
 					matchInArray: false,
-					key: 'test-string',
 					matchValue: 'John Doe',
 					normalize: false,
 					operator: 'EQUALS',
-					type: 'ALIAS',
+					type: 'STRING',
 					valueMapper,
 					valuePath: ['name']
 				});
@@ -869,7 +884,7 @@ describe('/index', () => {
 				]);
 
 				// @ts-expect-error
-				const saved = FilterCriteria.savedCriteria.get('test-string');
+				const saved = FilterCriteria.savedCriteria.get('test-string / STRING');
 
 				// @ts-expect-error
 				expect(FilterCriteria.applyCriteria).toHaveBeenCalledWith(
@@ -884,6 +899,8 @@ describe('/index', () => {
 						valueMapper,
 						valuePath: ['name']
 					},
+					true,
+					expect.any(Map),
 					true
 				);
 
@@ -928,8 +945,8 @@ describe('/index', () => {
 
 			it('should handle inexistent', async () => {
 				const criteria = FilterCriteria.criteria({
-					key: 'inexistent',
-					type: 'ALIAS'
+					alias: 'inexistent',
+					type: 'CUSTOM'
 				});
 
 				const res = await Promise.all([
@@ -943,7 +960,7 @@ describe('/index', () => {
 				expect(res[1]).toEqual({
 					matchValue: 'null',
 					passed: false,
-					reason: 'Criteria "inexistent" not found',
+					reason: 'Criteria "inexistent / CUSTOM" not found',
 					value: null
 				});
 			});
@@ -951,7 +968,6 @@ describe('/index', () => {
 
 		describe('array', () => {
 			it('should handle invalid valuePath', async () => {
-				// @ts-expect-error
 				const criteria = FilterCriteria.criteria({
 					type: 'ARRAY',
 					valuePath: ['age']
@@ -2167,7 +2183,6 @@ describe('/index', () => {
 
 		describe('map', () => {
 			it('should handle invalid valuePath', async () => {
-				// @ts-expect-error
 				const criteria = FilterCriteria.criteria({
 					type: 'MAP',
 					valuePath: ['age']
@@ -2446,7 +2461,6 @@ describe('/index', () => {
 
 		describe('number', () => {
 			it('should handle invalid valuePath', async () => {
-				// @ts-expect-error
 				const criteria = FilterCriteria.criteria({
 					type: 'NUMBER',
 					valuePath: ['name']
@@ -2653,7 +2667,6 @@ describe('/index', () => {
 
 		describe('object', () => {
 			it('should handle invalid valuePath', async () => {
-				// @ts-expect-error
 				const criteria = FilterCriteria.criteria({
 					type: 'OBJECT',
 					valuePath: ['age']
@@ -2932,7 +2945,6 @@ describe('/index', () => {
 
 		describe('set', () => {
 			it('should handle invalid valuePath', async () => {
-				// @ts-expect-error
 				const criteria = FilterCriteria.criteria({
 					type: 'SET',
 					valuePath: ['age']
@@ -3283,7 +3295,6 @@ describe('/index', () => {
 
 		describe('string', () => {
 			it('should handle invalid valuePath', async () => {
-				// @ts-expect-error
 				const criteria = FilterCriteria.criteria({
 					type: 'STRING',
 					valuePath: ['age']
@@ -3889,8 +3900,8 @@ describe('/index', () => {
 	describe('inspect', () => {
 		it('should return a JSON string with operators and saved criteria', () => {
 			FilterCriteria.saveCriteria(
-				'test-boolean',
 				FilterCriteria.criteria({
+					alias: 'test-boolean',
 					matchInArray: false,
 					operator: 'IS-TRUE',
 					type: 'BOOLEAN',
@@ -3900,8 +3911,8 @@ describe('/index', () => {
 
 			// Save some test criteria
 			FilterCriteria.saveCriteria(
-				'test-string',
 				FilterCriteria.criteria({
+					alias: 'test-string',
 					type: 'STRING',
 					operator: 'STARTS-WITH',
 					valuePath: ['name']
@@ -3990,7 +4001,8 @@ describe('/index', () => {
 
 			// Check saved criteria
 			expect(result.savedCriteria).toEqual({
-				'test-boolean': {
+				'test-boolean / BOOLEAN': {
+					alias: 'test-boolean',
 					criteriaMapper: null,
 					matchInArray: false,
 					matchValue: null,
@@ -3999,7 +4011,8 @@ describe('/index', () => {
 					valueMapper: null,
 					valuePath: ['active']
 				},
-				'test-string': {
+				'test-string / STRING': {
+					alias: 'test-string',
 					criteriaMapper: null,
 					defaultValue: '',
 					matchInArray: true,
@@ -4225,8 +4238,8 @@ describe('/index', () => {
 	describe('saveCriteria', () => {
 		it('should save criteria', () => {
 			FilterCriteria.saveCriteria(
-				'test',
 				FilterCriteria.criteria({
+					alias: 'test',
 					matchInArray: true,
 					matchValue: 'John',
 					operator: 'EQUALS',
@@ -4236,8 +4249,9 @@ describe('/index', () => {
 			);
 
 			// @ts-expect-error
-			expect(FilterCriteria.savedCriteria.get('test')).toEqual({
+			expect(FilterCriteria.savedCriteria.get('test / STRING')).toEqual({
 				criteria: {
+					alias: 'test',
 					criteriaMapper: null,
 					defaultValue: '',
 					matchInArray: true,
@@ -4251,19 +4265,13 @@ describe('/index', () => {
 			});
 		});
 
-		it('should not save criteria with type "ALIAS"', () => {
+		it('should throw error when alias is not provided', () => {
 			try {
-				FilterCriteria.saveCriteria(
-					'test',
-					FilterCriteria.criteria({
-						key: 'test',
-						type: 'ALIAS'
-					})
-				);
+				FilterCriteria.saveCriteria(FilterCriteria.criteria({ type: 'STRING' }));
 
 				throw new Error('Expected to throw');
 			} catch (err) {
-				expect(err).toEqual(new Error('Cannot save criteria with type "ALIAS"'));
+				expect(err).toEqual(new Error('Alias is required'));
 			}
 		});
 	});

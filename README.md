@@ -611,15 +611,15 @@ const customFunctionCriteria = FilterCriteria.filterGroup({
 });
 ```
 
-### 3. Saved Custom Criteria
+### 3. Saved Criteria
 
-You can save reusable criteria that can be referenced by key using aliases:
+You can save reusable criteria that can be referenced later by alias. This is useful for common filtering patterns that you want to reuse across your application:
 
 ```typescript
-// Save a custom criteria
+// Save a criteria for high-value users
 FilterCriteria.saveCriteria(
-	'isHighValueUser',
 	FilterCriteria.criteria({
+		alias: 'isHighValueUser',
 		type: 'CUSTOM',
 		predicate: async ({ value, matchValue }) => {
 			return value.purchases > matchValue && value.membershipLevel === 'premium';
@@ -630,8 +630,8 @@ FilterCriteria.saveCriteria(
 
 // Save a string criteria with normalize option
 FilterCriteria.saveCriteria(
-	'containsKeyword',
 	FilterCriteria.criteria({
+		alias: 'containsKeyword',
 		type: 'STRING',
 		operator: 'CONTAINS',
 		valuePath: ['description'],
@@ -640,81 +640,55 @@ FilterCriteria.saveCriteria(
 	})
 );
 
-// Use the saved criteria by reference using an alias
-const basicFilterCriteria = FilterCriteria.filterGroup({
-	operator: 'AND',
-	filters: [
-		FilterCriteria.filter({
-			operator: 'AND',
-			criteria: [
-				FilterCriteria.criteria({
-					type: 'ALIAS',
-					key: 'isHighValueUser'
-				})
-			]
-		})
-	]
+// Reference saved criteria using an alias
+const filterCriteria = FilterCriteria.criteria({
+	alias: 'isHighValueUser',
+	type: 'CUSTOM'
 });
 
-// Override saved criteria properties when using the alias
-const customFilterCriteria = FilterCriteria.filterGroup({
-	operator: 'AND',
-	filters: [
-		FilterCriteria.filter({
-			operator: 'AND',
-			criteria: [
-				FilterCriteria.criteria({
-					key: 'containsKeyword',
-					matchValue: 'special-offer',
-					normalize: true,
-					operator: 'STARTS-WITH',
-					type: 'ALIAS',
-					valueMapper: ({ value }) => value.name.toLowerCase(),
-					valuePath: ['title']
-				})
-			]
-		})
-	]
+// Override properties when using saved criteria
+const customizedCriteria = FilterCriteria.criteria({
+	alias: 'containsKeyword',
+	type: 'STRING',
+	matchValue: 'special-offer', // Override the default matchValue
+	normalize: true,
+	operator: 'STARTS-WITH', // Override the default operator
+	valueMapper: ({ value }) => value.name.toLowerCase(),
+	valuePath: ['title'] // Override the default path
 });
 
-// Multiple saved criteria references in a single filter
-const combinedFilterCriteria = FilterCriteria.filterGroup({
+// You can combine multiple criteria in a filter
+const combinedFilter = FilterCriteria.filter({
 	operator: 'AND',
-	filters: [
-		FilterCriteria.filter({
-			operator: 'AND',
-			criteria: [
-				FilterCriteria.criteria({
-					type: 'ALIAS',
-					key: 'isHighValueUser',
-					matchValue: 2000
-				}),
-				FilterCriteria.criteria({
-					type: 'ALIAS',
-					key: 'containsKeyword',
-					valuePath: ['tags'],
-					matchValue: 'vip'
-				})
-			]
+	criteria: [
+		FilterCriteria.criteria({
+			alias: 'isHighValueUser',
+			type: 'CUSTOM',
+			matchValue: 2000 // Override matchValue for this instance
+		}),
+		FilterCriteria.criteria({
+			alias: 'containsKeyword',
+			type: 'STRING',
+			valuePath: ['tags'],
+			matchValue: 'vip'
 		})
 	]
 });
 ```
 
-When using aliases to saved criteria, you can:
+When using saved criteria, you can:
 
-- Reference saved criteria by key using the 'ALIAS' type
-- Override any of their properties (valuePath, normalize, operator, matchValue)
-- Combine multiple aliases in a single filter
-- Mix aliases with regular criteria in the same filter
+- Reference saved criteria by providing its alias
+- Override any of their properties (valuePath, normalize, operator, matchValue, etc.)
+- Combine multiple saved criteria in a single filter
+- Mix saved criteria with regular criteria in the same filter
 
-Note: You cannot save a criteria of type "ALIAS" (no nested saved criteria references).
+The saved criteria system provides a way to:
 
-Custom criteria can be:
-
-- Synchronous or asynchronous (returning `boolean | Promise<boolean>`)
-- Used for complex filtering logic that can't be expressed with standard operators
-- Saved once and reused across multiple filters
+- Create reusable filtering patterns
+- Maintain consistent filtering logic across your application
+- Reduce code duplication
+- Easily modify common filtering patterns in one place
 
 ## Advanced Usage
 
@@ -803,7 +777,7 @@ This is useful for:
 - Implementing complex filtering logic
 - Creating adaptive filters that change behavior based on context
 
-Note: The `criteriaMapper` function can return any valid criteria type, including changing the criteria type entirely. However, it cannot return an ALIAS type criteria.
+Note: The `criteriaMapper` function can return any valid criteria type, including changing the criteria type entirely.
 
 ### Dynamic Values Using $path
 
@@ -931,17 +905,19 @@ console.log(info);
     // ... other operator types
   },
   "savedCriteria": {
-    "isHighValueUser": {
+    "isHighValueUser / CUSTOM": {
       "type": "CUSTOM",
       "predicate": [Function],
-      "matchValue": 1000
+      "matchValue": 1000,
+      "alias": "isHighValueUser"
     },
-    "containsKeyword": {
+    "containsKeyword / STRING": {
       "type": "STRING",
       "operator": "CONTAINS",
       "valuePath": ["description"],
       "normalize": true,
-      "matchValue": "premium"
+      "matchValue": "premium",
+      "alias": "containsKeyword"
     }
   }
 }
