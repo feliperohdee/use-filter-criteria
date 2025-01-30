@@ -804,7 +804,7 @@ describe('/index', () => {
 				});
 			});
 
-			it('should override [criteriaMapper, matchInArray, operator, normalize, valuePath, valueMapper]', async () => {
+			it('should override [criteriaMapper, matchInArray, operator, normalize, type, valuePath, valueMapper]', async () => {
 				const criteriaMapper = vi.fn(({ criteria }) => {
 					return criteria;
 				});
@@ -813,24 +813,14 @@ describe('/index', () => {
 					return value;
 				});
 
-				FilterCriteria.saveCriteria(
-					FilterCriteria.criteria({
-						alias: 'test',
-						type: 'STRING',
-						operator: 'STARTS-WITH',
-						valuePath: ['name']
-					})
-				);
-
 				const criteria = FilterCriteria.alias('test', {
 					criteriaMapper,
 					matchInArray: false,
-					matchValue: 'John Doe',
-					normalize: false,
-					operator: 'CONTAINS',
-					type: 'STRING',
+					matchValue: 25,
+					operator: 'EQUALS',
+					type: 'NUMBER',
 					valueMapper,
-					valuePath: ['name']
+					valuePath: ['age']
 				});
 
 				const res = await Promise.all([
@@ -850,11 +840,11 @@ describe('/index', () => {
 						...saved?.criteria,
 						criteriaMapper,
 						matchInArray: false,
-						matchValue: 'John Doe',
-						normalize: false,
-						operator: 'CONTAINS',
+						matchValue: 25,
+						operator: 'EQUALS',
+						type: 'NUMBER',
 						valueMapper,
-						valuePath: ['name']
+						valuePath: ['age']
 					},
 					true,
 					expect.any(Map),
@@ -867,11 +857,11 @@ describe('/index', () => {
 						...saved?.criteria,
 						criteriaMapper,
 						matchInArray: false,
-						matchValue: 'John Doe',
-						normalize: false,
-						operator: 'CONTAINS',
+						matchValue: 25,
+						operator: 'EQUALS',
+						type: 'NUMBER',
 						valueMapper,
-						valuePath: ['name']
+						valuePath: ['age']
 					},
 					value: testData[0]
 				});
@@ -882,21 +872,21 @@ describe('/index', () => {
 						...saved?.criteria,
 						criteriaMapper,
 						matchInArray: false,
-						matchValue: 'John Doe',
-						normalize: false,
-						operator: 'CONTAINS',
+						matchValue: 25,
+						operator: 'EQUALS',
+						type: 'NUMBER',
 						valueMapper,
-						valuePath: ['name']
+						valuePath: ['age']
 					},
 					value: testData[0]
 				});
 
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
-					matchValue: 'John Doe',
+					matchValue: '25',
 					passed: true,
-					reason: 'STRING criteria "CONTAINS" check PASSED',
-					value: 'John Doe'
+					reason: 'NUMBER criteria "EQUALS" check PASSED',
+					value: 25
 				});
 			});
 
@@ -917,27 +907,6 @@ describe('/index', () => {
 					matchValue: 'null',
 					passed: false,
 					reason: 'Criteria "inexistent" not found',
-					value: null
-				});
-			});
-
-			it('should handle type mismatch', async () => {
-				const criteria = FilterCriteria.alias('test', {
-					type: 'CUSTOM'
-				});
-
-				const res = await Promise.all([
-					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
-
-				expect(res[0]).toEqual(false);
-				expect(res[1]).toEqual({
-					matchValue: 'null',
-					passed: false,
-					reason: 'Criteria "test" type mismatch',
 					value: null
 				});
 			});

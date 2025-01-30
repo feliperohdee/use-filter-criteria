@@ -575,17 +575,6 @@ class FilterCriteria {
 				: false;
 		}
 
-		if (saved.criteria.type !== criteria.type) {
-			return detailed
-				? {
-						matchValue: stringify(criteria.matchValue || null),
-						passed: false,
-						reason: `Criteria "${criteria.alias}" type mismatch`,
-						value: null
-					}
-				: false;
-		}
-
 		// ensure immutable
 		let savedCriteria = { ...saved.criteria };
 
@@ -615,6 +604,10 @@ class FilterCriteria {
 
 		if ('valuePath' in criteria && criteria.valuePath && _.size(criteria.valuePath) > 0 && 'valuePath' in savedCriteria) {
 			savedCriteria.valuePath = criteria.valuePath;
+		}
+
+		if ('type' in criteria && criteria.type) {
+			savedCriteria.type = criteria.type;
 		}
 
 		return this.applyCriteria(value, savedCriteria, detailed, context, true);
