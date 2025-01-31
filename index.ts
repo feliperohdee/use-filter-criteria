@@ -5,13 +5,24 @@ import { promiseFilter } from 'use-async-helpers';
 
 import { isNumberArray, isStringArray, objectContainKeys, stringify } from './util';
 
-const datetime = z.string().datetime({ offset: true });
+const zDatetime = z.string().datetime({ offset: true });
+const zFunction = z.custom<Function>(
+	value => {
+		return _.isFunction(value);
+	},
+	{
+		message: 'Value must be a function'
+	}
+);
+
 const logicalOperator = z.enum(['AND', 'OR']);
 const matchValueGetter = <T extends z.ZodSchema>(schema: T) => {
-	return schema.or(z.function().args(z.any()).returns(schema)).or(
-		z.object({
-			$path: z.array(z.string())
-		})
+	return schema.or(
+		zFunction.or(
+			z.object({
+				$path: z.array(z.string())
+			})
+		)
 	);
 };
 
@@ -114,7 +125,7 @@ const criteriaCustomPredicate = z
 	.nullable()
 	.default(null);
 
-const criteriaMapper = z.function().args(z.any()).returns(z.any()).nullable().default(null);
+const criteriaMapper = zFunction.nullable().default(null);
 const criteriaArray = z.object({
 	alias: z.string().default(''),
 	criteriaMapper,
@@ -151,7 +162,7 @@ const criteriaDate = z.object({
 	criteriaMapper,
 	defaultValue: z.string().default(''),
 	matchInArray: z.boolean().default(true),
-	matchValue: matchValueGetter(z.union([datetime, z.tuple([datetime, datetime])])),
+	matchValue: matchValueGetter(z.union([zDatetime, z.tuple([zDatetime, zDatetime])])),
 	operator: operatorsDate.default('AFTER'),
 	type: z.literal('DATE'),
 	valueMapper: criteriaMapper,
@@ -387,7 +398,7 @@ class FilterCriteria {
 		detailed: boolean = false
 	): Promise<boolean | FilterCriteria.MatchDetailedResult> {
 		const converted = this.convertToFilterGroupInput(input);
-		const args = filterGroup.parse(converted.input);
+		const args = await filterGroup.parseAsync(converted.input);
 		const filtersResults = await Promise.all(
 			_.map(args.filters, filter => {
 				return this.applyFilter(value, filter, detailed);
@@ -425,7 +436,7 @@ class FilterCriteria {
 
 	static async matchMany(value: any[], input: FilterCriteria.MatchInput, concurrency: number = Infinity): Promise<any[]> {
 		const converted = this.convertToFilterGroupInput(input);
-		const args = filterGroup.parse(converted.input);
+		const args = await filterGroup.parseAsync(converted.input);
 
 		return promiseFilter(
 			value,
@@ -608,6 +619,16 @@ class FilterCriteria {
 
 		if ('type' in criteria && criteria.type) {
 			savedCriteria.type = criteria.type;
+
+			if ('defaultValue' in savedCriteria) {
+				const matchedSchema = schema.criteria.optionsMap.get(savedCriteria.type);
+				const newDefaultValue = matchedSchema?.shape?.defaultValue?._def?.defaultValue();
+
+				savedCriteria.defaultValue = newDefaultValue;
+			}
+
+			// revalidate schema
+			savedCriteria = await schema.criteria.parseAsync(savedCriteria);
 		}
 
 		return this.applyCriteria(value, savedCriteria, detailed, context, true);

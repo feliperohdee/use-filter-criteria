@@ -837,8 +837,9 @@ describe('/index', () => {
 				expect(FilterCriteria.applyCriteria).toHaveBeenCalledWith(
 					testData[0],
 					{
-						...saved?.criteria,
+						alias: 'test',
 						criteriaMapper,
+						defaultValue: 0,
 						matchInArray: false,
 						matchValue: 25,
 						operator: 'EQUALS',
@@ -854,8 +855,9 @@ describe('/index', () => {
 				expect(criteriaMapper).toHaveBeenCalledWith({
 					context: expect.any(Map),
 					criteria: {
-						...saved?.criteria,
+						alias: 'test',
 						criteriaMapper,
+						defaultValue: 0,
 						matchInArray: false,
 						matchValue: 25,
 						operator: 'EQUALS',
@@ -869,8 +871,9 @@ describe('/index', () => {
 				expect(valueMapper).toHaveBeenCalledWith({
 					context: expect.any(Map),
 					criteria: {
-						...saved?.criteria,
+						alias: 'test',
 						criteriaMapper,
+						defaultValue: 0,
 						matchInArray: false,
 						matchValue: 25,
 						operator: 'EQUALS',
