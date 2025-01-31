@@ -1578,7 +1578,7 @@ class FilterCriteria {
 		return _.isMatch(obj, subObject);
 	}
 
-	saveCriteria<T extends FilterCriteria.Criteria>(criteria: T): void {
+	saveCriteria<T extends FilterCriteria.Criteria>(criteria: T): this {
 		if (!criteria.alias) {
 			throw new Error('Alias is required');
 		}
@@ -1586,6 +1586,8 @@ class FilterCriteria {
 		this.savedCriteria.set(criteria.alias, {
 			criteria
 		});
+
+		return this;
 	}
 
 	private toRad(value: number): number {
