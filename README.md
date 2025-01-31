@@ -36,6 +36,8 @@ yarn add use-filter-criteria
 ```typescript
 import FilterCriteria from 'use-filter-criteria';
 
+const filter = new FilterCriteria();
+
 // Example data
 const users = [
 	{
@@ -137,11 +139,11 @@ const complexFilterGroup = FilterCriteria.filterGroup({
 });
 
 // Basic usage
-const matchingUsers = await FilterCriteria.matchMany(users, complexFilterGroup);
+const matchingUsers = await filter.matchMany(users, complexFilterGroup);
 console.log(matchingUsers);
 
 // With detailed logging
-const detailedResult = await FilterCriteria.match(users[0], complexFilterGroup, true);
+const detailedResult = await filter.match(users[0], complexFilterGroup, true);
 console.log(detailedResult);
 ```
 
@@ -161,7 +163,7 @@ const ageCriteria = FilterCriteria.criteria({
 	matchValue: 25
 });
 
-const result = await FilterCriteria.match(data, ageCriteria);
+const result = await filter.match(data, ageCriteria);
 ```
 
 ### 2. Filter Input
@@ -187,7 +189,7 @@ const userFilterCriteria = FilterCriteria.filter({
 	]
 });
 
-const result = await FilterCriteria.match(data, userFilterCriteria);
+const result = await filter.match(data, userFilterCriteria);
 ```
 
 ### 3. Filter Group Input
@@ -229,7 +231,7 @@ const complexFilterCriteria = FilterCriteria.filterGroup({
 	]
 });
 
-const result = await FilterCriteria.match(data, complexFilterCriteria);
+const result = await filter.match(data, complexFilterCriteria);
 ```
 
 Each input format supports all the filter types and operators described in the "Supported Filter Types" section. The choice between them depends on your filtering complexity needs:
@@ -243,7 +245,7 @@ Each input format supports all the filter types and operators described in the "
 The `match` and `matchMany` functions support detailed logging that provides comprehensive information about why filters passed or failed. Enable detailed logging by passing `true` as the third parameter to `match`:
 
 ```typescript
-const result = await FilterCriteria.match(data, filter, true);
+const result = await filter.match(data, filter, true);
 ```
 
 The detailed output includes:
@@ -287,7 +289,7 @@ const stringFilterCriteria = FilterCriteria.filterGroup({
 	]
 });
 
-const stringResult = await FilterCriteria.match(users[0], stringFilterCriteria, true);
+const stringResult = await filter.match(users[0], stringFilterCriteria, true);
 /* Output:
 {
   operator: 'AND',
@@ -330,7 +332,7 @@ const geoFilterCriteria = FilterCriteria.filterGroup({
 	]
 });
 
-const geoResult = await FilterCriteria.match(users[0], geoFilterCriteria, true);
+const geoResult = await filter.match(users[0], geoFilterCriteria, true);
 /* Output shows detailed radius check results:
 {
   operator: 'AND',
@@ -390,7 +392,7 @@ const nestedFilterCriteria = FilterCriteria.filterGroup({
 	]
 });
 
-const nestedResult = await FilterCriteria.match(users[0], nestedFilter, true);
+const nestedResult = await filter.match(users[0], nestedFilter, true);
 /* Output shows the complete evaluation tree:
 {
   operator: 'OR',
@@ -583,7 +585,7 @@ const batchedCriteria = FilterCriteria.filterGroup({
 });
 
 // Apply the filter with concurrency control
-const results = await FilterCriteria.matchMany(users, batchedCriteria, 2);
+const results = await filter.matchMany(users, batchedCriteria, 2);
 ```
 
 ### 2. Inline Custom Functions

@@ -56,9 +56,13 @@ const testData = [
 ];
 
 describe('/index', () => {
+	let filterCriteria: FilterCriteria;
+
 	beforeEach(() => {
+		filterCriteria = new FilterCriteria();
+
 		// @ts-expect-error
-		FilterCriteria.savedCriteria.clear();
+		filterCriteria.savedCriteria.clear();
 	});
 
 	describe('match', () => {
@@ -86,7 +90,7 @@ describe('/index', () => {
 				})
 			});
 
-			const res = await Promise.all([FilterCriteria.match(testData[0], input, false), FilterCriteria.match(testData[0], input, true)]);
+			const res = await Promise.all([filterCriteria.match(testData[0], input, false), filterCriteria.match(testData[0], input, true)]);
 
 			expect(res[0]).toEqual(true);
 			expect(res[1]).toEqual({
@@ -141,7 +145,7 @@ describe('/index', () => {
 				})
 			});
 
-			const res = await Promise.all([FilterCriteria.match(testData[0], input, false), FilterCriteria.match(testData[0], input, true)]);
+			const res = await Promise.all([filterCriteria.match(testData[0], input, false), filterCriteria.match(testData[0], input, true)]);
 
 			expect(res[0]).toEqual(true);
 			expect(res[1]).toEqual({
@@ -191,7 +195,7 @@ describe('/index', () => {
 				]
 			});
 
-			const res = await Promise.all([FilterCriteria.match(testData[0], input, false), FilterCriteria.match(testData[0], input, true)]);
+			const res = await Promise.all([filterCriteria.match(testData[0], input, false), filterCriteria.match(testData[0], input, true)]);
 
 			expect(res[0]).toEqual(true);
 			expect(res[1]).toEqual({
@@ -223,7 +227,7 @@ describe('/index', () => {
 				valuePath: ['name']
 			});
 
-			const res = await Promise.all([FilterCriteria.match(testData[0], input, false), FilterCriteria.match(testData[0], input, true)]);
+			const res = await Promise.all([filterCriteria.match(testData[0], input, false), filterCriteria.match(testData[0], input, true)]);
 
 			expect(res[0]).toEqual(true);
 			expect(res[1]).toEqual({
@@ -272,7 +276,7 @@ describe('/index', () => {
 					]
 				});
 
-				const res = await FilterCriteria.matchMany(testData, input);
+				const res = await filterCriteria.matchMany(testData, input);
 				expect(res).toHaveLength(2);
 				expect(_.map(res, 'id').sort()).toEqual([1, 3]);
 			});
@@ -312,7 +316,7 @@ describe('/index', () => {
 					]
 				});
 
-				const res = await FilterCriteria.matchMany(testData, input);
+				const res = await filterCriteria.matchMany(testData, input);
 				expect(res).toHaveLength(2);
 				expect(_.map(res, 'id').sort()).toEqual([1, 3]);
 			});
@@ -343,7 +347,7 @@ describe('/index', () => {
 					]
 				});
 
-				const res = await FilterCriteria.matchMany(testData, input, 2);
+				const res = await filterCriteria.matchMany(testData, input, 2);
 
 				expect(fn).toHaveBeenCalledTimes(2);
 				expect(fn).toHaveBeenCalledWith([1, 2]);
@@ -373,7 +377,7 @@ describe('/index', () => {
 					]
 				});
 
-				const res = await FilterCriteria.matchMany(testData, input);
+				const res = await filterCriteria.matchMany(testData, input);
 				expect(res).toHaveLength(3);
 			});
 
@@ -395,7 +399,7 @@ describe('/index', () => {
 					]
 				});
 
-				const res = await FilterCriteria.matchMany(testData, input);
+				const res = await filterCriteria.matchMany(testData, input);
 				expect(res).toHaveLength(0);
 			});
 		});
@@ -412,9 +416,9 @@ describe('/index', () => {
 
 			const res = await Promise.all([
 				// @ts-expect-error
-				FilterCriteria.applyCriteria(testData[0], criteria),
+				filterCriteria.applyCriteria(testData[0], criteria),
 				// @ts-expect-error
-				FilterCriteria.applyCriteria(testData[0], criteria, true)
+				filterCriteria.applyCriteria(testData[0], criteria, true)
 			]);
 
 			expect(res[0]).toEqual(true);
@@ -440,9 +444,9 @@ describe('/index', () => {
 
 			const res = await Promise.all([
 				// @ts-expect-error
-				FilterCriteria.applyCriteria(testData[0], criteria),
+				filterCriteria.applyCriteria(testData[0], criteria),
 				// @ts-expect-error
-				FilterCriteria.applyCriteria(testData[0], criteria, true)
+				filterCriteria.applyCriteria(testData[0], criteria, true)
 			]);
 
 			expect(matchValue).toHaveBeenCalledWith({
@@ -481,9 +485,9 @@ describe('/index', () => {
 
 			const res = await Promise.all([
 				// @ts-expect-error
-				FilterCriteria.applyCriteria(testData[0], criteria),
+				filterCriteria.applyCriteria(testData[0], criteria),
 				// @ts-expect-error
-				FilterCriteria.applyCriteria(testData[0], criteria, true)
+				filterCriteria.applyCriteria(testData[0], criteria, true)
 			]);
 
 			expect(criteriaMapper).toHaveBeenCalledWith({
@@ -519,9 +523,9 @@ describe('/index', () => {
 
 			const res = await Promise.all([
 				// @ts-expect-error
-				FilterCriteria.applyCriteria(testData[0], criteria),
+				filterCriteria.applyCriteria(testData[0], criteria),
 				// @ts-expect-error
-				FilterCriteria.applyCriteria(testData[0], criteria, true)
+				filterCriteria.applyCriteria(testData[0], criteria, true)
 			]);
 
 			expect(criteriaMapper).toHaveBeenCalledWith({
@@ -552,9 +556,9 @@ describe('/index', () => {
 
 			const res = await Promise.all([
 				// @ts-expect-error
-				FilterCriteria.applyCriteria(testData[0], criteria),
+				filterCriteria.applyCriteria(testData[0], criteria),
 				// @ts-expect-error
-				FilterCriteria.applyCriteria(testData[0], criteria, true)
+				filterCriteria.applyCriteria(testData[0], criteria, true)
 			]);
 
 			expect(valueMapper).toHaveBeenCalledWith({
@@ -592,9 +596,9 @@ describe('/index', () => {
 
 			const res = await Promise.all([
 				// @ts-expect-error
-				FilterCriteria.applyCriteria(testData[0], criteria),
+				filterCriteria.applyCriteria(testData[0], criteria),
 				// @ts-expect-error
-				FilterCriteria.applyCriteria(testData[0], criteria, true)
+				filterCriteria.applyCriteria(testData[0], criteria, true)
 			]);
 
 			expect(valueMapper).toHaveBeenCalledWith({
@@ -623,9 +627,9 @@ describe('/index', () => {
 
 			const res = await Promise.all([
 				// @ts-expect-error
-				FilterCriteria.applyCriteria(testData[0], criteria),
+				filterCriteria.applyCriteria(testData[0], criteria),
 				// @ts-expect-error
-				FilterCriteria.applyCriteria(testData[0], criteria, true)
+				filterCriteria.applyCriteria(testData[0], criteria, true)
 			]);
 
 			expect(res[0]).toEqual(true);
@@ -646,9 +650,9 @@ describe('/index', () => {
 
 			const res = await Promise.all([
 				// @ts-expect-error
-				FilterCriteria.applyCriteria(testData[0], criteria),
+				filterCriteria.applyCriteria(testData[0], criteria),
 				// @ts-expect-error
-				FilterCriteria.applyCriteria(testData[0], criteria, true)
+				filterCriteria.applyCriteria(testData[0], criteria, true)
 			]);
 
 			expect(res[0]).toEqual(false);
@@ -670,9 +674,9 @@ describe('/index', () => {
 
 			const res = await Promise.all([
 				// @ts-expect-error
-				FilterCriteria.applyCriteria(testData[0], criteria),
+				filterCriteria.applyCriteria(testData[0], criteria),
 				// @ts-expect-error
-				FilterCriteria.applyCriteria(testData[0], criteria, true)
+				filterCriteria.applyCriteria(testData[0], criteria, true)
 			]);
 
 			expect(res[0]).toEqual(true);
@@ -700,13 +704,13 @@ describe('/index', () => {
 
 			const res = await Promise.all([
 				// @ts-expect-error
-				FilterCriteria.applyCriteria(testValue, criteria),
+				filterCriteria.applyCriteria(testValue, criteria),
 				// @ts-expect-error
-				FilterCriteria.applyCriteria(testValue, criteria, true),
+				filterCriteria.applyCriteria(testValue, criteria, true),
 				// @ts-expect-error
-				FilterCriteria.applyCriteria(testValue, { ...criteria, matchInArray: false }),
+				filterCriteria.applyCriteria(testValue, { ...criteria, matchInArray: false }),
 				// @ts-expect-error
-				FilterCriteria.applyCriteria(testValue, { ...criteria, matchInArray: false }, true)
+				filterCriteria.applyCriteria(testValue, { ...criteria, matchInArray: false }, true)
 			]);
 
 			expect(res[0]).toEqual(true);
@@ -738,9 +742,9 @@ describe('/index', () => {
 
 			const res = await Promise.all([
 				// @ts-expect-error
-				FilterCriteria.applyCriteria(testData[0], criteria),
+				filterCriteria.applyCriteria(testData[0], criteria),
 				// @ts-expect-error
-				FilterCriteria.applyCriteria(testData[0], criteria, true)
+				filterCriteria.applyCriteria(testData[0], criteria, true)
 			]);
 
 			expect(res[0]).toEqual(false);
@@ -754,7 +758,7 @@ describe('/index', () => {
 
 		describe('alias', () => {
 			beforeEach(() => {
-				FilterCriteria.saveCriteria(
+				filterCriteria.saveCriteria(
 					FilterCriteria.criteria({
 						alias: 'test',
 						operator: 'STARTS-WITH',
@@ -764,7 +768,7 @@ describe('/index', () => {
 				);
 
 				// @ts-expect-error
-				vi.spyOn(FilterCriteria, 'applyCriteria');
+				vi.spyOn(filterCriteria, 'applyCriteria');
 			});
 
 			it('should handle', async () => {
@@ -775,16 +779,16 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				// @ts-expect-error
-				const saved = FilterCriteria.savedCriteria.get('test');
+				const saved = filterCriteria.savedCriteria.get('test');
 
 				// @ts-expect-error
-				expect(FilterCriteria.applyCriteria).toHaveBeenCalledWith(
+				expect(filterCriteria.applyCriteria).toHaveBeenCalledWith(
 					testData[0],
 					{
 						...saved?.criteria,
@@ -825,16 +829,16 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				// @ts-expect-error
-				const saved = FilterCriteria.savedCriteria.get('test');
+				const saved = filterCriteria.savedCriteria.get('test');
 
 				// @ts-expect-error
-				expect(FilterCriteria.applyCriteria).toHaveBeenCalledWith(
+				expect(filterCriteria.applyCriteria).toHaveBeenCalledWith(
 					testData[0],
 					{
 						alias: 'test',
@@ -900,9 +904,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(false);
@@ -923,7 +927,7 @@ describe('/index', () => {
 				});
 
 				// @ts-expect-error
-				const res = await FilterCriteria.applyCriteria(testData[0], criteria);
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
 				expect(res).toEqual(false);
 			});
@@ -939,9 +943,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -964,9 +968,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(false);
@@ -988,9 +992,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -1012,9 +1016,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -1036,9 +1040,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -1060,9 +1064,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -1083,9 +1087,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(false);
@@ -1106,9 +1110,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -1130,9 +1134,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(false);
@@ -1154,9 +1158,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(false);
@@ -1178,9 +1182,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -1202,9 +1206,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -1226,9 +1230,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -1250,9 +1254,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -1274,9 +1278,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -1300,9 +1304,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -1324,9 +1328,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(false);
@@ -1347,9 +1351,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(false);
@@ -1370,9 +1374,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -1393,9 +1397,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -1416,9 +1420,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -1439,9 +1443,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -1462,9 +1466,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -1486,9 +1490,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(false);
@@ -1509,9 +1513,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(false);
@@ -1532,9 +1536,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(false);
@@ -1555,9 +1559,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(false);
@@ -1579,9 +1583,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(false);
@@ -1603,9 +1607,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -1631,9 +1635,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(predicate).toHaveBeenCalledWith({
@@ -1663,9 +1667,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(predicate).toHaveBeenCalledWith({
@@ -1692,7 +1696,7 @@ describe('/index', () => {
 				});
 
 				// @ts-expect-error
-				const res = await FilterCriteria.applyCriteria(testData[0], criteria);
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
 				expect(res).toEqual(false);
 			});
@@ -1707,9 +1711,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -1731,9 +1735,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -1755,9 +1759,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -1779,9 +1783,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -1797,9 +1801,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -1821,7 +1825,7 @@ describe('/index', () => {
 				});
 
 				// @ts-expect-error
-				const res = await FilterCriteria.applyCriteria(testData[0], criteria);
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
 				expect(res).toEqual(false);
 			});
@@ -1852,15 +1856,15 @@ describe('/index', () => {
 
 				const resLA = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(LAPoint, criteria),
+					filterCriteria.applyCriteria(LAPoint, criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(LAPoint, criteria, true)
+					filterCriteria.applyCriteria(LAPoint, criteria, true)
 				]);
 				const resNewark = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(newarkPoint, criteria),
+					filterCriteria.applyCriteria(newarkPoint, criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(newarkPoint, criteria, true)
+					filterCriteria.applyCriteria(newarkPoint, criteria, true)
 				]);
 
 				expect(resLA[0]).toEqual(false);
@@ -1916,15 +1920,15 @@ describe('/index', () => {
 
 				const resLA = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(LAPoint, criteria),
+					filterCriteria.applyCriteria(LAPoint, criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(LAPoint, criteria, true)
+					filterCriteria.applyCriteria(LAPoint, criteria, true)
 				]);
 				const resNewark = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(newarkPoint, criteria),
+					filterCriteria.applyCriteria(newarkPoint, criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(newarkPoint, criteria, true)
+					filterCriteria.applyCriteria(newarkPoint, criteria, true)
 				]);
 
 				expect(resLA[0]).toEqual(false);
@@ -1980,15 +1984,15 @@ describe('/index', () => {
 
 				const resLA = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(LAPoint, criteria),
+					filterCriteria.applyCriteria(LAPoint, criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(LAPoint, criteria, true)
+					filterCriteria.applyCriteria(LAPoint, criteria, true)
 				]);
 				const resNewark = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(newarkPoint, criteria),
+					filterCriteria.applyCriteria(newarkPoint, criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(newarkPoint, criteria, true)
+					filterCriteria.applyCriteria(newarkPoint, criteria, true)
 				]);
 
 				expect(resLA[0]).toEqual(false);
@@ -2052,15 +2056,15 @@ describe('/index', () => {
 
 				const resKm = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(LAPoint, criteriaKm),
+					filterCriteria.applyCriteria(LAPoint, criteriaKm),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(LAPoint, criteriaKm, true)
+					filterCriteria.applyCriteria(LAPoint, criteriaKm, true)
 				]);
 				const resMi = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(LAPoint, criteriaMi),
+					filterCriteria.applyCriteria(LAPoint, criteriaMi),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(LAPoint, criteriaMi, true)
+					filterCriteria.applyCriteria(LAPoint, criteriaMi, true)
 				]);
 
 				// A distance is ~3936km or ~2445mi, so it should be outside the radius in both cases
@@ -2110,9 +2114,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(newarkPoint, criteria),
+					filterCriteria.applyCriteria(newarkPoint, criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(newarkPoint, criteria, true)
+					filterCriteria.applyCriteria(newarkPoint, criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -2138,7 +2142,7 @@ describe('/index', () => {
 				});
 
 				// @ts-expect-error
-				const res = await FilterCriteria.applyCriteria(testData[0], criteria);
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
 				expect(res).toEqual(false);
 			});
@@ -2153,9 +2157,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -2178,9 +2182,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -2203,9 +2207,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(false);
@@ -2227,9 +2231,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -2250,9 +2254,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(false);
@@ -2273,9 +2277,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -2297,9 +2301,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -2321,9 +2325,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -2345,9 +2349,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -2369,9 +2373,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -2393,9 +2397,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -2416,7 +2420,7 @@ describe('/index', () => {
 				});
 
 				// @ts-expect-error
-				const res = await FilterCriteria.applyCriteria(testData[0], criteria);
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
 				expect(res).toEqual(false);
 			});
@@ -2431,9 +2435,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -2455,9 +2459,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -2479,9 +2483,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -2503,9 +2507,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -2527,9 +2531,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -2551,9 +2555,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -2575,9 +2579,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -2599,9 +2603,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -2622,7 +2626,7 @@ describe('/index', () => {
 				});
 
 				// @ts-expect-error
-				const res = await FilterCriteria.applyCriteria(testData[0], criteria);
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
 				expect(res).toEqual(false);
 			});
@@ -2637,9 +2641,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -2662,9 +2666,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -2687,9 +2691,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(false);
@@ -2711,9 +2715,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -2734,9 +2738,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(false);
@@ -2757,9 +2761,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -2781,9 +2785,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -2805,9 +2809,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -2829,9 +2833,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -2853,9 +2857,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -2877,9 +2881,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -2900,7 +2904,7 @@ describe('/index', () => {
 				});
 
 				// @ts-expect-error
-				const res = await FilterCriteria.applyCriteria(testData[0], criteria);
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
 				expect(res).toEqual(false);
 			});
@@ -2916,9 +2920,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -2941,9 +2945,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(false);
@@ -2965,9 +2969,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -2989,9 +2993,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -3013,9 +3017,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -3036,9 +3040,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(false);
@@ -3059,9 +3063,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -3083,9 +3087,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(false);
@@ -3107,9 +3111,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(false);
@@ -3131,9 +3135,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -3155,9 +3159,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -3179,9 +3183,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -3203,9 +3207,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -3227,9 +3231,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -3250,7 +3254,7 @@ describe('/index', () => {
 				});
 
 				// @ts-expect-error
-				const res = await FilterCriteria.applyCriteria(testData[0], criteria);
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
 				expect(res).toEqual(false);
 			});
@@ -3266,9 +3270,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -3291,9 +3295,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(false);
@@ -3315,9 +3319,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -3339,9 +3343,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -3363,9 +3367,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -3388,9 +3392,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -3411,9 +3415,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(false);
@@ -3435,9 +3439,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -3459,9 +3463,9 @@ describe('/index', () => {
 
 				const res = await Promise.all([
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria),
+					filterCriteria.applyCriteria(testData[0], criteria),
 					// @ts-expect-error
-					FilterCriteria.applyCriteria(testData[0], criteria, true)
+					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
 				expect(res[0]).toEqual(true);
@@ -3477,7 +3481,7 @@ describe('/index', () => {
 
 	describe('applyFilter', () => {
 		it('should return', async () => {
-			const filter: FilterCriteria.FilterInput = {
+			const filter = FilterCriteria.filter({
 				operator: 'OR',
 				criteria: [
 					{
@@ -3493,32 +3497,32 @@ describe('/index', () => {
 						valuePath: ['name']
 					}
 				]
-			};
+			});
 
 			const res = await Promise.all([
 				// @ts-expect-error
-				FilterCriteria.applyFilter(testData[0], filter, false),
+				filterCriteria.applyFilter(testData[0], filter, false),
 				// @ts-expect-error
-				FilterCriteria.applyFilter(testData[0], filter, true)
+				filterCriteria.applyFilter(testData[0], filter, true)
 			]);
 
-			expect(res[0]).toEqual(false);
+			expect(res[0]).toEqual(true);
 			expect(res[1]).toEqual({
 				operator: 'OR',
-				passed: false,
-				reason: 'Filter "OR" check FAILED',
+				passed: true,
+				reason: 'Filter "OR" check PASSED',
 				results: [
 					{
 						matchValue: 'jo_hn',
 						passed: false,
 						reason: 'STRING criteria "CONTAINS" check FAILED',
-						value: 'John Doe'
+						value: 'john-doe'
 					},
 					{
 						matchValue: 'john',
-						passed: false,
-						reason: 'STRING criteria "CONTAINS" check FAILED',
-						value: 'John Doe'
+						passed: true,
+						reason: 'STRING criteria "CONTAINS" check PASSED',
+						value: 'john-doe'
 					}
 				]
 			});
@@ -3535,7 +3539,7 @@ describe('/index', () => {
 			});
 
 			// @ts-expect-error
-			const filterInput = FilterCriteria.convertToFilterGroupInput(criteria);
+			const filterInput = filterCriteria.convertToFilterGroupInput(criteria);
 
 			expect(filterInput).toEqual({
 				input: {
@@ -3554,13 +3558,13 @@ describe('/index', () => {
 				valuePath: ['name']
 			});
 
-			const filter: FilterCriteria.FilterInput = {
+			const filter = FilterCriteria.filter({
 				operator: 'AND',
 				criteria: [criteria]
-			};
+			});
 
 			// @ts-expect-error
-			const filterGroupInput = FilterCriteria.convertToFilterGroupInput(filter);
+			const filterGroupInput = filterCriteria.convertToFilterGroupInput(filter);
 			expect(filterGroupInput).toEqual({
 				input: { operator: 'AND', filters: [filter] },
 				level: 'filter'
@@ -3581,7 +3585,7 @@ describe('/index', () => {
 			};
 
 			// @ts-expect-error
-			expect(FilterCriteria.convertToFilterGroupInput(filterGroupInput)).toEqual({
+			expect(filterCriteria.convertToFilterGroupInput(filterGroupInput)).toEqual({
 				input: filterGroupInput,
 				level: 'filter-group'
 			});
@@ -3600,7 +3604,7 @@ describe('/index', () => {
 
 			it('should find string value', () => {
 				// @ts-expect-error
-				expect(FilterCriteria.findByPath(simpleObject, ['name'])).toEqual({
+				expect(filterCriteria.findByPath(simpleObject, ['name'])).toEqual({
 					arrayBranching: false,
 					value: 'John'
 				});
@@ -3608,7 +3612,7 @@ describe('/index', () => {
 
 			it('should find number value', () => {
 				// @ts-expect-error
-				expect(FilterCriteria.findByPath(simpleObject, ['age'])).toEqual({
+				expect(filterCriteria.findByPath(simpleObject, ['age'])).toEqual({
 					arrayBranching: false,
 					value: 30
 				});
@@ -3616,7 +3620,7 @@ describe('/index', () => {
 
 			it('should find boolean value', () => {
 				// @ts-expect-error
-				expect(FilterCriteria.findByPath(simpleObject, ['isActive'])).toEqual({
+				expect(filterCriteria.findByPath(simpleObject, ['isActive'])).toEqual({
 					arrayBranching: false,
 					value: true
 				});
@@ -3624,7 +3628,7 @@ describe('/index', () => {
 
 			it('should find null value', () => {
 				// @ts-expect-error
-				expect(FilterCriteria.findByPath(simpleObject, ['nullValue'])).toEqual({
+				expect(filterCriteria.findByPath(simpleObject, ['nullValue'])).toEqual({
 					arrayBranching: false,
 					value: null
 				});
@@ -3632,7 +3636,7 @@ describe('/index', () => {
 
 			it('should return defaultValue for undefined value', () => {
 				// @ts-expect-error
-				expect(FilterCriteria.findByPath(simpleObject, ['undefinedValue'])).toEqual({
+				expect(filterCriteria.findByPath(simpleObject, ['undefinedValue'])).toEqual({
 					arrayBranching: false,
 					value: undefined
 				});
@@ -3640,7 +3644,7 @@ describe('/index', () => {
 
 			it('should return defaultValue for non-existent path', () => {
 				// @ts-expect-error
-				expect(FilterCriteria.findByPath(simpleObject, ['nonexistent'])).toEqual({
+				expect(filterCriteria.findByPath(simpleObject, ['nonexistent'])).toEqual({
 					arrayBranching: false,
 					value: undefined
 				});
@@ -3662,7 +3666,7 @@ describe('/index', () => {
 
 			it('should find deeply nested value using dot notation', () => {
 				// @ts-expect-error
-				expect(FilterCriteria.findByPath(nestedObject, ['user', 'details', 'name'])).toEqual({
+				expect(filterCriteria.findByPath(nestedObject, ['user', 'details', 'name'])).toEqual({
 					arrayBranching: false,
 					value: 'John'
 				});
@@ -3670,7 +3674,7 @@ describe('/index', () => {
 
 			it('should find multiple levels deep value', () => {
 				// @ts-expect-error
-				expect(FilterCriteria.findByPath(nestedObject, ['user', 'details', 'address', 'street'])).toEqual({
+				expect(filterCriteria.findByPath(nestedObject, ['user', 'details', 'address', 'street'])).toEqual({
 					arrayBranching: false,
 					value: 'Main St'
 				});
@@ -3678,7 +3682,7 @@ describe('/index', () => {
 
 			it('should return undefined for invalid nested path', () => {
 				// @ts-expect-error
-				expect(FilterCriteria.findByPath(nestedObject, ['user', 'invalid', 'path'])).toEqual({
+				expect(filterCriteria.findByPath(nestedObject, ['user', 'invalid', 'path'])).toEqual({
 					arrayBranching: false,
 					value: undefined
 				});
@@ -3698,7 +3702,7 @@ describe('/index', () => {
 
 			it('should return simple array', () => {
 				// @ts-expect-error
-				expect(FilterCriteria.findByPath(arrayData, ['numbers'])).toEqual({
+				expect(filterCriteria.findByPath(arrayData, ['numbers'])).toEqual({
 					arrayBranching: false,
 					value: [1, 2, 3]
 				});
@@ -3706,7 +3710,7 @@ describe('/index', () => {
 
 			it('should return nested arrays', () => {
 				// @ts-expect-error
-				expect(FilterCriteria.findByPath(arrayData, ['nested'])).toEqual({
+				expect(filterCriteria.findByPath(arrayData, ['nested'])).toEqual({
 					arrayBranching: false,
 					value: [
 						[4, 5],
@@ -3717,7 +3721,7 @@ describe('/index', () => {
 
 			it('should return deeply nested arrays', () => {
 				// @ts-expect-error
-				expect(FilterCriteria.findByPath(arrayData, ['deepNested'])).toEqual({
+				expect(filterCriteria.findByPath(arrayData, ['deepNested'])).toEqual({
 					arrayBranching: false,
 					value: [[[8, 9]], [[10, 11]]]
 				});
@@ -3725,7 +3729,7 @@ describe('/index', () => {
 
 			it('should return mixed type arrays', () => {
 				// @ts-expect-error
-				expect(FilterCriteria.findByPath(arrayData, ['mixedArray'])).toEqual({
+				expect(filterCriteria.findByPath(arrayData, ['mixedArray'])).toEqual({
 					arrayBranching: false,
 					value: [1, '2', true, null]
 				});
@@ -3748,7 +3752,7 @@ describe('/index', () => {
 
 			it('should find values across array of objects', () => {
 				// @ts-expect-error
-				expect(FilterCriteria.findByPath(objectArrays, ['users', 'name'])).toEqual({
+				expect(filterCriteria.findByPath(objectArrays, ['users', 'name'])).toEqual({
 					arrayBranching: true,
 					value: ['John', 'Jane']
 				});
@@ -3756,7 +3760,7 @@ describe('/index', () => {
 
 			it('should find and flatten nested arrays in objects', () => {
 				// @ts-expect-error
-				expect(FilterCriteria.findByPath(objectArrays, ['users', 'tags'])).toEqual({
+				expect(filterCriteria.findByPath(objectArrays, ['users', 'tags'])).toEqual({
 					arrayBranching: true,
 					value: ['admin', 'user', 'user']
 				});
@@ -3764,7 +3768,7 @@ describe('/index', () => {
 
 			it('should traverse deeply nested object arrays', () => {
 				// @ts-expect-error
-				expect(FilterCriteria.findByPath(objectArrays, ['nested', 'groups', 'members', 'name'])).toEqual({
+				expect(filterCriteria.findByPath(objectArrays, ['nested', 'groups', 'members', 'name'])).toEqual({
 					arrayBranching: true,
 					value: ['Alice', 'Bob', 'Charlie']
 				});
@@ -3772,7 +3776,7 @@ describe('/index', () => {
 
 			it('should return empty array for invalid nested path', () => {
 				// @ts-expect-error
-				expect(FilterCriteria.findByPath(objectArrays, ['nested', 'groups', 'invalid'])).toEqual({
+				expect(filterCriteria.findByPath(objectArrays, ['nested', 'groups', 'invalid'])).toEqual({
 					arrayBranching: true,
 					value: []
 				});
@@ -3782,7 +3786,7 @@ describe('/index', () => {
 		describe('edge cases', () => {
 			it('should handle empty object', () => {
 				// @ts-expect-error
-				expect(FilterCriteria.findByPath({}, ['any', 'path'])).toEqual({
+				expect(filterCriteria.findByPath({}, ['any', 'path'])).toEqual({
 					arrayBranching: false,
 					value: undefined
 				});
@@ -3790,7 +3794,7 @@ describe('/index', () => {
 
 			it('should handle empty array', () => {
 				// @ts-expect-error
-				expect(FilterCriteria.findByPath([], ['any', 'path'])).toEqual({
+				expect(filterCriteria.findByPath([], ['any', 'path'])).toEqual({
 					arrayBranching: false,
 					value: []
 				});
@@ -3798,7 +3802,7 @@ describe('/index', () => {
 
 			it('should handle empty path', () => {
 				// @ts-expect-error
-				expect(FilterCriteria.findByPath({ value: 1 }, [])).toEqual({
+				expect(filterCriteria.findByPath({ value: 1 }, [])).toEqual({
 					arrayBranching: false,
 					value: { value: 1 }
 				});
@@ -3809,12 +3813,12 @@ describe('/index', () => {
 
 			it('should handle circular references', () => {
 				// @ts-expect-error
-				expect(FilterCriteria.findByPath(circularRef, ['a'])).toEqual({
+				expect(filterCriteria.findByPath(circularRef, ['a'])).toEqual({
 					arrayBranching: false,
 					value: 1
 				});
 				// @ts-expect-error
-				expect(FilterCriteria.findByPath(circularRef, ['self', 'a'])).toEqual({
+				expect(filterCriteria.findByPath(circularRef, ['self', 'a'])).toEqual({
 					arrayBranching: false,
 					value: 1
 				});
@@ -3828,17 +3832,17 @@ describe('/index', () => {
 
 			it('should handle special characters in path using bracket notation', () => {
 				// @ts-expect-error
-				expect(FilterCriteria.findByPath(specialChars, ['["key.with.dots"]'])).toEqual({
+				expect(filterCriteria.findByPath(specialChars, ['["key.with.dots"]'])).toEqual({
 					arrayBranching: false,
 					value: 'value'
 				});
 				// @ts-expect-error
-				expect(FilterCriteria.findByPath(specialChars, ['["key-with-dashes"]'])).toEqual({
+				expect(filterCriteria.findByPath(specialChars, ['["key-with-dashes"]'])).toEqual({
 					arrayBranching: false,
 					value: 'value2'
 				});
 				// @ts-expect-error
-				expect(FilterCriteria.findByPath(specialChars, ['["@special!chars"]'])).toEqual({
+				expect(filterCriteria.findByPath(specialChars, ['["@special!chars"]'])).toEqual({
 					arrayBranching: false,
 					value: 'value3'
 				});
@@ -3848,7 +3852,7 @@ describe('/index', () => {
 
 	describe('inspect', () => {
 		it('should return a JSON string with operators and saved criteria', () => {
-			FilterCriteria.saveCriteria(
+			filterCriteria.saveCriteria(
 				FilterCriteria.criteria({
 					alias: 'test-boolean',
 					matchInArray: false,
@@ -3859,7 +3863,7 @@ describe('/index', () => {
 			);
 
 			// Save some test criteria
-			FilterCriteria.saveCriteria(
+			filterCriteria.saveCriteria(
 				FilterCriteria.criteria({
 					alias: 'test-string',
 					type: 'STRING',
@@ -3868,7 +3872,7 @@ describe('/index', () => {
 				})
 			);
 
-			const result = JSON.parse(FilterCriteria.inspect());
+			const result = JSON.parse(filterCriteria.inspect());
 
 			// Check operators
 			expect(result.operators).toEqual({
@@ -3976,7 +3980,7 @@ describe('/index', () => {
 		});
 
 		it('should return empty savedCriteria when no criteria are saved', () => {
-			const result = JSON.parse(FilterCriteria.inspect());
+			const result = JSON.parse(filterCriteria.inspect());
 
 			expect(result.savedCriteria).toEqual({});
 			expect(Object.keys(result.operators).length).toBe(9); // Check that operators are still present
@@ -3985,17 +3989,17 @@ describe('/index', () => {
 
 	describe('normalize', () => {
 		it('should normalize array', () => {
-			expect(FilterCriteria.normalize([1, 'Develóper', 3])).toEqual([1, 'developer', 3]);
+			expect(filterCriteria.normalize([1, 'Develóper', 3])).toEqual([1, 'developer', 3]);
 		});
 
 		it('should normalize boolean', () => {
-			expect(FilterCriteria.normalize(true)).toEqual(true);
-			expect(FilterCriteria.normalize(false)).toEqual(false);
+			expect(filterCriteria.normalize(true)).toEqual(true);
+			expect(filterCriteria.normalize(false)).toEqual(false);
 		});
 
 		it('should normalize map', () => {
 			expect(
-				FilterCriteria.normalize(
+				filterCriteria.normalize(
 					new Map([
 						['a', '1'],
 						['b', 'Develóper']
@@ -4010,12 +4014,12 @@ describe('/index', () => {
 		});
 
 		it('should normalize number', () => {
-			expect(FilterCriteria.normalize(123)).toEqual(123);
+			expect(filterCriteria.normalize(123)).toEqual(123);
 		});
 
 		it('should normalize object', () => {
 			expect(
-				FilterCriteria.normalize({
+				filterCriteria.normalize({
 					a: 1,
 					b: 'Develóper',
 					c: 3
@@ -4029,7 +4033,7 @@ describe('/index', () => {
 
 		it('should normalize nested object', () => {
 			expect(
-				FilterCriteria.normalize({
+				filterCriteria.normalize({
 					a: 1,
 					b: 'Develóper',
 					c: {
@@ -4048,74 +4052,74 @@ describe('/index', () => {
 		});
 
 		it('should normalize set', () => {
-			expect(FilterCriteria.normalize(new Set(['1', 'Develóper']))).toEqual(new Set(['1', 'developer']));
+			expect(filterCriteria.normalize(new Set(['1', 'Develóper']))).toEqual(new Set(['1', 'developer']));
 		});
 
 		it('should normalize string', () => {
-			expect(FilterCriteria.normalize('Develóper')).toEqual('developer');
+			expect(filterCriteria.normalize('Develóper')).toEqual('developer');
 		});
 
 		it('should normalize undefined', () => {
-			expect(FilterCriteria.normalize(undefined)).toEqual(undefined);
+			expect(filterCriteria.normalize(undefined)).toEqual(undefined);
 		});
 	});
 
 	describe('normalizeString', () => {
 		it('should normalize string', () => {
 			// @ts-expect-error
-			expect(FilterCriteria.normalizeString('Develóper')).toEqual('developer');
+			expect(filterCriteria.normalizeString('Develóper')).toEqual('developer');
 			// @ts-expect-error
-			expect(FilterCriteria.normalizeString('Devel  óper')).toEqual('devel-oper');
+			expect(filterCriteria.normalizeString('Devel  óper')).toEqual('devel-oper');
 		});
 	});
 
 	describe('objectContaining', () => {
 		it('should return false for null or undefined values', () => {
 			// @ts-expect-error
-			expect(FilterCriteria.objectContaining(null, {})).toBe(false);
+			expect(filterCriteria.objectContaining(null, {})).toBe(false);
 			// @ts-expect-error
-			expect(FilterCriteria.objectContaining(undefined, {})).toBe(false);
+			expect(filterCriteria.objectContaining(undefined, {})).toBe(false);
 			// @ts-expect-error
-			expect(FilterCriteria.objectContaining({}, null)).toBe(false);
+			expect(filterCriteria.objectContaining({}, null)).toBe(false);
 			// @ts-expect-error
-			expect(FilterCriteria.objectContaining({}, undefined)).toBe(false);
+			expect(filterCriteria.objectContaining({}, undefined)).toBe(false);
 		});
 
 		it('should compare strings', () => {
 			// @ts-expect-error
-			expect(FilterCriteria.objectContaining('hello', 'hello')).toBe(true);
+			expect(filterCriteria.objectContaining('hello', 'hello')).toBe(true);
 			// @ts-expect-error
-			expect(FilterCriteria.objectContaining('Hello', 'hello')).toBe(false);
+			expect(filterCriteria.objectContaining('Hello', 'hello')).toBe(false);
 			// @ts-expect-error
-			expect(FilterCriteria.objectContaining('hello', 'Hello')).toBe(false);
+			expect(filterCriteria.objectContaining('hello', 'Hello')).toBe(false);
 		});
 
 		it('should compare primitive values directly', () => {
 			// @ts-expect-error
-			expect(FilterCriteria.objectContaining(42, 42)).toBe(true);
+			expect(filterCriteria.objectContaining(42, 42)).toBe(true);
 			// @ts-expect-error
-			expect(FilterCriteria.objectContaining(42, 43)).toBe(false);
+			expect(filterCriteria.objectContaining(42, 43)).toBe(false);
 			// @ts-expect-error
-			expect(FilterCriteria.objectContaining(true, true)).toBe(true);
+			expect(filterCriteria.objectContaining(true, true)).toBe(true);
 			// @ts-expect-error
-			expect(FilterCriteria.objectContaining(true, false)).toBe(false);
+			expect(filterCriteria.objectContaining(true, false)).toBe(false);
 		});
 
 		it('should handle array comparisons', () => {
 			// @ts-expect-error
-			expect(FilterCriteria.objectContaining([1, 2, 3], [1, 2])).toBe(true);
+			expect(filterCriteria.objectContaining([1, 2, 3], [1, 2])).toBe(true);
 			// @ts-expect-error
-			expect(FilterCriteria.objectContaining([1, 2], [1, 2, 3])).toBe(false);
+			expect(filterCriteria.objectContaining([1, 2], [1, 2, 3])).toBe(false);
 			// @ts-expect-error
-			expect(FilterCriteria.objectContaining([{ a: 1 }, { b: 2 }], [{ a: 1 }])).toBe(true);
+			expect(filterCriteria.objectContaining([{ a: 1 }, { b: 2 }], [{ a: 1 }])).toBe(true);
 			// @ts-expect-error
-			expect(FilterCriteria.objectContaining([1, 2, 3], [4, 5])).toBe(false);
+			expect(filterCriteria.objectContaining([1, 2, 3], [4, 5])).toBe(false);
 		});
 
 		it('should handle nested array comparisons', () => {
 			expect(
 				// @ts-expect-error
-				FilterCriteria.objectContaining(
+				filterCriteria.objectContaining(
 					[
 						[1, 2],
 						[3, 4]
@@ -4125,7 +4129,7 @@ describe('/index', () => {
 			).toBe(true);
 			expect(
 				// @ts-expect-error
-				FilterCriteria.objectContaining(
+				filterCriteria.objectContaining(
 					[[1, 2]],
 					[
 						[1, 2],
@@ -4134,16 +4138,16 @@ describe('/index', () => {
 				)
 			).toBe(false);
 			// @ts-expect-error
-			expect(FilterCriteria.objectContaining([[{ a: 1 }]], [[{ a: 1 }]])).toBe(true);
+			expect(filterCriteria.objectContaining([[{ a: 1 }]], [[{ a: 1 }]])).toBe(true);
 		});
 
 		it('should handle object comparisons', () => {
 			// @ts-expect-error
-			expect(FilterCriteria.objectContaining({ a: 1, b: 2 }, { a: 1 })).toBe(true);
+			expect(filterCriteria.objectContaining({ a: 1, b: 2 }, { a: 1 })).toBe(true);
 			// @ts-expect-error
-			expect(FilterCriteria.objectContaining({ a: 1 }, { a: 1, b: 2 })).toBe(false);
+			expect(filterCriteria.objectContaining({ a: 1 }, { a: 1, b: 2 })).toBe(false);
 			// @ts-expect-error
-			expect(FilterCriteria.objectContaining({ a: { b: 2 } }, { a: { b: 2 } })).toBe(true);
+			expect(filterCriteria.objectContaining({ a: { b: 2 } }, { a: { b: 2 } })).toBe(true);
 		});
 
 		it('should handle mixed nested structures', () => {
@@ -4154,11 +4158,11 @@ describe('/index', () => {
 			};
 
 			// @ts-expect-error
-			expect(FilterCriteria.objectContaining(obj, { b: [{ c: 3 }] })).toBe(true);
+			expect(filterCriteria.objectContaining(obj, { b: [{ c: 3 }] })).toBe(true);
 			// @ts-expect-error
-			expect(FilterCriteria.objectContaining(obj, { d: { e: [4] } })).toBe(true);
+			expect(filterCriteria.objectContaining(obj, { d: { e: [4] } })).toBe(true);
 			// @ts-expect-error
-			expect(FilterCriteria.objectContaining(obj, { b: [{ c: 4 }] })).toBe(false);
+			expect(filterCriteria.objectContaining(obj, { b: [{ c: 4 }] })).toBe(false);
 		});
 
 		it('should handle string comparisons in nested structures with normalize = true', () => {
@@ -4168,26 +4172,26 @@ describe('/index', () => {
 			};
 
 			// @ts-expect-error
-			expect(FilterCriteria.objectContaining(obj, { details: [{ city: 'New York' }] })).toBe(true);
+			expect(filterCriteria.objectContaining(obj, { details: [{ city: 'New York' }] })).toBe(true);
 			// @ts-expect-error
-			expect(FilterCriteria.objectContaining(obj, { details: [{ city: 'Caple Town' }] })).toBe(false);
+			expect(filterCriteria.objectContaining(obj, { details: [{ city: 'Caple Town' }] })).toBe(false);
 		});
 
 		it('should handle edge cases', () => {
 			// @ts-expect-error
-			expect(FilterCriteria.objectContaining({}, {})).toBe(true);
+			expect(filterCriteria.objectContaining({}, {})).toBe(true);
 			// @ts-expect-error
-			expect(FilterCriteria.objectContaining([], [])).toBe(true);
+			expect(filterCriteria.objectContaining([], [])).toBe(true);
 			// @ts-expect-error
-			expect(FilterCriteria.objectContaining({ a: [] }, { a: [] })).toBe(true);
+			expect(filterCriteria.objectContaining({ a: [] }, { a: [] })).toBe(true);
 			// @ts-expect-error
-			expect(FilterCriteria.objectContaining({ a: {} }, { a: {} })).toBe(true);
+			expect(filterCriteria.objectContaining({ a: {} }, { a: {} })).toBe(true);
 		});
 	});
 
 	describe('saveCriteria', () => {
 		it('should save criteria', () => {
-			FilterCriteria.saveCriteria(
+			filterCriteria.saveCriteria(
 				FilterCriteria.criteria({
 					alias: 'test',
 					matchInArray: true,
@@ -4199,7 +4203,7 @@ describe('/index', () => {
 			);
 
 			// @ts-expect-error
-			expect(FilterCriteria.savedCriteria.get('test')).toEqual({
+			expect(filterCriteria.savedCriteria.get('test')).toEqual({
 				criteria: {
 					alias: 'test',
 					criteriaMapper: null,
@@ -4217,7 +4221,7 @@ describe('/index', () => {
 
 		it('should throw error when alias is not provided', () => {
 			try {
-				FilterCriteria.saveCriteria(FilterCriteria.criteria({ type: 'STRING' }));
+				filterCriteria.saveCriteria(FilterCriteria.criteria({ type: 'STRING' }));
 
 				throw new Error('Expected to throw');
 			} catch (err) {

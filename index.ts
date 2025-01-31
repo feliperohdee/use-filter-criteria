@@ -384,7 +384,7 @@ const filterGroupFactory = <T extends FilterCriteria.FilterGroup = FilterCriteri
 };
 
 class FilterCriteria {
-	private static savedCriteria: Map<string, { criteria: FilterCriteria.Criteria }> = new Map();
+	private savedCriteria: Map<string, { criteria: FilterCriteria.Criteria }> = new Map();
 
 	static alias = aliasFactory;
 	static criteria = criteriaFactory;
@@ -392,7 +392,7 @@ class FilterCriteria {
 	static filterGroup = filterGroupFactory;
 	static schema = schema;
 
-	static async match(
+	async match(
 		value: any,
 		input: FilterCriteria.MatchInput,
 		detailed: boolean = false
@@ -434,7 +434,7 @@ class FilterCriteria {
 		return passed;
 	}
 
-	static async matchMany(value: any[], input: FilterCriteria.MatchInput, concurrency: number = Infinity): Promise<any[]> {
+	async matchMany(value: any[], input: FilterCriteria.MatchInput, concurrency: number = Infinity): Promise<any[]> {
 		const converted = this.convertToFilterGroupInput(input);
 		const args = await filterGroup.parseAsync(converted.input);
 
@@ -457,7 +457,7 @@ class FilterCriteria {
 		);
 	}
 
-	private static async applyCriteria(
+	private async applyCriteria(
 		value: any,
 		criteria: FilterCriteria.CriteriaInput,
 		detailed: boolean = false,
@@ -567,7 +567,7 @@ class FilterCriteria {
 		}
 	}
 
-	private static async $applyAlias(
+	private async $applyAlias(
 		value: any,
 		criteria: FilterCriteria.CriteriaInput & { alias: string },
 		detailed: boolean,
@@ -634,7 +634,7 @@ class FilterCriteria {
 		return this.applyCriteria(value, savedCriteria, detailed, context, true);
 	}
 
-	private static async applyFilter(
+	private async applyFilter(
 		value: any,
 		filter: FilterCriteria.FilterInput,
 		detailed: boolean = false
@@ -666,7 +666,7 @@ class FilterCriteria {
 		return passed;
 	}
 
-	private static evaluateCriteria(value: any, criteria: FilterCriteria.CriteriaInput): boolean {
+	private evaluateCriteria(value: any, criteria: FilterCriteria.CriteriaInput): boolean {
 		if ('matchInArray' in criteria && criteria.matchInArray && _.isArray(value)) {
 			return _.some(value, item => {
 				return this.evaluateSingleCriteria(item, criteria);
@@ -676,7 +676,7 @@ class FilterCriteria {
 		return this.evaluateSingleCriteria(value, criteria);
 	}
 
-	private static evaluateSingleCriteria(value: any, criteria: FilterCriteria.CriteriaInput): boolean {
+	private evaluateSingleCriteria(value: any, criteria: FilterCriteria.CriteriaInput): boolean {
 		if (!('operator' in criteria) || !criteria.operator) {
 			throw new Error('Unknown criteria operator');
 		}
@@ -705,7 +705,7 @@ class FilterCriteria {
 		}
 	}
 
-	private static applyArrayCriteria(value: any[], operator: FilterCriteria.Operators['array'], matchValue: any): boolean {
+	private applyArrayCriteria(value: any[], operator: FilterCriteria.Operators['array'], matchValue: any): boolean {
 		const validValue = _.isArray(value);
 
 		if (!validValue) {
@@ -820,7 +820,7 @@ class FilterCriteria {
 		}
 	}
 
-	private static applyBooleanCriteria(value: any, operator: FilterCriteria.Operators['boolean'], matchValue: any): boolean {
+	private applyBooleanCriteria(value: any, operator: FilterCriteria.Operators['boolean'], matchValue: any): boolean {
 		switch (operator) {
 			case 'EQUALS': {
 				return _.isEqual(value, matchValue);
@@ -883,15 +883,11 @@ class FilterCriteria {
 		}
 	}
 
-	private static applyCustomCriteria(
-		value: any,
-		predicate: FilterCriteria.CriteriaCustomPredicate,
-		matchValue: any
-	): boolean | Promise<boolean> {
+	private applyCustomCriteria(value: any, predicate: FilterCriteria.CriteriaCustomPredicate, matchValue: any): boolean | Promise<boolean> {
 		return predicate ? predicate({ matchValue, value }) : false;
 	}
 
-	private static applyDateCriteria(value: string, operator: FilterCriteria.Operators['date'], matchValue: any): boolean {
+	private applyDateCriteria(value: string, operator: FilterCriteria.Operators['date'], matchValue: any): boolean {
 		const validValue = _.isString(value);
 		const validMatchValue = _.isString(matchValue) || isStringArray(matchValue);
 
@@ -935,7 +931,7 @@ class FilterCriteria {
 		}
 	}
 
-	private static applyGeoCriteria(
+	private applyGeoCriteria(
 		value: [number, number] | { lat: number; lng: number },
 		operator: FilterCriteria.Operators['geo'],
 		matchValue: any
@@ -981,7 +977,7 @@ class FilterCriteria {
 		}
 	}
 
-	private static applyMapCriteria(value: Map<any, any>, operator: FilterCriteria.Operators['map'], matchValue: any): boolean {
+	private applyMapCriteria(value: Map<any, any>, operator: FilterCriteria.Operators['map'], matchValue: any): boolean {
 		const validValue = _.isMap(value);
 
 		if (!validValue) {
@@ -1060,7 +1056,7 @@ class FilterCriteria {
 		}
 	}
 
-	private static applyNumberCriteria(value: number, operator: FilterCriteria.Operators['number'], matchValue: any): boolean {
+	private applyNumberCriteria(value: number, operator: FilterCriteria.Operators['number'], matchValue: any): boolean {
 		const validValue = _.isNumber(value);
 
 		if (!validValue) {
@@ -1138,7 +1134,7 @@ class FilterCriteria {
 		}
 	}
 
-	private static applyObjectCriteria(value: any, operator: FilterCriteria.Operators['object'], matchValue: any): boolean {
+	private applyObjectCriteria(value: any, operator: FilterCriteria.Operators['object'], matchValue: any): boolean {
 		const validValue = _.isPlainObject(value);
 
 		if (!validValue) {
@@ -1221,7 +1217,7 @@ class FilterCriteria {
 		}
 	}
 
-	private static applySetCriteria(value: Set<any>, operator: FilterCriteria.Operators['set'], matchValue: any): boolean {
+	private applySetCriteria(value: Set<any>, operator: FilterCriteria.Operators['set'], matchValue: any): boolean {
 		const validValue = _.isSet(value);
 
 		if (!validValue) {
@@ -1306,7 +1302,7 @@ class FilterCriteria {
 		}
 	}
 
-	private static applyStringCriteria(value: string, operator: FilterCriteria.Operators['string'], matchValue: any): boolean {
+	private applyStringCriteria(value: string, operator: FilterCriteria.Operators['string'], matchValue: any): boolean {
 		value = stringify(value);
 
 		const validValue = _.isString(value);
@@ -1373,11 +1369,7 @@ class FilterCriteria {
 		}
 	}
 
-	private static calculateDistance(
-		point1: { lat: number; lng: number },
-		point2: { lat: number; lng: number },
-		unit: 'km' | 'mi' = 'km'
-	): number {
+	private calculateDistance(point1: { lat: number; lng: number }, point2: { lat: number; lng: number }, unit: 'km' | 'mi' = 'km'): number {
 		// Haversine formula implementation
 		const R = unit === 'km' ? 6371 : 3959;
 		const dLat = this.toRad(point2.lat - point1.lat);
@@ -1390,7 +1382,7 @@ class FilterCriteria {
 		return R * c;
 	}
 
-	private static convertToFilterGroupInput(input: FilterCriteria.MatchInput): {
+	private convertToFilterGroupInput(input: FilterCriteria.MatchInput): {
 		input: FilterCriteria.FilterGroupInput;
 		level: 'filter-group' | 'filter' | 'criteria';
 	} {
@@ -1437,7 +1429,7 @@ class FilterCriteria {
 		findByPath function is designed to traverse nested data structures using 
 		a path array and track whether it encounters many possible paths during traversal.
 	*/
-	private static findByPath(
+	private findByPath(
 		value: any,
 		path: string[],
 		defaultValue?: any
@@ -1481,7 +1473,7 @@ class FilterCriteria {
 		};
 	}
 
-	static inspect(): string {
+	inspect(): string {
 		const builtInOperators = {
 			array: _.keys(operatorsArray.enum),
 			boolean: _.keys(operatorsBoolean.enum),
@@ -1510,7 +1502,7 @@ class FilterCriteria {
 		return JSON.stringify(result, null, 2);
 	}
 
-	static normalize(value: any): any {
+	normalize(value: any): any {
 		if (_.isArray(value)) {
 			return _.map(value, v => {
 				return this.normalize(v);
@@ -1546,7 +1538,7 @@ class FilterCriteria {
 		return value;
 	}
 
-	private static normalizeString = _.memoize((value: string): string => {
+	private normalizeString = _.memoize((value: string): string => {
 		value = _.trim(value);
 		value = _.toLower(value);
 		value = _.deburr(value);
@@ -1558,7 +1550,7 @@ class FilterCriteria {
 		return value;
 	});
 
-	private static objectContaining(obj: any, subObject: any): boolean {
+	private objectContaining(obj: any, subObject: any): boolean {
 		if (_.isNil(obj) || _.isNil(subObject)) {
 			return false;
 		}
@@ -1586,7 +1578,7 @@ class FilterCriteria {
 		return _.isMatch(obj, subObject);
 	}
 
-	static saveCriteria<T extends FilterCriteria.Criteria>(criteria: T): void {
+	saveCriteria<T extends FilterCriteria.Criteria>(criteria: T): void {
 		if (!criteria.alias) {
 			throw new Error('Alias is required');
 		}
@@ -1596,7 +1588,7 @@ class FilterCriteria {
 		});
 	}
 
-	private static toRad(value: number): number {
+	private toRad(value: number): number {
 		return (value * Math.PI) / 180;
 	}
 }
