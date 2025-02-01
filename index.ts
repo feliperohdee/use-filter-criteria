@@ -513,7 +513,7 @@ class FilterCriteria {
 			}
 
 			if ('criteriaMapper' in criteria && _.isFunction(criteria.criteriaMapper)) {
-				criteria = criteria.criteriaMapper({ context, criteria, value });
+				criteria = await criteria.criteriaMapper({ context, criteria, value });
 
 				if (criteria.type === 'CUSTOM') {
 					return this.applyCriteria(value, criteria, detailed, context);
@@ -521,7 +521,7 @@ class FilterCriteria {
 			}
 
 			if ('valueMapper' in criteria && _.isFunction(criteria.valueMapper)) {
-				value = criteria.valueMapper({ context, criteria, value });
+				value = await criteria.valueMapper({ context, criteria, value });
 			}
 
 			if ('valuePath' in criteria && _.isArray(criteria.valuePath) && _.size(criteria.valuePath) > 0) {
