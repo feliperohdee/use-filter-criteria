@@ -65,6 +65,97 @@ describe('/index', () => {
 		filterCriteria.savedCriteria.clear();
 	});
 
+	describe('statics', () => {
+		describe('alias', () => {
+			it('should return', () => {
+				const res = FilterCriteria.alias('test');
+
+				expect(res).toEqual({
+					alias: 'test',
+					criteriaMapper: null,
+					defaultValue: null,
+					matchValue: null,
+					normalize: null,
+					operator: null,
+					type: null,
+					valueMapper: null,
+					valuePath: null
+				});
+			});
+
+			it('should return with input', () => {
+				const res = FilterCriteria.alias('test', {
+					matchInArray: false,
+					type: 'NUMBER'
+				});
+
+				expect(res).toEqual({
+					alias: 'test',
+					criteriaMapper: null,
+					defaultValue: null,
+					matchInArray: false,
+					matchValue: null,
+					operator: null,
+					type: 'NUMBER',
+					valueMapper: null,
+					valuePath: null
+				});
+			});
+		});
+
+		describe('criteria', () => {
+			it('should return', () => {
+				const res = FilterCriteria.criteria({
+					matchValue: 'john',
+					operator: 'CONTAINS',
+					type: 'STRING',
+					valuePath: ['name']
+				});
+
+				expect(res).toEqual({
+					alias: '',
+					criteriaMapper: null,
+					defaultValue: '',
+					matchInArray: true,
+					matchValue: 'john',
+					normalize: true,
+					operator: 'CONTAINS',
+					type: 'STRING',
+					valueMapper: null,
+					valuePath: ['name']
+				});
+			});
+		});
+
+		describe('filter', () => {
+			it('should return', () => {
+				const res = FilterCriteria.filter({
+					operator: 'AND',
+					criterias: []
+				});
+
+				expect(res).toEqual({
+					operator: 'AND',
+					criterias: []
+				});
+			});
+		});
+
+		describe('filterGroup', () => {
+			it('should return', () => {
+				const res = FilterCriteria.filterGroup({
+					operator: 'AND',
+					filters: []
+				});
+
+				expect(res).toEqual({
+					operator: 'AND',
+					filters: []
+				});
+			});
+		});
+	});
+
 	describe('match', () => {
 		it('should return by filter group with AND', async () => {
 			const input = FilterCriteria.filterGroup({
@@ -774,6 +865,9 @@ describe('/index', () => {
 					type: 'STRING'
 				});
 
+				// @ts-expect-error
+				criteria = filterCriteria.translateCriteriaAlias(criteria);
+
 				const res = await Promise.all([
 					// @ts-expect-error
 					filterCriteria.applyCriteria(testData[0], criteria),
@@ -787,27 +881,6 @@ describe('/index', () => {
 					passed: true,
 					reason: 'STRING criteria "STARTS-WITH" check PASSED',
 					value: 'john-doe'
-				});
-			});
-
-			it('should handle inexistent', async () => {
-				const criteria = FilterCriteria.alias('inexistent', {
-					type: 'CUSTOM'
-				});
-
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
-
-				expect(res[0]).toEqual(false);
-				expect(res[1]).toEqual({
-					matchValue: 'null',
-					passed: false,
-					reason: 'Criteria "inexistent" not found',
-					value: testData[0]
 				});
 			});
 		});
@@ -3422,69 +3495,6 @@ describe('/index', () => {
 		});
 	});
 
-	describe('convertToFilterGroupInput', () => {
-		it('should convert CriteriaInput to FilterGroupInput', () => {
-			const criteria = FilterCriteria.criteria({
-				matchValue: 'John Doe',
-				operator: 'EQUALS',
-				type: 'STRING',
-				valuePath: ['name']
-			});
-
-			// @ts-expect-error
-			const filterInput = filterCriteria.convertToFilterGroupInput(criteria);
-
-			expect(filterInput).toEqual({
-				input: {
-					operator: 'AND',
-					filters: [{ operator: 'AND', criterias: [criteria] }]
-				},
-				level: 'criteria'
-			});
-		});
-
-		it('should convert FilterInput to FilterGroupInput', () => {
-			const criteria = FilterCriteria.criteria({
-				matchValue: 'John Doe',
-				operator: 'EQUALS',
-				type: 'STRING',
-				valuePath: ['name']
-			});
-
-			const filter = FilterCriteria.filter({
-				operator: 'AND',
-				criterias: [criteria]
-			});
-
-			// @ts-expect-error
-			const filterGroupInput = filterCriteria.convertToFilterGroupInput(filter);
-			expect(filterGroupInput).toEqual({
-				input: { operator: 'AND', filters: [filter] },
-				level: 'filter'
-			});
-		});
-
-		it('should convert FilterGroupInput to FilterGroupInput', () => {
-			const criteria = FilterCriteria.criteria({
-				matchValue: 'John Doe',
-				operator: 'EQUALS',
-				type: 'STRING',
-				valuePath: ['name']
-			});
-
-			const filterGroupInput = FilterCriteria.filterGroup({
-				operator: 'AND',
-				filters: [{ operator: 'AND', criterias: [criteria] }]
-			});
-
-			// @ts-expect-error
-			expect(filterCriteria.convertToFilterGroupInput(filterGroupInput)).toEqual({
-				input: filterGroupInput,
-				level: 'filter-group'
-			});
-		});
-	});
-
 	describe('findByPath', () => {
 		describe('basic object traversal', () => {
 			const simpleObject = {
@@ -4145,7 +4155,7 @@ describe('/index', () => {
 			}
 		});
 
-		it('should override [criteriaMapper, matchInArray, matchValue, normalize, operator, type, valuePath, valueMapper]', async () => {
+		it('should override [criteriaMapper, matchInArray, matchValue, operator, type, valuePath, valueMapper]', async () => {
 			const criteriaMapper = vi.fn(({ criteria }) => {
 				return criteria;
 			});
@@ -4177,6 +4187,198 @@ describe('/index', () => {
 				type: 'NUMBER',
 				valueMapper,
 				valuePath: ['age']
+			});
+		});
+
+		it('should override [normalize]', async () => {
+			const criteriaMapper = vi.fn(({ criteria }) => {
+				return criteria;
+			});
+
+			const valueMapper = vi.fn(({ value }) => {
+				return value;
+			});
+
+			let criteria = FilterCriteria.alias('test', {
+				normalize: false,
+				type: 'STRING'
+			});
+
+			// @ts-expect-error
+			criteria = filterCriteria.translateCriteriaAlias(criteria);
+
+			expect(criteria).toEqual({
+				alias: 'test',
+				criteriaMapper: null,
+				defaultValue: '',
+				matchInArray: true,
+				matchValue: null,
+				normalize: false,
+				operator: 'EQUALS',
+				type: 'STRING',
+				valueMapper: null,
+				valuePath: ['name']
+			});
+		});
+	});
+
+	describe('translateToFilterGroupInput', () => {
+		let criteriaAlias: FilterCriteria.Criteria;
+
+		beforeEach(() => {
+			criteriaAlias = FilterCriteria.criteria({
+				alias: 'test',
+				operator: 'GREATER',
+				type: 'NUMBER',
+				valuePath: ['age']
+			});
+
+			filterCriteria.saveCriteria(criteriaAlias);
+		});
+
+		describe('from filterGroup', () => {
+			it('should convert', () => {
+				const criteria = FilterCriteria.criteria({
+					matchValue: 'John Doe',
+					operator: 'EQUALS',
+					type: 'STRING',
+					valuePath: ['name']
+				});
+
+				const filterGroupInput = FilterCriteria.filterGroup({
+					operator: 'AND',
+					filters: [
+						{
+							operator: 'AND',
+							criterias: [criteria, FilterCriteria.alias('test')]
+						}
+					]
+				});
+
+				// @ts-expect-error
+				expect(filterCriteria.translateToFilterGroupInput(filterGroupInput)).toEqual({
+					input: {
+						...filterGroupInput,
+						filters: _.map(filterGroupInput.filters, filter => {
+							return {
+								...filter,
+								criterias: [
+									criteria,
+									{
+										alias: 'test',
+										criteriaMapper: null,
+										defaultValue: 0,
+										matchInArray: true,
+										matchValue: null,
+										operator: 'GREATER',
+										type: 'NUMBER',
+										valueMapper: null,
+										valuePath: ['age']
+									}
+								]
+							};
+						})
+					},
+					level: 'filter-group'
+				});
+			});
+		});
+
+		describe('from filter', () => {
+			it('should convert', () => {
+				const criteria = FilterCriteria.criteria({
+					matchValue: 'John Doe',
+					operator: 'EQUALS',
+					type: 'STRING',
+					valuePath: ['name']
+				});
+
+				const filter = FilterCriteria.filter({
+					operator: 'AND',
+					criterias: [criteria, FilterCriteria.alias('test')]
+				});
+
+				// @ts-expect-error
+				const filterGroupInput = filterCriteria.translateToFilterGroupInput(filter);
+				expect(filterGroupInput).toEqual({
+					input: {
+						operator: 'AND',
+						filters: [
+							{
+								...filter,
+								criterias: [
+									criteria,
+									{
+										alias: 'test',
+										criteriaMapper: null,
+										defaultValue: 0,
+										matchInArray: true,
+										matchValue: null,
+										operator: 'GREATER',
+										type: 'NUMBER',
+										valueMapper: null,
+										valuePath: ['age']
+									}
+								]
+							}
+						]
+					},
+					level: 'filter'
+				});
+			});
+		});
+
+		describe('from criteria', () => {
+			it('should convert', () => {
+				const criteria = FilterCriteria.criteria({
+					matchValue: 'John Doe',
+					operator: 'EQUALS',
+					type: 'STRING',
+					valuePath: ['name']
+				});
+
+				// @ts-expect-error
+				const filterInput = filterCriteria.translateToFilterGroupInput(criteria);
+
+				expect(filterInput).toEqual({
+					input: {
+						operator: 'AND',
+						filters: [{ operator: 'AND', criterias: [criteria] }]
+					},
+					level: 'criteria'
+				});
+			});
+
+			it('should convert with alias', () => {
+				const criteria = FilterCriteria.alias('test');
+
+				// @ts-expect-error
+				const filterInput = filterCriteria.translateToFilterGroupInput(criteria);
+
+				expect(filterInput).toEqual({
+					input: {
+						operator: 'AND',
+						filters: [
+							{
+								operator: 'AND',
+								criterias: [
+									{
+										alias: 'test',
+										criteriaMapper: null,
+										defaultValue: 0,
+										matchInArray: true,
+										matchValue: null,
+										operator: 'GREATER',
+										type: 'NUMBER',
+										valueMapper: null,
+										valuePath: ['age']
+									}
+								]
+							}
+						]
+					},
+					level: 'criteria'
+				});
 			});
 		});
 	});

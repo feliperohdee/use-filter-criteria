@@ -354,14 +354,24 @@ namespace FilterCriteria {
 
 type DistributiveOmit<T, K extends keyof any> = T extends any ? Omit<T, K> : never;
 
-const aliasFactory = <T extends FilterCriteria.Criteria = FilterCriteria.Criteria>(
+const criteriaAliasFactory = <T extends FilterCriteria.Criteria = FilterCriteria.Criteria>(
 	alias: string,
 	input?: DistributiveOmit<FilterCriteria.CriteriaInput, 'criteriaMapper' | 'valueMapper'> & {
 		criteriaMapper?: (input: { context: Map<string, any>; criteria: T; value: any }) => any;
 		valueMapper?: (input: { context: Map<string, any>; criteria: T; value: any }) => any;
 	}
 ): T => {
-	return { ...input, alias } as T;
+	const source = { ...input, alias };
+	const res: Record<string, any> = zDefault(criteria, source);
+
+	// nullify inexistent keys on source
+	for (const key in res) {
+		if (!(key in source)) {
+			res[key] = null;
+		}
+	}
+
+	return res as T;
 };
 
 const criteriaFactory = <T extends FilterCriteria.Criteria = FilterCriteria.Criteria>(
@@ -386,7 +396,7 @@ const filterGroupFactory = <T extends FilterCriteria.FilterGroup = FilterCriteri
 class FilterCriteria {
 	private savedCriteria: Map<string, { criteria: FilterCriteria.Criteria }> = new Map();
 
-	static alias = aliasFactory;
+	static alias = criteriaAliasFactory;
 	static criteria = criteriaFactory;
 	static filter = filterFactory;
 	static filterGroup = filterGroupFactory;
@@ -397,7 +407,7 @@ class FilterCriteria {
 		input: FilterCriteria.MatchInput,
 		detailed: boolean = false
 	): Promise<boolean | FilterCriteria.MatchDetailedResult> {
-		const converted = this.convertToFilterGroupInput(input);
+		const converted = this.translateToFilterGroupInput(input);
 		const args = await filterGroup.parseAsync(converted.input);
 		const filtersResults = await Promise.all(
 			_.map(args.filters, filter => {
@@ -435,7 +445,7 @@ class FilterCriteria {
 	}
 
 	async matchMany(value: any[], input: FilterCriteria.MatchInput, concurrency: number = Infinity): Promise<any[]> {
-		const converted = this.convertToFilterGroupInput(input);
+		const converted = this.translateToFilterGroupInput(input);
 		const args = await filterGroup.parseAsync(converted.input);
 
 		return promiseFilter(
@@ -463,23 +473,6 @@ class FilterCriteria {
 		detailed: boolean = false,
 		context: Map<string, any> = new Map()
 	): Promise<boolean | FilterCriteria.CriteriaResult> {
-		try {
-			if (criteria.alias) {
-				criteria = this.translateCriteriaAlias(criteria as FilterCriteria.CriteriaInput & { alias: string });
-			}
-		} catch (err) {
-			if (detailed) {
-				return {
-					matchValue: stringify(criteria.matchValue || 'null'),
-					passed: false,
-					reason: (err as Error).message,
-					value
-				};
-			}
-
-			return false;
-		}
-
 		// ensure immutable
 		criteria = { ...criteria };
 
@@ -1320,49 +1313,6 @@ class FilterCriteria {
 		return R * c;
 	}
 
-	private convertToFilterGroupInput(input: FilterCriteria.MatchInput): {
-		input: FilterCriteria.FilterGroupInput;
-		level: 'filter-group' | 'filter' | 'criteria';
-	} {
-		let result: {
-			input: FilterCriteria.FilterGroupInput;
-			level: 'filter-group' | 'filter' | 'criteria';
-		};
-
-		if ('filters' in input) {
-			// Handle FilterGroupInput
-			result = {
-				input,
-				level: 'filter-group'
-			};
-		} else if ('criterias' in input) {
-			// Handle FilterInput
-			result = {
-				input: {
-					filters: [input],
-					operator: 'AND'
-				},
-				level: 'filter'
-			};
-		} else {
-			// Handle CriteriaInput
-			result = {
-				input: {
-					filters: [
-						{
-							operator: 'AND',
-							criterias: [input]
-						}
-					],
-					operator: 'AND'
-				},
-				level: 'criteria'
-			};
-		}
-
-		return result;
-	}
-
 	/*
 		findByPath function is designed to traverse nested data structures using 
 		a path array and track whether it encounters many possible paths during traversal.
@@ -1542,35 +1492,35 @@ class FilterCriteria {
 		// ensure immutable
 		let savedCriteria = { ...saved.criteria };
 
-		if ('criteriaMapper' in criteria && criteria.criteriaMapper && 'criteriaMapper' in savedCriteria) {
+		if ('criteriaMapper' in criteria && !_.isNil(criteria.criteriaMapper) && 'criteriaMapper' in savedCriteria) {
 			savedCriteria.criteriaMapper = criteria.criteriaMapper;
 		}
 
-		if ('matchInArray' in criteria && _.isBoolean(criteria.matchInArray) && 'matchInArray' in savedCriteria) {
+		if ('matchInArray' in criteria && !_.isNil(criteria.matchInArray) && 'matchInArray' in savedCriteria) {
 			savedCriteria.matchInArray = criteria.matchInArray;
 		}
 
-		if ('matchValue' in criteria && criteria.matchValue) {
+		if ('matchValue' in criteria && !_.isNil(criteria.matchValue) && 'matchValue' in savedCriteria) {
 			savedCriteria.matchValue = criteria.matchValue;
 		}
 
-		if ('normalize' in criteria && _.isBoolean(criteria.normalize) && 'normalize' in savedCriteria) {
+		if ('normalize' in criteria && !_.isNil(criteria.normalize) && 'normalize' in savedCriteria) {
 			savedCriteria.normalize = criteria.normalize;
 		}
 
-		if ('operator' in criteria && criteria.operator && 'operator' in savedCriteria) {
+		if ('operator' in criteria && !_.isNil(criteria.operator) && 'operator' in savedCriteria) {
 			savedCriteria.operator = criteria.operator;
 		}
 
-		if ('valueMapper' in criteria && criteria.valueMapper && 'valueMapper' in savedCriteria) {
+		if ('valueMapper' in criteria && !_.isNil(criteria.valueMapper) && 'valueMapper' in savedCriteria) {
 			savedCriteria.valueMapper = criteria.valueMapper;
 		}
 
-		if ('valuePath' in criteria && criteria.valuePath && _.size(criteria.valuePath) > 0 && 'valuePath' in savedCriteria) {
+		if ('valuePath' in criteria && !_.isNil(criteria.valuePath) && _.size(criteria.valuePath) > 0 && 'valuePath' in savedCriteria) {
 			savedCriteria.valuePath = criteria.valuePath;
 		}
 
-		if ('type' in criteria && criteria.type) {
+		if ('type' in criteria && !_.isNil(criteria.type) && 'type' in savedCriteria) {
 			savedCriteria.type = criteria.type;
 
 			if ('defaultValue' in savedCriteria) {
@@ -1585,6 +1535,66 @@ class FilterCriteria {
 		}
 
 		return savedCriteria;
+	}
+
+	private translateToFilterGroupInput(input: FilterCriteria.MatchInput): {
+		input: FilterCriteria.FilterGroupInput;
+		level: 'filter-group' | 'filter' | 'criteria';
+	} {
+		let result: {
+			input: FilterCriteria.FilterGroupInput;
+			level: 'filter-group' | 'filter' | 'criteria';
+		};
+
+		if ('filters' in input) {
+			// Handle FilterGroupInput
+			result = {
+				input,
+				level: 'filter-group'
+			};
+		} else if ('criterias' in input) {
+			// Handle FilterInput
+			result = {
+				input: {
+					filters: [input],
+					operator: 'AND'
+				},
+				level: 'filter'
+			};
+		} else {
+			// Handle CriteriaInput
+			result = {
+				input: {
+					filters: [
+						{
+							operator: 'AND',
+							criterias: [input]
+						}
+					],
+					operator: 'AND'
+				},
+				level: 'criteria'
+			};
+		}
+
+		return {
+			...result,
+			input: {
+				...result.input,
+				filters: _.map(result.input.filters, filter => {
+					return {
+						...filter,
+						criterias: _.map(filter.criterias, criteria => {
+							if (criteria.alias) {
+								return this.translateCriteriaAlias(criteria as FilterCriteria.CriteriaInput & { alias: string });
+							}
+
+							return criteria;
+						})
+					};
+				})
+			}
+		};
 	}
 }
 
