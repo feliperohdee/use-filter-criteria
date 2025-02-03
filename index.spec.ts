@@ -72,7 +72,7 @@ describe('/index', () => {
 				filters: _.times(2, () => {
 					return {
 						operator: 'OR',
-						criteria: [
+						criterias: [
 							{
 								matchValue: 'jo_hn',
 								operator: 'CONTAINS',
@@ -127,7 +127,7 @@ describe('/index', () => {
 				filters: _.times(2, () => {
 					return {
 						operator: 'OR',
-						criteria: [
+						criterias: [
 							{
 								matchValue: 'jo_hn',
 								operator: 'CONTAINS',
@@ -179,7 +179,7 @@ describe('/index', () => {
 		it('should return by filter', async () => {
 			const input = FilterCriteria.filter({
 				operator: 'OR',
-				criteria: [
+				criterias: [
 					{
 						matchValue: 'jo_hn',
 						operator: 'CONTAINS',
@@ -247,7 +247,7 @@ describe('/index', () => {
 					filters: [
 						{
 							operator: 'AND',
-							criteria: [
+							criterias: [
 								{
 									matchValue: true,
 									operator: 'EQUALS',
@@ -258,7 +258,7 @@ describe('/index', () => {
 						},
 						{
 							operator: 'OR',
-							criteria: [
+							criterias: [
 								{
 									matchValue: 'John',
 									operator: 'CONTAINS',
@@ -287,7 +287,7 @@ describe('/index', () => {
 					filters: [
 						{
 							operator: 'AND',
-							criteria: [
+							criterias: [
 								{
 									matchValue: true,
 									operator: 'EQUALS',
@@ -298,7 +298,7 @@ describe('/index', () => {
 						},
 						{
 							operator: 'OR',
-							criteria: [
+							criterias: [
 								{
 									matchValue: 'John',
 									operator: 'CONTAINS',
@@ -335,7 +335,7 @@ describe('/index', () => {
 
 				const input = FilterCriteria.filter({
 					operator: 'AND',
-					criteria: [
+					criterias: [
 						{
 							predicate,
 							type: 'CUSTOM'
@@ -364,7 +364,7 @@ describe('/index', () => {
 					filters: [
 						{
 							operator: 'AND',
-							criteria: [
+							criterias: [
 								{
 									defaultValue: 40,
 									matchValue: 30,
@@ -387,7 +387,7 @@ describe('/index', () => {
 					filters: [
 						{
 							operator: 'AND',
-							criteria: [
+							criterias: [
 								{
 									matchValue: 30,
 									operator: 'GREATER-OR-EQUALS',
@@ -766,13 +766,10 @@ describe('/index', () => {
 						valuePath: ['name']
 					})
 				);
-
-				// @ts-expect-error
-				vi.spyOn(filterCriteria, 'applyCriteria');
 			});
 
 			it('should handle', async () => {
-				const criteria = FilterCriteria.alias('test', {
+				let criteria = FilterCriteria.alias('test', {
 					matchValue: 'JOHN',
 					type: 'STRING'
 				});
@@ -784,116 +781,12 @@ describe('/index', () => {
 					filterCriteria.applyCriteria(testData[0], criteria, true)
 				]);
 
-				// @ts-expect-error
-				const saved = filterCriteria.savedCriteria.get('test');
-
-				// @ts-expect-error
-				expect(filterCriteria.applyCriteria).toHaveBeenCalledWith(
-					testData[0],
-					{
-						...saved?.criteria,
-						matchValue: 'JOHN'
-					},
-					true,
-					expect.any(Map),
-					true
-				);
-
 				expect(res[0]).toEqual(true);
 				expect(res[1]).toEqual({
 					matchValue: 'john',
 					passed: true,
 					reason: 'STRING criteria "STARTS-WITH" check PASSED',
 					value: 'john-doe'
-				});
-			});
-
-			it('should override [criteriaMapper, matchInArray, operator, normalize, type, valuePath, valueMapper]', async () => {
-				const criteriaMapper = vi.fn(({ criteria }) => {
-					return criteria;
-				});
-
-				const valueMapper = vi.fn(({ value }) => {
-					return value;
-				});
-
-				const criteria = FilterCriteria.alias('test', {
-					criteriaMapper,
-					matchInArray: false,
-					matchValue: 25,
-					operator: 'EQUALS',
-					type: 'NUMBER',
-					valueMapper,
-					valuePath: ['age']
-				});
-
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
-
-				// @ts-expect-error
-				const saved = filterCriteria.savedCriteria.get('test');
-
-				// @ts-expect-error
-				expect(filterCriteria.applyCriteria).toHaveBeenCalledWith(
-					testData[0],
-					{
-						alias: 'test',
-						criteriaMapper,
-						defaultValue: 0,
-						matchInArray: false,
-						matchValue: 25,
-						operator: 'EQUALS',
-						type: 'NUMBER',
-						valueMapper,
-						valuePath: ['age']
-					},
-					true,
-					expect.any(Map),
-					true
-				);
-
-				expect(criteriaMapper).toHaveBeenCalledWith({
-					context: expect.any(Map),
-					criteria: {
-						alias: 'test',
-						criteriaMapper,
-						defaultValue: 0,
-						matchInArray: false,
-						matchValue: 25,
-						operator: 'EQUALS',
-						type: 'NUMBER',
-						valueMapper,
-						valuePath: ['age']
-					},
-					value: testData[0]
-				});
-
-				expect(valueMapper).toHaveBeenCalledWith({
-					context: expect.any(Map),
-					criteria: {
-						alias: 'test',
-						criteriaMapper,
-						defaultValue: 0,
-						matchInArray: false,
-						matchValue: 25,
-						operator: 'EQUALS',
-						type: 'NUMBER',
-						valueMapper,
-						valuePath: ['age']
-					},
-					value: testData[0]
-				});
-
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
-					matchValue: '25',
-					passed: true,
-					reason: 'NUMBER criteria "EQUALS" check PASSED',
-					value: 25
 				});
 			});
 
@@ -914,7 +807,7 @@ describe('/index', () => {
 					matchValue: 'null',
 					passed: false,
 					reason: 'Criteria "inexistent" not found',
-					value: null
+					value: testData[0]
 				});
 			});
 		});
@@ -3483,7 +3376,7 @@ describe('/index', () => {
 		it('should return', async () => {
 			const filter = FilterCriteria.filter({
 				operator: 'OR',
-				criteria: [
+				criterias: [
 					{
 						matchValue: 'jo_hn',
 						operator: 'CONTAINS',
@@ -3544,7 +3437,7 @@ describe('/index', () => {
 			expect(filterInput).toEqual({
 				input: {
 					operator: 'AND',
-					filters: [{ operator: 'AND', criteria: [criteria] }]
+					filters: [{ operator: 'AND', criterias: [criteria] }]
 				},
 				level: 'criteria'
 			});
@@ -3560,7 +3453,7 @@ describe('/index', () => {
 
 			const filter = FilterCriteria.filter({
 				operator: 'AND',
-				criteria: [criteria]
+				criterias: [criteria]
 			});
 
 			// @ts-expect-error
@@ -3579,10 +3472,10 @@ describe('/index', () => {
 				valuePath: ['name']
 			});
 
-			const filterGroupInput = {
+			const filterGroupInput = FilterCriteria.filterGroup({
 				operator: 'AND',
-				rules: [{ operator: 'AND', criteria: [criteria] }]
-			};
+				filters: [{ operator: 'AND', criterias: [criteria] }]
+			});
 
 			// @ts-expect-error
 			expect(filterCriteria.convertToFilterGroupInput(filterGroupInput)).toEqual({
@@ -4227,6 +4120,64 @@ describe('/index', () => {
 			} catch (err) {
 				expect(err).toEqual(new Error('Alias is required'));
 			}
+		});
+	});
+
+	describe('translateCriteriaAlias', () => {
+		beforeEach(() => {
+			filterCriteria.saveCriteria(
+				FilterCriteria.criteria({
+					alias: 'test',
+					type: 'STRING',
+					valuePath: ['name']
+				})
+			);
+		});
+
+		it('should throw error when alias is not found', () => {
+			try {
+				// @ts-expect-error
+				filterCriteria.translateCriteriaAlias({ alias: 'inexistent' });
+
+				throw new Error('Expected to throw');
+			} catch (err) {
+				expect(err).toEqual(new Error('Criteria "inexistent" not found'));
+			}
+		});
+
+		it('should override [criteriaMapper, matchInArray, matchValue, normalize, operator, type, valuePath, valueMapper]', async () => {
+			const criteriaMapper = vi.fn(({ criteria }) => {
+				return criteria;
+			});
+
+			const valueMapper = vi.fn(({ value }) => {
+				return value;
+			});
+
+			let criteria = FilterCriteria.alias('test', {
+				criteriaMapper,
+				matchInArray: false,
+				matchValue: 25,
+				operator: 'EQUALS',
+				type: 'NUMBER',
+				valueMapper,
+				valuePath: ['age']
+			});
+
+			// @ts-expect-error
+			criteria = filterCriteria.translateCriteriaAlias(criteria);
+
+			expect(criteria).toEqual({
+				alias: 'test',
+				criteriaMapper,
+				defaultValue: 0,
+				matchInArray: false,
+				matchValue: 25,
+				operator: 'EQUALS',
+				type: 'NUMBER',
+				valueMapper,
+				valuePath: ['age']
+			});
 		});
 	});
 });

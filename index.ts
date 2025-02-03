@@ -271,7 +271,7 @@ const criteria = z.discriminatedUnion('type', [
 ]);
 
 const filter = z.object({
-	criteria: z.array(criteria),
+	criterias: z.array(criteria),
 	operator: logicalOperator
 });
 
@@ -356,7 +356,7 @@ type DistributiveOmit<T, K extends keyof any> = T extends any ? Omit<T, K> : nev
 
 const aliasFactory = <T extends FilterCriteria.Criteria = FilterCriteria.Criteria>(
 	alias: string,
-	input: DistributiveOmit<FilterCriteria.CriteriaInput, 'criteriaMapper' | 'valueMapper'> & {
+	input?: DistributiveOmit<FilterCriteria.CriteriaInput, 'criteriaMapper' | 'valueMapper'> & {
 		criteriaMapper?: (input: { context: Map<string, any>; criteria: T; value: any }) => any;
 		valueMapper?: (input: { context: Map<string, any>; criteria: T; value: any }) => any;
 	}
@@ -461,18 +461,23 @@ class FilterCriteria {
 		value: any,
 		criteria: FilterCriteria.CriteriaInput,
 		detailed: boolean = false,
-		context: Map<string, any> = new Map(),
-		aliasCall: boolean = false
+		context: Map<string, any> = new Map()
 	): Promise<boolean | FilterCriteria.CriteriaResult> {
-		if (!aliasCall && criteria.alias) {
-			return this.$applyAlias(
-				value,
-				criteria as FilterCriteria.CriteriaInput & {
-					alias: string;
-				},
-				detailed,
-				context
-			);
+		try {
+			if (criteria.alias) {
+				criteria = this.translateCriteriaAlias(criteria as FilterCriteria.CriteriaInput & { alias: string });
+			}
+		} catch (err) {
+			if (detailed) {
+				return {
+					matchValue: stringify(criteria.matchValue || 'null'),
+					passed: false,
+					reason: (err as Error).message,
+					value
+				};
+			}
+
+			return false;
 		}
 
 		// ensure immutable
@@ -567,80 +572,13 @@ class FilterCriteria {
 		}
 	}
 
-	private async $applyAlias(
-		value: any,
-		criteria: FilterCriteria.CriteriaInput & { alias: string },
-		detailed: boolean,
-		context: Map<string, any>
-	) {
-		const saved = this.savedCriteria.get(criteria.alias);
-
-		if (!saved) {
-			return detailed
-				? {
-						matchValue: stringify(criteria.matchValue || null),
-						passed: false,
-						reason: `Criteria "${criteria.alias}" not found`,
-						value: null
-					}
-				: false;
-		}
-
-		// ensure immutable
-		let savedCriteria = { ...saved.criteria };
-
-		if ('criteriaMapper' in criteria && criteria.criteriaMapper && 'criteriaMapper' in savedCriteria) {
-			savedCriteria.criteriaMapper = criteria.criteriaMapper;
-		}
-
-		if ('normalize' in criteria && _.isBoolean(criteria.normalize) && 'normalize' in savedCriteria) {
-			savedCriteria.normalize = criteria.normalize;
-		}
-
-		if ('operator' in criteria && criteria.operator && 'operator' in savedCriteria) {
-			savedCriteria.operator = criteria.operator;
-		}
-
-		if ('matchInArray' in criteria && _.isBoolean(criteria.matchInArray) && 'matchInArray' in savedCriteria) {
-			savedCriteria.matchInArray = criteria.matchInArray;
-		}
-
-		if ('matchValue' in criteria && criteria.matchValue) {
-			savedCriteria.matchValue = criteria.matchValue;
-		}
-
-		if ('valueMapper' in criteria && criteria.valueMapper && 'valueMapper' in savedCriteria) {
-			savedCriteria.valueMapper = criteria.valueMapper;
-		}
-
-		if ('valuePath' in criteria && criteria.valuePath && _.size(criteria.valuePath) > 0 && 'valuePath' in savedCriteria) {
-			savedCriteria.valuePath = criteria.valuePath;
-		}
-
-		if ('type' in criteria && criteria.type) {
-			savedCriteria.type = criteria.type;
-
-			if ('defaultValue' in savedCriteria) {
-				const matchedSchema = schema.criteria.optionsMap.get(savedCriteria.type);
-				const newDefaultValue = matchedSchema?.shape?.defaultValue?._def?.defaultValue();
-
-				savedCriteria.defaultValue = newDefaultValue;
-			}
-
-			// revalidate schema
-			savedCriteria = await schema.criteria.parseAsync(savedCriteria);
-		}
-
-		return this.applyCriteria(value, savedCriteria, detailed, context, true);
-	}
-
 	private async applyFilter(
 		value: any,
 		filter: FilterCriteria.FilterInput,
 		detailed: boolean = false
 	): Promise<boolean | FilterCriteria.FilterResult> {
 		const criteriaResults = await Promise.all(
-			_.map(filter.criteria, criteria => {
+			_.map(filter.criterias, criteria => {
 				return this.applyCriteria(value, criteria, detailed);
 			})
 		);
@@ -1391,21 +1329,13 @@ class FilterCriteria {
 			level: 'filter-group' | 'filter' | 'criteria';
 		};
 
-		if ('type' in input) {
-			// Handle CriteriaInput
+		if ('filters' in input) {
+			// Handle FilterGroupInput
 			result = {
-				input: {
-					filters: [
-						{
-							operator: 'AND',
-							criteria: [input]
-						}
-					],
-					operator: 'AND'
-				},
-				level: 'criteria'
+				input,
+				level: 'filter-group'
 			};
-		} else if ('criteria' in input) {
+		} else if ('criterias' in input) {
 			// Handle FilterInput
 			result = {
 				input: {
@@ -1415,10 +1345,18 @@ class FilterCriteria {
 				level: 'filter'
 			};
 		} else {
-			// Handle FilterGroupInput
+			// Handle CriteriaInput
 			result = {
-				input,
-				level: 'filter-group'
+				input: {
+					filters: [
+						{
+							operator: 'AND',
+							criterias: [input]
+						}
+					],
+					operator: 'AND'
+				},
+				level: 'criteria'
 			};
 		}
 
@@ -1592,6 +1530,61 @@ class FilterCriteria {
 
 	private toRad(value: number): number {
 		return (value * Math.PI) / 180;
+	}
+
+	private translateCriteriaAlias(criteria: FilterCriteria.CriteriaInput & { alias: string }) {
+		const saved = this.savedCriteria.get(criteria.alias);
+
+		if (!saved) {
+			throw new Error(`Criteria "${criteria.alias}" not found`);
+		}
+
+		// ensure immutable
+		let savedCriteria = { ...saved.criteria };
+
+		if ('criteriaMapper' in criteria && criteria.criteriaMapper && 'criteriaMapper' in savedCriteria) {
+			savedCriteria.criteriaMapper = criteria.criteriaMapper;
+		}
+
+		if ('matchInArray' in criteria && _.isBoolean(criteria.matchInArray) && 'matchInArray' in savedCriteria) {
+			savedCriteria.matchInArray = criteria.matchInArray;
+		}
+
+		if ('matchValue' in criteria && criteria.matchValue) {
+			savedCriteria.matchValue = criteria.matchValue;
+		}
+
+		if ('normalize' in criteria && _.isBoolean(criteria.normalize) && 'normalize' in savedCriteria) {
+			savedCriteria.normalize = criteria.normalize;
+		}
+
+		if ('operator' in criteria && criteria.operator && 'operator' in savedCriteria) {
+			savedCriteria.operator = criteria.operator;
+		}
+
+		if ('valueMapper' in criteria && criteria.valueMapper && 'valueMapper' in savedCriteria) {
+			savedCriteria.valueMapper = criteria.valueMapper;
+		}
+
+		if ('valuePath' in criteria && criteria.valuePath && _.size(criteria.valuePath) > 0 && 'valuePath' in savedCriteria) {
+			savedCriteria.valuePath = criteria.valuePath;
+		}
+
+		if ('type' in criteria && criteria.type) {
+			savedCriteria.type = criteria.type;
+
+			if ('defaultValue' in savedCriteria) {
+				const matchedSchema = schema.criteria.optionsMap.get(savedCriteria.type);
+				const newDefaultValue = matchedSchema?.shape?.defaultValue?._def?.defaultValue();
+
+				savedCriteria.defaultValue = newDefaultValue;
+			}
+
+			// revalidate schema
+			savedCriteria = schema.criteria.parse(savedCriteria);
+		}
+
+		return savedCriteria;
 	}
 }
 

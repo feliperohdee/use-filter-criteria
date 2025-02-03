@@ -103,7 +103,7 @@ const complexFilterGroup = FilterCriteria.filterGroup({
 	filters: [
 		FilterCriteria.filter({
 			operator: 'AND',
-			criteria: [
+			criterias: [
 				FilterCriteria.criteria({
 					type: 'SET',
 					operator: 'INCLUDES-ANY',
@@ -120,7 +120,7 @@ const complexFilterGroup = FilterCriteria.filterGroup({
 		}),
 		FilterCriteria.filter({
 			operator: 'OR',
-			criteria: [
+			criterias: [
 				FilterCriteria.criteria({
 					type: 'STRING',
 					operator: 'CONTAINS',
@@ -173,7 +173,7 @@ For grouping multiple criteria with a logical operator:
 ```typescript
 const userFilterCriteria = FilterCriteria.filter({
 	operator: 'AND',
-	criteria: [
+	criterias: [
 		FilterCriteria.criteria({
 			type: 'NUMBER',
 			operator: 'GREATER',
@@ -202,7 +202,7 @@ const complexFilterCriteria = FilterCriteria.filterGroup({
 	filters: [
 		FilterCriteria.filter({
 			operator: 'AND',
-			criteria: [
+			criterias: [
 				FilterCriteria.criteria({
 					type: 'NUMBER',
 					operator: 'GREATER',
@@ -219,7 +219,7 @@ const complexFilterCriteria = FilterCriteria.filterGroup({
 		}),
 		FilterCriteria.filter({
 			operator: 'OR',
-			criteria: [
+			criterias: [
 				FilterCriteria.criteria({
 					type: 'STRING',
 					operator: 'MATCHES-REGEX',
@@ -277,7 +277,7 @@ const stringFilterCriteria = FilterCriteria.filterGroup({
 	filters: [
 		FilterCriteria.filter({
 			operator: 'AND',
-			criteria: [
+			criterias: [
 				FilterCriteria.criteria({
 					type: 'STRING',
 					operator: 'CONTAINS',
@@ -315,7 +315,7 @@ const geoFilterCriteria = FilterCriteria.filterGroup({
 	filters: [
 		FilterCriteria.filter({
 			operator: 'AND',
-			criteria: [
+			criterias: [
 				FilterCriteria.criteria({
 					type: 'GEO',
 					operator: 'IN-RADIUS',
@@ -363,7 +363,7 @@ const nestedFilterCriteria = FilterCriteria.filterGroup({
 	filters: [
 		FilterCriteria.filter({
 			operator: 'AND',
-			criteria: [
+			criterias: [
 				FilterCriteria.criteria({
 					type: 'NUMBER',
 					operator: 'GREATER',
@@ -380,7 +380,7 @@ const nestedFilterCriteria = FilterCriteria.filterGroup({
 		}),
 		FilterCriteria.filter({
 			operator: 'OR',
-			criteria: [
+			criterias: [
 				FilterCriteria.criteria({
 					type: 'STRING',
 					operator: 'MATCHES-REGEX',
@@ -570,7 +570,7 @@ const batchedCriteria = FilterCriteria.filterGroup({
 	filters: [
 		FilterCriteria.filter({
 			operator: 'AND',
-			criteria: [
+			criterias: [
 				FilterCriteria.criteria({
 					type: 'CUSTOM',
 					predicate: async user => userLoader.load(user.id)
@@ -598,7 +598,7 @@ const customFunctionCriteria = FilterCriteria.filterGroup({
 	filters: [
 		FilterCriteria.filter({
 			operator: 'AND',
-			criteria: [
+			criterias: [
 				FilterCriteria.criteria({
 					type: 'CUSTOM',
 					predicate: async (item, matchValue) => {
@@ -658,7 +658,7 @@ const customizedCriteria = FilterCriteria.alias('containsKeyword', {
 // You can combine multiple criteria in a filter
 const combinedFilter = FilterCriteria.filter({
 	operator: 'AND',
-	criteria: [
+	criterias: [
 		FilterCriteria.alias('isHighValueUser', {
 			type: 'CUSTOM',
 			matchValue: 2000 // Override matchValue for this instance
@@ -708,7 +708,7 @@ const setFilter = FilterCriteria.filterGroup({
 	filters: [
 		FilterCriteria.filter({
 			operator: 'AND',
-			criteria: [
+			criterias: [
 				FilterCriteria.criteria({
 					type: 'SET',
 					operator: 'INCLUDES-ALL',
@@ -727,7 +727,7 @@ const mapFilter = FilterCriteria.filterGroup({
 	filters: [
 		FilterCriteria.filter({
 			operator: 'AND',
-			criteria: [
+			criterias: [
 				FilterCriteria.criteria({
 					type: 'MAP',
 					operator: 'HAS-KEY',
@@ -791,7 +791,7 @@ const filter = FilterCriteria.filterGroup({
 	filters: [
 		FilterCriteria.filter({
 			operator: 'AND',
-			criteria: [
+			criterias: [
 				FilterCriteria.criteria({
 					type: 'SET',
 					operator: 'INCLUDES-ALL',
@@ -820,7 +820,7 @@ const filter = FilterCriteria.filterGroup({
 	filters: [
 		FilterCriteria.filter({
 			operator: 'AND',
-			criteria: [
+			criterias: [
 				FilterCriteria.criteria({
 					type: 'DATE',
 					operator: 'BETWEEN',
