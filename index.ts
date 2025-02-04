@@ -402,7 +402,7 @@ class FilterCriteria {
 	static filterGroup = filterGroupFactory;
 	static schema = schema;
 
-	async match(value: any, input: FilterCriteria.MatchInput): Promise<boolean | FilterCriteria.MatchResult> {
+	async match(value: any, input: FilterCriteria.MatchInput): Promise<FilterCriteria.MatchResult> {
 		const converted = this.translateToFilterGroupInput(input);
 		const args = await filterGroup.parseAsync(converted.input);
 		const filtersResults = await Promise.all(
