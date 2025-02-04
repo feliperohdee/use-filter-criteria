@@ -181,10 +181,9 @@ describe('/index', () => {
 				})
 			});
 
-			const res = await Promise.all([filterCriteria.match(testData[0], input, false), filterCriteria.match(testData[0], input, true)]);
+			const res = await filterCriteria.match(testData[0], input);
 
-			expect(res[0]).toEqual(true);
-			expect(res[1]).toEqual({
+			expect(res).toEqual({
 				operator: 'AND',
 				passed: true,
 				reason: 'Filter group "AND" check PASSED',
@@ -236,10 +235,9 @@ describe('/index', () => {
 				})
 			});
 
-			const res = await Promise.all([filterCriteria.match(testData[0], input, false), filterCriteria.match(testData[0], input, true)]);
+			const res = await filterCriteria.match(testData[0], input);
 
-			expect(res[0]).toEqual(true);
-			expect(res[1]).toEqual({
+			expect(res).toEqual({
 				operator: 'OR',
 				passed: true,
 				reason: 'Filter group "OR" check PASSED',
@@ -286,10 +284,9 @@ describe('/index', () => {
 				]
 			});
 
-			const res = await Promise.all([filterCriteria.match(testData[0], input, false), filterCriteria.match(testData[0], input, true)]);
+			const res = await filterCriteria.match(testData[0], input);
 
-			expect(res[0]).toEqual(true);
-			expect(res[1]).toEqual({
+			expect(res).toEqual({
 				operator: 'OR',
 				passed: true,
 				reason: 'Filter "OR" check PASSED',
@@ -318,10 +315,9 @@ describe('/index', () => {
 				valuePath: ['name']
 			});
 
-			const res = await Promise.all([filterCriteria.match(testData[0], input, false), filterCriteria.match(testData[0], input, true)]);
+			const res = await filterCriteria.match(testData[0], input);
 
-			expect(res[0]).toEqual(true);
-			expect(res[1]).toEqual({
+			expect(res).toEqual({
 				matchValue: 'john',
 				passed: true,
 				reason: 'STRING criteria "CONTAINS" check PASSED',
@@ -505,15 +501,10 @@ describe('/index', () => {
 				valuePath: ['tags']
 			});
 
-			const res = await Promise.all([
-				// @ts-expect-error
-				filterCriteria.applyCriteria(testData[0], criteria),
-				// @ts-expect-error
-				filterCriteria.applyCriteria(testData[0], criteria, true)
-			]);
+			// @ts-expect-error
+			const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-			expect(res[0]).toEqual(true);
-			expect(res[1]).toEqual({
+			expect(res).toEqual({
 				matchValue: JSON.stringify(['developer', 'javascript']),
 				passed: true,
 				reason: 'ARRAY criteria "EXACTLY-MATCHES" check PASSED',
@@ -533,12 +524,8 @@ describe('/index', () => {
 				valuePath: ['tags']
 			});
 
-			const res = await Promise.all([
-				// @ts-expect-error
-				filterCriteria.applyCriteria(testData[0], criteria),
-				// @ts-expect-error
-				filterCriteria.applyCriteria(testData[0], criteria, true)
-			]);
+			// @ts-expect-error
+			const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
 			expect(matchValue).toHaveBeenCalledWith({
 				context: expect.any(Map),
@@ -549,8 +536,7 @@ describe('/index', () => {
 				value: testData[0]
 			});
 
-			expect(res[0]).toEqual(true);
-			expect(res[1]).toEqual({
+			expect(res).toEqual({
 				matchValue: JSON.stringify(['developer', 'javascript']),
 				passed: true,
 				reason: 'ARRAY criteria "EXACTLY-MATCHES" check PASSED',
@@ -574,12 +560,8 @@ describe('/index', () => {
 				valuePath: ['tags']
 			});
 
-			const res = await Promise.all([
-				// @ts-expect-error
-				filterCriteria.applyCriteria(testData[0], criteria),
-				// @ts-expect-error
-				filterCriteria.applyCriteria(testData[0], criteria, true)
-			]);
+			// @ts-expect-error
+			const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
 			expect(criteriaMapper).toHaveBeenCalledWith({
 				context: expect.any(Map),
@@ -587,8 +569,7 @@ describe('/index', () => {
 				value: testData[0]
 			});
 
-			expect(res[0]).toEqual(true);
-			expect(res[1]).toEqual({
+			expect(res).toEqual({
 				matchValue: JSON.stringify(['developer', 'javascript']),
 				passed: true,
 				reason: 'ARRAY criteria "EXACTLY-MATCHES" check PASSED',
@@ -612,12 +593,8 @@ describe('/index', () => {
 				valuePath: ['tags']
 			});
 
-			const res = await Promise.all([
-				// @ts-expect-error
-				filterCriteria.applyCriteria(testData[0], criteria),
-				// @ts-expect-error
-				filterCriteria.applyCriteria(testData[0], criteria, true)
-			]);
+			// @ts-expect-error
+			const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
 			expect(criteriaMapper).toHaveBeenCalledWith({
 				context: expect.any(Map),
@@ -625,8 +602,7 @@ describe('/index', () => {
 				value: testData[0]
 			});
 
-			expect(res[0]).toEqual(true);
-			expect(res[1]).toEqual({
+			expect(res).toEqual({
 				matchValue: 'null',
 				passed: true,
 				reason: 'CUSTOM predicate check PASSED',
@@ -645,12 +621,8 @@ describe('/index', () => {
 				valueMapper
 			});
 
-			const res = await Promise.all([
-				// @ts-expect-error
-				filterCriteria.applyCriteria(testData[0], criteria),
-				// @ts-expect-error
-				filterCriteria.applyCriteria(testData[0], criteria, true)
-			]);
+			// @ts-expect-error
+			const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
 			expect(valueMapper).toHaveBeenCalledWith({
 				context: expect.any(Map),
@@ -658,8 +630,7 @@ describe('/index', () => {
 				value: testData[0]
 			});
 
-			expect(res[0]).toEqual(true);
-			expect(res[1]).toEqual({
+			expect(res).toEqual({
 				matchValue: 'null',
 				passed: true,
 				reason: 'BOOLEAN criteria "NOT-UNDEFINED" check PASSED',
@@ -685,12 +656,8 @@ describe('/index', () => {
 				valueMapper
 			});
 
-			const res = await Promise.all([
-				// @ts-expect-error
-				filterCriteria.applyCriteria(testData[0], criteria),
-				// @ts-expect-error
-				filterCriteria.applyCriteria(testData[0], criteria, true)
-			]);
+			// @ts-expect-error
+			const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
 			expect(valueMapper).toHaveBeenCalledWith({
 				context: expect.any(Map),
@@ -701,8 +668,7 @@ describe('/index', () => {
 				value: testData[0]
 			});
 
-			expect(res[0]).toEqual(true);
-			expect(res[1]).toEqual({
+			expect(res).toEqual({
 				matchValue: 'john-doe',
 				passed: true,
 				reason: 'STRING criteria "EQUALS" check PASSED',
@@ -716,15 +682,10 @@ describe('/index', () => {
 				type: 'BOOLEAN'
 			});
 
-			const res = await Promise.all([
-				// @ts-expect-error
-				filterCriteria.applyCriteria(testData[0], criteria),
-				// @ts-expect-error
-				filterCriteria.applyCriteria(testData[0], criteria, true)
-			]);
+			// @ts-expect-error
+			const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-			expect(res[0]).toEqual(true);
-			expect(res[1]).toEqual({
+			expect(res).toEqual({
 				matchValue: 'null',
 				passed: true,
 				reason: 'BOOLEAN criteria "NOT-UNDEFINED" check PASSED',
@@ -739,15 +700,10 @@ describe('/index', () => {
 				type: 'BOOLEAN'
 			});
 
-			const res = await Promise.all([
-				// @ts-expect-error
-				filterCriteria.applyCriteria(testData[0], criteria),
-				// @ts-expect-error
-				filterCriteria.applyCriteria(testData[0], criteria, true)
-			]);
+			// @ts-expect-error
+			const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-			expect(res[0]).toEqual(false);
-			expect(res[1]).toEqual({
+			expect(res).toEqual({
 				matchValue: 'null',
 				passed: false,
 				reason: 'Unknown criteria operator',
@@ -763,15 +719,10 @@ describe('/index', () => {
 				valuePath: ['phones', 'number']
 			});
 
-			const res = await Promise.all([
-				// @ts-expect-error
-				filterCriteria.applyCriteria(testData[0], criteria),
-				// @ts-expect-error
-				filterCriteria.applyCriteria(testData[0], criteria, true)
-			]);
+			// @ts-expect-error
+			const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-			expect(res[0]).toEqual(true);
-			expect(res[1]).toEqual({
+			expect(res).toEqual({
 				matchValue: '1234567891',
 				passed: true,
 				reason: 'STRING criteria "EQUALS" check PASSED',
@@ -797,23 +748,17 @@ describe('/index', () => {
 				// @ts-expect-error
 				filterCriteria.applyCriteria(testValue, criteria),
 				// @ts-expect-error
-				filterCriteria.applyCriteria(testValue, criteria, true),
-				// @ts-expect-error
-				filterCriteria.applyCriteria(testValue, { ...criteria, matchInArray: false }),
-				// @ts-expect-error
-				filterCriteria.applyCriteria(testValue, { ...criteria, matchInArray: false }, true)
+				filterCriteria.applyCriteria(testValue, { ...criteria, matchInArray: false })
 			]);
 
-			expect(res[0]).toEqual(true);
-			expect(res[1]).toEqual({
+			expect(res[0]).toEqual({
 				matchValue: 'jane-doe',
 				passed: true,
 				reason: 'STRING criteria "EQUALS" check PASSED',
 				value: ['john-smith', 'jane-doe', 'bob-johnson']
 			});
 
-			expect(res[2]).toEqual(false);
-			expect(res[3]).toEqual({
+			expect(res[1]).toEqual({
 				matchValue: 'jane-doe',
 				passed: false,
 				reason: 'STRING criteria "EQUALS" check FAILED',
@@ -831,15 +776,10 @@ describe('/index', () => {
 				valuePath: ['name']
 			});
 
-			const res = await Promise.all([
-				// @ts-expect-error
-				filterCriteria.applyCriteria(testData[0], criteria),
-				// @ts-expect-error
-				filterCriteria.applyCriteria(testData[0], criteria, true)
-			]);
+			// @ts-expect-error
+			const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-			expect(res[0]).toEqual(false);
-			expect(res[1]).toEqual({
+			expect(res).toEqual({
 				matchValue: 'john',
 				passed: false,
 				reason: 'Unknown criteria type',
@@ -868,15 +808,10 @@ describe('/index', () => {
 				// @ts-expect-error
 				criteria = filterCriteria.translateCriteriaAlias(criteria);
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: 'john',
 					passed: true,
 					reason: 'STRING criteria "STARTS-WITH" check PASSED',
@@ -895,7 +830,12 @@ describe('/index', () => {
 				// @ts-expect-error
 				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res).toEqual(false);
+				expect(res).toEqual({
+					matchValue: 'null',
+					passed: false,
+					reason: 'ARRAY criteria "EXACTLY-MATCHES" check FAILED',
+					value: 25
+				});
 			});
 
 			it('should handle EXACTLY-MATCHES operator with normalize = true', async () => {
@@ -907,15 +847,10 @@ describe('/index', () => {
 					valuePath: ['tags']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: JSON.stringify(['developer', 'javascript']),
 					passed: true,
 					reason: 'ARRAY criteria "EXACTLY-MATCHES" check PASSED',
@@ -932,15 +867,10 @@ describe('/index', () => {
 					valuePath: ['tags']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(false);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: JSON.stringify(['Develóper', 'JavaScript']),
 					passed: false,
 					reason: 'ARRAY criteria "EXACTLY-MATCHES" check FAILED',
@@ -956,15 +886,10 @@ describe('/index', () => {
 					valuePath: ['tags']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: 'developer',
 					passed: true,
 					reason: 'ARRAY criteria "HAS" check PASSED',
@@ -980,15 +905,10 @@ describe('/index', () => {
 					valuePath: ['tags']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: JSON.stringify(['developer', 'javascript']),
 					passed: true,
 					reason: 'ARRAY criteria "INCLUDES-ALL" check PASSED',
@@ -1004,15 +924,10 @@ describe('/index', () => {
 					valuePath: ['tags']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: JSON.stringify(['developer', 'inexistent']),
 					passed: true,
 					reason: 'ARRAY criteria "INCLUDES-ANY" check PASSED',
@@ -1028,15 +943,10 @@ describe('/index', () => {
 					valuePath: ['tags']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: 'developer',
 					passed: true,
 					reason: 'ARRAY criteria "HAS" check PASSED',
@@ -1051,15 +961,10 @@ describe('/index', () => {
 					valuePath: ['tags']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(false);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: 'null',
 					passed: false,
 					reason: 'ARRAY criteria "IS-EMPTY" check FAILED',
@@ -1074,15 +979,10 @@ describe('/index', () => {
 					valuePath: ['tags']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: 'null',
 					passed: true,
 					reason: 'ARRAY criteria "NOT-EMPTY" check PASSED',
@@ -1098,15 +998,10 @@ describe('/index', () => {
 					valuePath: ['tags']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(false);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: JSON.stringify(['developer', 'javascript']),
 					passed: false,
 					reason: 'ARRAY criteria "NOT-INCLUDES-ALL" check FAILED',
@@ -1122,15 +1017,10 @@ describe('/index', () => {
 					valuePath: ['tags']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(false);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: JSON.stringify(['developer', 'inexistent']),
 					passed: false,
 					reason: 'ARRAY criteria "NOT-INCLUDES-ANY" check FAILED',
@@ -1146,15 +1036,10 @@ describe('/index', () => {
 					valuePath: ['tags']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: '2',
 					passed: true,
 					reason: 'ARRAY criteria "SIZE-EQUALS" check PASSED',
@@ -1170,15 +1055,10 @@ describe('/index', () => {
 					valuePath: ['tags']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: '1',
 					passed: true,
 					reason: 'ARRAY criteria "SIZE-GREATER" check PASSED',
@@ -1194,15 +1074,10 @@ describe('/index', () => {
 					valuePath: ['tags']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: '2',
 					passed: true,
 					reason: 'ARRAY criteria "SIZE-GREATER-OR-EQUALS" check PASSED',
@@ -1218,15 +1093,10 @@ describe('/index', () => {
 					valuePath: ['tags']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: '3',
 					passed: true,
 					reason: 'ARRAY criteria "SIZE-LESS" check PASSED',
@@ -1242,15 +1112,10 @@ describe('/index', () => {
 					valuePath: ['tags']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: '2',
 					passed: true,
 					reason: 'ARRAY criteria "SIZE-LESS-OR-EQUALS" check PASSED',
@@ -1268,15 +1133,10 @@ describe('/index', () => {
 					valuePath: ['obj']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: JSON.stringify({ a: 1 }),
 					passed: true,
 					reason: 'BOOLEAN criteria "EQUALS" check PASSED',
@@ -1292,15 +1152,10 @@ describe('/index', () => {
 					valuePath: ['active']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(false);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: 'false',
 					passed: false,
 					reason: 'BOOLEAN criteria "IS-FALSE" check FAILED',
@@ -1315,15 +1170,10 @@ describe('/index', () => {
 					valuePath: ['name']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(false);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: 'null',
 					passed: false,
 					reason: 'BOOLEAN criteria "IS-FALSY" check FAILED',
@@ -1338,15 +1188,10 @@ describe('/index', () => {
 					valuePath: ['null']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: 'null',
 					passed: true,
 					reason: 'BOOLEAN criteria "IS-NIL" check PASSED',
@@ -1361,15 +1206,10 @@ describe('/index', () => {
 					valuePath: ['null']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: 'null',
 					passed: true,
 					reason: 'BOOLEAN criteria "IS-NULL" check PASSED',
@@ -1384,15 +1224,10 @@ describe('/index', () => {
 					valuePath: ['active']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: 'null',
 					passed: true,
 					reason: 'BOOLEAN criteria "IS-TRUE" check PASSED',
@@ -1407,15 +1242,10 @@ describe('/index', () => {
 					valuePath: ['name']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: 'null',
 					passed: true,
 					reason: 'BOOLEAN criteria "IS-TRUTHY" check PASSED',
@@ -1430,15 +1260,10 @@ describe('/index', () => {
 					valuePath: ['inexistent']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: 'null',
 					passed: true,
 					reason: 'BOOLEAN criteria "IS-UNDEFINED" check PASSED',
@@ -1454,15 +1279,10 @@ describe('/index', () => {
 					valuePath: ['obj']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(false);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: JSON.stringify({ a: 1 }),
 					passed: false,
 					reason: 'BOOLEAN criteria "NOT-EQUALS" check FAILED',
@@ -1477,15 +1297,10 @@ describe('/index', () => {
 					valuePath: ['null']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(false);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: 'null',
 					passed: false,
 					reason: 'BOOLEAN criteria "NOT-NIL" check FAILED',
@@ -1500,15 +1315,10 @@ describe('/index', () => {
 					valuePath: ['null']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(false);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: 'null',
 					passed: false,
 					reason: 'BOOLEAN criteria "NOT-NULL" check FAILED',
@@ -1523,15 +1333,10 @@ describe('/index', () => {
 					valuePath: ['inexistent']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(false);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: 'null',
 					passed: false,
 					reason: 'BOOLEAN criteria "NOT-UNDEFINED" check FAILED',
@@ -1547,15 +1352,10 @@ describe('/index', () => {
 					valuePath: ['obj']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(false);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: JSON.stringify({ a: 1 }),
 					passed: false,
 					reason: 'BOOLEAN criteria "STRICT-EQUAL" check FAILED',
@@ -1571,15 +1371,10 @@ describe('/index', () => {
 					valuePath: ['obj']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: JSON.stringify({ a: 1 }),
 					passed: true,
 					reason: 'BOOLEAN criteria "STRICT-NOT-EQUAL" check PASSED',
@@ -1599,20 +1394,15 @@ describe('/index', () => {
 					type: 'CUSTOM'
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
 				expect(predicate).toHaveBeenCalledWith({
 					matchValue: null,
 					value: testData[0]
 				});
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: 'null',
 					passed: true,
 					reason: 'CUSTOM predicate check PASSED',
@@ -1631,20 +1421,15 @@ describe('/index', () => {
 					type: 'CUSTOM'
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
 				expect(predicate).toHaveBeenCalledWith({
 					matchValue: 'John',
 					value: testData[0]
 				});
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: 'John',
 					passed: true,
 					reason: 'CUSTOM predicate check PASSED',
@@ -1664,7 +1449,12 @@ describe('/index', () => {
 				// @ts-expect-error
 				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res).toEqual(false);
+				expect(res).toEqual({
+					matchValue: '',
+					passed: false,
+					reason: 'DATE criteria "AFTER" check FAILED',
+					value: 25
+				});
 			});
 
 			it('should handle AFTER operator', async () => {
@@ -1675,15 +1465,10 @@ describe('/index', () => {
 					valuePath: ['createdAt']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: '2023-01-01T00:00:00+00:01',
 					passed: true,
 					reason: 'DATE criteria "AFTER" check PASSED',
@@ -1699,15 +1484,10 @@ describe('/index', () => {
 					valuePath: ['createdAt']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: '2023-01-01T00:00:00Z',
 					passed: true,
 					reason: 'DATE criteria "AFTER-OR-EQUALS" check PASSED',
@@ -1723,15 +1503,10 @@ describe('/index', () => {
 					valuePath: ['createdAt']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: '2023-01-01T00:00:00-00:01',
 					passed: true,
 					reason: 'DATE criteria "BEFORE" check PASSED',
@@ -1747,14 +1522,15 @@ describe('/index', () => {
 					valuePath: ['createdAt']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
+				expect(res).toEqual({
+					matchValue: '2023-01-01T00:00:00Z',
+					passed: true,
+					reason: 'DATE criteria "BEFORE-OR-EQUALS" check PASSED',
+					value: '2023-01-01T00:00:00Z'
+				});
 			});
 
 			it('should handle BETWEEN operator', async () => {
@@ -1765,15 +1541,10 @@ describe('/index', () => {
 					valuePath: ['createdAt']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: JSON.stringify(['2023-01-01T00:00:00Z', '2023-01-01T00:00:00Z']),
 					passed: true,
 					reason: 'DATE criteria "BETWEEN" check PASSED',
@@ -1793,7 +1564,12 @@ describe('/index', () => {
 				// @ts-expect-error
 				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res).toEqual(false);
+				expect(res).toEqual({
+					matchValue: JSON.stringify({ lat: 0, lng: 0, radius: 0, unit: 'km' }),
+					passed: false,
+					reason: 'GEO criteria "IN-RADIUS" check FAILED',
+					value: 25
+				});
 			});
 
 			it('should handle IN-RADIUS operator with km unit', async () => {
@@ -1820,21 +1596,12 @@ describe('/index', () => {
 					location: { lat: 40.7357, lng: -74.1724 }
 				};
 
-				const resLA = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(LAPoint, criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(LAPoint, criteria, true)
-				]);
-				const resNewark = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(newarkPoint, criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(newarkPoint, criteria, true)
-				]);
+				// @ts-expect-error
+				const resLA = await filterCriteria.applyCriteria(LAPoint, criteria);
+				// @ts-expect-error
+				const resNewark = await filterCriteria.applyCriteria(newarkPoint, criteria);
 
-				expect(resLA[0]).toEqual(false);
-				expect(resLA[1]).toEqual({
+				expect(resLA).toEqual({
 					matchValue: JSON.stringify({
 						lat: 40.7128,
 						lng: -74.006,
@@ -1846,8 +1613,7 @@ describe('/index', () => {
 					value: { lat: 34.0522, lng: -118.2437 }
 				});
 
-				expect(resNewark[0]).toEqual(true);
-				expect(resNewark[1]).toEqual({
+				expect(resNewark).toEqual({
 					matchValue: JSON.stringify({
 						lat: 40.7128,
 						lng: -74.006,
@@ -1884,21 +1650,12 @@ describe('/index', () => {
 					location: [40.7357, -74.1724]
 				};
 
-				const resLA = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(LAPoint, criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(LAPoint, criteria, true)
-				]);
-				const resNewark = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(newarkPoint, criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(newarkPoint, criteria, true)
-				]);
+				// @ts-expect-error
+				const resLA = await filterCriteria.applyCriteria(LAPoint, criteria);
+				// @ts-expect-error
+				const resNewark = await filterCriteria.applyCriteria(newarkPoint, criteria);
 
-				expect(resLA[0]).toEqual(false);
-				expect(resLA[1]).toEqual({
+				expect(resLA).toEqual({
 					matchValue: JSON.stringify({
 						lat: 40.7128,
 						lng: -74.006,
@@ -1910,8 +1667,7 @@ describe('/index', () => {
 					value: [34.0522, -118.2437]
 				});
 
-				expect(resNewark[0]).toEqual(true);
-				expect(resNewark[1]).toEqual({
+				expect(resNewark).toEqual({
 					matchValue: JSON.stringify({
 						lat: 40.7128,
 						lng: -74.006,
@@ -1948,21 +1704,12 @@ describe('/index', () => {
 					location: { lat: 40.7357, lng: -74.1724 }
 				};
 
-				const resLA = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(LAPoint, criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(LAPoint, criteria, true)
-				]);
-				const resNewark = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(newarkPoint, criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(newarkPoint, criteria, true)
-				]);
+				// @ts-expect-error
+				const resLA = await filterCriteria.applyCriteria(LAPoint, criteria);
+				// @ts-expect-error
+				const resNewark = await filterCriteria.applyCriteria(newarkPoint, criteria);
 
-				expect(resLA[0]).toEqual(false);
-				expect(resLA[1]).toEqual({
+				expect(resLA).toEqual({
 					matchValue: JSON.stringify({
 						lat: 40.7128,
 						lng: -74.006,
@@ -1974,8 +1721,7 @@ describe('/index', () => {
 					value: { lat: 34.0522, lng: -118.2437 }
 				});
 
-				expect(resNewark[0]).toEqual(true);
-				expect(resNewark[1]).toEqual({
+				expect(resNewark).toEqual({
 					matchValue: JSON.stringify({
 						lat: 40.7128,
 						lng: -74.006,
@@ -2020,22 +1766,13 @@ describe('/index', () => {
 					location: { lat: 34.0522, lng: -118.2437 }
 				};
 
-				const resKm = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(LAPoint, criteriaKm),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(LAPoint, criteriaKm, true)
-				]);
-				const resMi = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(LAPoint, criteriaMi),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(LAPoint, criteriaMi, true)
-				]);
+				// @ts-expect-error
+				const resKm = await filterCriteria.applyCriteria(LAPoint, criteriaKm);
+				// @ts-expect-error
+				const resMi = await filterCriteria.applyCriteria(LAPoint, criteriaMi);
 
 				// A distance is ~3936km or ~2445mi, so it should be outside the radius in both cases
-				expect(resKm[0]).toEqual(true);
-				expect(resKm[1]).toEqual({
+				expect(resKm).toEqual({
 					matchValue: JSON.stringify({
 						lat: 40.7128,
 						lng: -74.006,
@@ -2047,8 +1784,7 @@ describe('/index', () => {
 					value: { lat: 34.0522, lng: -118.2437 }
 				});
 
-				expect(resMi[0]).toEqual(true);
-				expect(resMi[1]).toEqual({
+				expect(resMi).toEqual({
 					matchValue: JSON.stringify({
 						lat: 40.7128,
 						lng: -74.006,
@@ -2078,15 +1814,10 @@ describe('/index', () => {
 					location: { lat: 40.7357, lng: -74.1724 }
 				};
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(newarkPoint, criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(newarkPoint, criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(newarkPoint, criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: JSON.stringify({
 						lat: 40.7128,
 						lng: -74.006,
@@ -2110,7 +1841,12 @@ describe('/index', () => {
 				// @ts-expect-error
 				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res).toEqual(false);
+				expect(res).toEqual({
+					matchValue: 'null',
+					passed: false,
+					reason: 'MAP criteria "CONTAINS" check FAILED',
+					value: 25
+				});
 			});
 
 			it('should handle CONTAINS operator', async () => {
@@ -2121,15 +1857,10 @@ describe('/index', () => {
 					valuePath: ['map']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: JSON.stringify({ 'key-1': 'value-1' }),
 					passed: true,
 					reason: 'MAP criteria "CONTAINS" check PASSED',
@@ -2146,15 +1877,10 @@ describe('/index', () => {
 					valuePath: ['map']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: 'key-1',
 					passed: true,
 					reason: 'MAP criteria "HAS-KEY" check PASSED',
@@ -2171,15 +1897,10 @@ describe('/index', () => {
 					valuePath: ['map']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(false);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: 'KÉY-1',
 					passed: false,
 					reason: 'MAP criteria "HAS-KEY" check FAILED',
@@ -2195,15 +1916,10 @@ describe('/index', () => {
 					valuePath: ['map']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: 'value-1',
 					passed: true,
 					reason: 'MAP criteria "HAS-VALUE" check PASSED',
@@ -2218,15 +1934,10 @@ describe('/index', () => {
 					valuePath: ['map']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(false);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: 'null',
 					passed: false,
 					reason: 'MAP criteria "IS-EMPTY" check FAILED',
@@ -2241,15 +1952,10 @@ describe('/index', () => {
 					valuePath: ['map']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: 'null',
 					passed: true,
 					reason: 'MAP criteria "NOT-EMPTY" check PASSED',
@@ -2265,15 +1971,10 @@ describe('/index', () => {
 					valuePath: ['map']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: '1',
 					passed: true,
 					reason: 'MAP criteria "SIZE-EQUALS" check PASSED',
@@ -2289,15 +1990,10 @@ describe('/index', () => {
 					valuePath: ['map']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: '0',
 					passed: true,
 					reason: 'MAP criteria "SIZE-GREATER" check PASSED',
@@ -2313,15 +2009,10 @@ describe('/index', () => {
 					valuePath: ['map']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: '1',
 					passed: true,
 					reason: 'MAP criteria "SIZE-GREATER-OR-EQUALS" check PASSED',
@@ -2337,15 +2028,10 @@ describe('/index', () => {
 					valuePath: ['map']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: '2',
 					passed: true,
 					reason: 'MAP criteria "SIZE-LESS" check PASSED',
@@ -2361,15 +2047,10 @@ describe('/index', () => {
 					valuePath: ['map']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: '1',
 					passed: true,
 					reason: 'MAP criteria "SIZE-LESS-OR-EQUALS" check PASSED',
@@ -2388,7 +2069,12 @@ describe('/index', () => {
 				// @ts-expect-error
 				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res).toEqual(false);
+				expect(res).toEqual({
+					matchValue: 'null',
+					passed: false,
+					reason: 'NUMBER criteria "EQUALS" check FAILED',
+					value: 'John Doe'
+				});
 			});
 
 			it('should handle BETWEEN operator', async () => {
@@ -2399,15 +2085,10 @@ describe('/index', () => {
 					valuePath: ['age']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: JSON.stringify([25, 30]),
 					passed: true,
 					reason: 'NUMBER criteria "BETWEEN" check PASSED',
@@ -2423,15 +2104,10 @@ describe('/index', () => {
 					valuePath: ['age']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: '25',
 					passed: true,
 					reason: 'NUMBER criteria "EQUALS" check PASSED',
@@ -2447,15 +2123,10 @@ describe('/index', () => {
 					valuePath: ['age']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: '20',
 					passed: true,
 					reason: 'NUMBER criteria "GREATER" check PASSED',
@@ -2471,15 +2142,10 @@ describe('/index', () => {
 					valuePath: ['age']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: '25',
 					passed: true,
 					reason: 'NUMBER criteria "GREATER-OR-EQUALS" check PASSED',
@@ -2495,15 +2161,10 @@ describe('/index', () => {
 					valuePath: ['age']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: JSON.stringify([15, 25, 30]),
 					passed: true,
 					reason: 'NUMBER criteria "IN" check PASSED',
@@ -2519,15 +2180,10 @@ describe('/index', () => {
 					valuePath: ['age']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: '30',
 					passed: true,
 					reason: 'NUMBER criteria "LESS" check PASSED',
@@ -2543,15 +2199,10 @@ describe('/index', () => {
 					valuePath: ['age']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: '30',
 					passed: true,
 					reason: 'NUMBER criteria "LESS-OR-EQUALS" check PASSED',
@@ -2567,15 +2218,10 @@ describe('/index', () => {
 					valuePath: ['age']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: '30',
 					passed: true,
 					reason: 'NUMBER criteria "NOT-EQUALS" check PASSED',
@@ -2594,7 +2240,12 @@ describe('/index', () => {
 				// @ts-expect-error
 				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res).toEqual(false);
+				expect(res).toEqual({
+					matchValue: 'null',
+					passed: false,
+					reason: 'OBJECT criteria "CONTAINS" check FAILED',
+					value: 25
+				});
 			});
 
 			it('should handle CONTAINS operator', async () => {
@@ -2605,15 +2256,10 @@ describe('/index', () => {
 					valuePath: ['obj']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: JSON.stringify({ a: 1 }),
 					passed: true,
 					reason: 'OBJECT criteria "CONTAINS" check PASSED',
@@ -2630,15 +2276,10 @@ describe('/index', () => {
 					valuePath: ['obj']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: 'a',
 					passed: true,
 					reason: 'OBJECT criteria "HAS-KEY" check PASSED',
@@ -2655,15 +2296,10 @@ describe('/index', () => {
 					valuePath: ['obj']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(false);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: 'KÉY-1',
 					passed: false,
 					reason: 'OBJECT criteria "HAS-KEY" check FAILED',
@@ -2679,15 +2315,10 @@ describe('/index', () => {
 					valuePath: ['obj']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: '1',
 					passed: true,
 					reason: 'OBJECT criteria "HAS-VALUE" check PASSED',
@@ -2702,15 +2333,10 @@ describe('/index', () => {
 					valuePath: ['obj']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(false);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: 'null',
 					passed: false,
 					reason: 'OBJECT criteria "IS-EMPTY" check FAILED',
@@ -2725,15 +2351,10 @@ describe('/index', () => {
 					valuePath: ['obj']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: 'null',
 					passed: true,
 					reason: 'OBJECT criteria "NOT-EMPTY" check PASSED',
@@ -2749,15 +2370,10 @@ describe('/index', () => {
 					valuePath: ['obj']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: '1',
 					passed: true,
 					reason: 'OBJECT criteria "SIZE-EQUALS" check PASSED',
@@ -2773,15 +2389,10 @@ describe('/index', () => {
 					valuePath: ['obj']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: '0',
 					passed: true,
 					reason: 'OBJECT criteria "SIZE-GREATER" check PASSED',
@@ -2797,15 +2408,10 @@ describe('/index', () => {
 					valuePath: ['obj']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: '1',
 					passed: true,
 					reason: 'OBJECT criteria "SIZE-GREATER-OR-EQUALS" check PASSED',
@@ -2821,15 +2427,10 @@ describe('/index', () => {
 					valuePath: ['obj']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: '2',
 					passed: true,
 					reason: 'OBJECT criteria "SIZE-LESS" check PASSED',
@@ -2845,15 +2446,10 @@ describe('/index', () => {
 					valuePath: ['obj']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: '1',
 					passed: true,
 					reason: 'OBJECT criteria "SIZE-LESS-OR-EQUALS" check PASSED',
@@ -2872,7 +2468,12 @@ describe('/index', () => {
 				// @ts-expect-error
 				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res).toEqual(false);
+				expect(res).toEqual({
+					matchValue: 'null',
+					passed: false,
+					reason: 'SET criteria "EXACTLY-MATCHES" check FAILED',
+					value: 25
+				});
 			});
 
 			it('should handle EXACTLY-MATCHES operator with normalize = true', async () => {
@@ -2884,15 +2485,10 @@ describe('/index', () => {
 					valuePath: ['tagsSet']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: JSON.stringify(['developer', 'javascript']),
 					passed: true,
 					reason: 'SET criteria "EXACTLY-MATCHES" check PASSED',
@@ -2909,15 +2505,10 @@ describe('/index', () => {
 					valuePath: ['tagsSet']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(false);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: JSON.stringify(['Develóper', 'JavaScript']),
 					passed: false,
 					reason: 'SET criteria "EXACTLY-MATCHES" check FAILED',
@@ -2933,15 +2524,10 @@ describe('/index', () => {
 					valuePath: ['tagsSet']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: 'developer',
 					passed: true,
 					reason: 'SET criteria "HAS" check PASSED',
@@ -2957,15 +2543,10 @@ describe('/index', () => {
 					valuePath: ['tagsSet']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: JSON.stringify(['developer', 'javascript']),
 					passed: true,
 					reason: 'SET criteria "INCLUDES-ALL" check PASSED',
@@ -2981,15 +2562,10 @@ describe('/index', () => {
 					valuePath: ['tagsSet']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: JSON.stringify(['developer', 'javascript']),
 					passed: true,
 					reason: 'SET criteria "INCLUDES-ANY" check PASSED',
@@ -3004,15 +2580,10 @@ describe('/index', () => {
 					valuePath: ['tagsSet']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(false);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: 'null',
 					passed: false,
 					reason: 'SET criteria "IS-EMPTY" check FAILED',
@@ -3027,15 +2598,10 @@ describe('/index', () => {
 					valuePath: ['tagsSet']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: 'null',
 					passed: true,
 					reason: 'SET criteria "NOT-EMPTY" check PASSED',
@@ -3051,15 +2617,10 @@ describe('/index', () => {
 					valuePath: ['tagsSet']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(false);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: JSON.stringify(['developer', 'javascript']),
 					passed: false,
 					reason: 'SET criteria "NOT-INCLUDES-ALL" check FAILED',
@@ -3075,15 +2636,10 @@ describe('/index', () => {
 					valuePath: ['tagsSet']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(false);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: JSON.stringify(['developer', 'javascript']),
 					passed: false,
 					reason: 'SET criteria "NOT-INCLUDES-ANY" check FAILED',
@@ -3099,15 +2655,10 @@ describe('/index', () => {
 					valuePath: ['tagsSet']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: '2',
 					passed: true,
 					reason: 'SET criteria "SIZE-EQUALS" check PASSED',
@@ -3123,15 +2674,10 @@ describe('/index', () => {
 					valuePath: ['tagsSet']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: '1',
 					passed: true,
 					reason: 'SET criteria "SIZE-GREATER" check PASSED',
@@ -3147,15 +2693,10 @@ describe('/index', () => {
 					valuePath: ['tagsSet']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: '2',
 					passed: true,
 					reason: 'SET criteria "SIZE-GREATER-OR-EQUALS" check PASSED',
@@ -3171,15 +2712,10 @@ describe('/index', () => {
 					valuePath: ['tagsSet']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: '3',
 					passed: true,
 					reason: 'SET criteria "SIZE-LESS" check PASSED',
@@ -3195,15 +2731,10 @@ describe('/index', () => {
 					valuePath: ['tagsSet']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: '2',
 					passed: true,
 					reason: 'SET criteria "SIZE-LESS-OR-EQUALS" check PASSED',
@@ -3222,7 +2753,12 @@ describe('/index', () => {
 				// @ts-expect-error
 				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res).toEqual(false);
+				expect(res).toEqual({
+					matchValue: 'null',
+					passed: false,
+					reason: 'STRING criteria "EQUALS" check FAILED',
+					value: 25
+				});
 			});
 
 			it('should handle CONTAINS operator with normalize = true', async () => {
@@ -3234,15 +2770,10 @@ describe('/index', () => {
 					valuePath: ['name']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: 'doe',
 					passed: true,
 					reason: 'STRING criteria "CONTAINS" check PASSED',
@@ -3259,15 +2790,10 @@ describe('/index', () => {
 					valuePath: ['name']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(false);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: 'doe',
 					passed: false,
 					reason: 'STRING criteria "CONTAINS" check FAILED',
@@ -3283,15 +2809,10 @@ describe('/index', () => {
 					valuePath: ['phones', 'number']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: '456',
 					passed: true,
 					reason: 'STRING criteria "CONTAINS" check PASSED',
@@ -3307,15 +2828,10 @@ describe('/index', () => {
 					valuePath: ['name']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: 'doe',
 					passed: true,
 					reason: 'STRING criteria "ENDS-WITH" check PASSED',
@@ -3331,15 +2847,10 @@ describe('/index', () => {
 					valuePath: ['name']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: 'john-doe',
 					passed: true,
 					reason: 'STRING criteria "EQUALS" check PASSED',
@@ -3356,15 +2867,10 @@ describe('/index', () => {
 					valuePath: ['name']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: JSON.stringify(['doe', 'john-doe', 'john']),
 					passed: true,
 					reason: 'STRING criteria "IN" check PASSED',
@@ -3379,15 +2885,10 @@ describe('/index', () => {
 					valuePath: ['name']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(false);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: 'null',
 					passed: false,
 					reason: 'STRING criteria "IS-EMPTY" check FAILED',
@@ -3403,15 +2904,10 @@ describe('/index', () => {
 					valuePath: ['name']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: '/john/i',
 					passed: true,
 					reason: 'STRING criteria "MATCHES-REGEX" check PASSED',
@@ -3427,15 +2923,10 @@ describe('/index', () => {
 					valuePath: ['name']
 				});
 
-				const res = await Promise.all([
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria),
-					// @ts-expect-error
-					filterCriteria.applyCriteria(testData[0], criteria, true)
-				]);
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
 
-				expect(res[0]).toEqual(true);
-				expect(res[1]).toEqual({
+				expect(res).toEqual({
 					matchValue: 'john',
 					passed: true,
 					reason: 'STRING criteria "STARTS-WITH" check PASSED',
@@ -3465,15 +2956,10 @@ describe('/index', () => {
 				]
 			});
 
-			const res = await Promise.all([
-				// @ts-expect-error
-				filterCriteria.applyFilter(testData[0], filter, false),
-				// @ts-expect-error
-				filterCriteria.applyFilter(testData[0], filter, true)
-			]);
+			// @ts-expect-error
+			const res = await filterCriteria.applyFilter(testData[0], filter);
 
-			expect(res[0]).toEqual(true);
-			expect(res[1]).toEqual({
+			expect(res).toEqual({
 				operator: 'OR',
 				passed: true,
 				reason: 'Filter "OR" check PASSED',

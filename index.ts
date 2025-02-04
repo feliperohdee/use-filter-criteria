@@ -327,7 +327,7 @@ namespace FilterCriteria {
 	export type LogicalOperator = z.infer<typeof logicalOperator>;
 	export type MatchInput = z.input<typeof matchInput>;
 	export type MatchManyInput = z.input<typeof matchManyInput>;
-	export type MatchDetailedResult = CriteriaResult | FilterResult | FilterGroupResult;
+	export type MatchResult = CriteriaResult | FilterResult | FilterGroupResult;
 
 	export type Operators = {
 		[K in keyof typeof operators]: z.infer<(typeof operators)[K]>;
@@ -402,46 +402,38 @@ class FilterCriteria {
 	static filterGroup = filterGroupFactory;
 	static schema = schema;
 
-	async match(
-		value: any,
-		input: FilterCriteria.MatchInput,
-		detailed: boolean = false
-	): Promise<boolean | FilterCriteria.MatchDetailedResult> {
+	async match(value: any, input: FilterCriteria.MatchInput): Promise<boolean | FilterCriteria.MatchResult> {
 		const converted = this.translateToFilterGroupInput(input);
 		const args = await filterGroup.parseAsync(converted.input);
 		const filtersResults = await Promise.all(
 			_.map(args.filters, filter => {
-				return this.applyFilter(value, filter, detailed);
+				return this.applyFilter(value, filter);
 			})
 		);
 
 		const passed =
 			args.operator === 'AND'
 				? _.every(filtersResults, r => {
-						return _.isBoolean(r) ? r : r.passed;
+						return r.passed;
 					})
 				: _.some(filtersResults, r => {
-						return _.isBoolean(r) ? r : r.passed;
+						return r.passed;
 					});
 
-		if (detailed) {
-			if (converted.level === 'criteria') {
-				return (filtersResults[0] as FilterCriteria.FilterResult).results[0];
-			}
-
-			if (converted.level === 'filter') {
-				return filtersResults[0] as FilterCriteria.FilterResult;
-			}
-
-			return {
-				operator: args.operator,
-				passed,
-				reason: `Filter group "${args.operator}" check ${passed ? 'PASSED' : 'FAILED'}`,
-				results: filtersResults as FilterCriteria.FilterResult[]
-			};
+		if (converted.level === 'criteria') {
+			return (filtersResults[0] as FilterCriteria.FilterResult).results[0];
 		}
 
-		return passed;
+		if (converted.level === 'filter') {
+			return filtersResults[0] as FilterCriteria.FilterResult;
+		}
+
+		return {
+			operator: args.operator,
+			passed,
+			reason: `Filter group "${args.operator}" check ${passed ? 'PASSED' : 'FAILED'}`,
+			results: filtersResults as FilterCriteria.FilterResult[]
+		};
 	}
 
 	async matchMany(value: any[], input: FilterCriteria.MatchInput, concurrency: number = Infinity): Promise<any[]> {
@@ -455,10 +447,16 @@ class FilterCriteria {
 					const filtersResults = await Promise.all(
 						_.map(args.filters, filter => {
 							return this.applyFilter(item, filter);
-						}) as Promise<boolean>[]
+						})
 					);
 
-					return args.operator === 'AND' ? _.every(filtersResults, Boolean) : _.some(filtersResults, Boolean);
+					return args.operator === 'AND'
+						? _.every(filtersResults, r => {
+								return r.passed;
+							})
+						: _.some(filtersResults, r => {
+								return r.passed;
+							});
 				} catch {
 					return false;
 				}
@@ -470,9 +468,8 @@ class FilterCriteria {
 	private async applyCriteria(
 		value: any,
 		criteria: FilterCriteria.CriteriaInput,
-		detailed: boolean = false,
 		context: Map<string, any> = new Map()
-	): Promise<boolean | FilterCriteria.CriteriaResult> {
+	): Promise<FilterCriteria.CriteriaResult> {
 		// ensure immutable
 		criteria = { ...criteria };
 
@@ -493,14 +490,12 @@ class FilterCriteria {
 			if (criteria.type === 'CUSTOM') {
 				const passed = criteria.predicate ? await this.applyCustomCriteria(value, criteria.predicate, criteria.matchValue) : false;
 
-				return detailed
-					? {
-							matchValue: stringify(criteria.matchValue),
-							passed,
-							reason: `CUSTOM predicate check ${passed ? 'PASSED' : 'FAILED'}`,
-							value
-						}
-					: passed;
+				return {
+					matchValue: stringify(criteria.matchValue),
+					passed,
+					reason: `CUSTOM predicate check ${passed ? 'PASSED' : 'FAILED'}`,
+					value
+				};
 			}
 
 			let passed = false;
@@ -514,7 +509,7 @@ class FilterCriteria {
 				criteria = await criteria.criteriaMapper({ context, criteria, value });
 
 				if (criteria.type === 'CUSTOM') {
-					return this.applyCriteria(value, criteria, detailed, context);
+					return this.applyCriteria(value, criteria, context);
 				}
 			}
 
@@ -541,60 +536,44 @@ class FilterCriteria {
 				passed = this.evaluateCriteria(value, criteria);
 			}
 
-			if (detailed) {
-				return {
-					matchValue: stringify(criteria.matchValue),
-					passed,
-					reason: `${criteria.type} criteria "${criteria.operator}" check ${passed ? 'PASSED' : 'FAILED'}`,
-					value
-				};
-			}
-
-			return passed;
+			return {
+				matchValue: stringify(criteria.matchValue),
+				passed,
+				reason: `${criteria.type} criteria "${criteria.operator}" check ${passed ? 'PASSED' : 'FAILED'}`,
+				value
+			};
 		} catch (err) {
-			if (detailed) {
-				return {
-					matchValue: stringify(criteria.matchValue),
-					passed: false,
-					reason: (err as Error).message,
-					value
-				};
-			}
-
-			return false;
+			return {
+				matchValue: stringify(criteria.matchValue),
+				passed: false,
+				reason: (err as Error).message,
+				value
+			};
 		}
 	}
 
-	private async applyFilter(
-		value: any,
-		filter: FilterCriteria.FilterInput,
-		detailed: boolean = false
-	): Promise<boolean | FilterCriteria.FilterResult> {
+	private async applyFilter(value: any, filter: FilterCriteria.FilterInput): Promise<FilterCriteria.FilterResult> {
 		const criteriaResults = await Promise.all(
 			_.map(filter.criterias, criteria => {
-				return this.applyCriteria(value, criteria, detailed);
+				return this.applyCriteria(value, criteria);
 			})
 		);
 
 		const passed =
 			filter.operator === 'AND'
 				? _.every(criteriaResults, r => {
-						return _.isBoolean(r) ? r : r.passed;
+						return r.passed;
 					})
 				: _.some(criteriaResults, r => {
-						return _.isBoolean(r) ? r : r.passed;
+						return r.passed;
 					});
 
-		if (detailed) {
-			return {
-				operator: filter.operator,
-				passed,
-				reason: `Filter "${filter.operator}" check ${passed ? 'PASSED' : 'FAILED'}`,
-				results: criteriaResults as FilterCriteria.CriteriaResult[]
-			};
-		}
-
-		return passed;
+		return {
+			operator: filter.operator,
+			passed,
+			reason: `Filter "${filter.operator}" check ${passed ? 'PASSED' : 'FAILED'}`,
+			results: criteriaResults as FilterCriteria.CriteriaResult[]
+		};
 	}
 
 	private evaluateCriteria(value: any, criteria: FilterCriteria.CriteriaInput): boolean {

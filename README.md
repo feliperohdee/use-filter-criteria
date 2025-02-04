@@ -20,7 +20,7 @@ A TypeScript-based filtering engine that provides a flexible, type-safe way to f
 - ⚡ **Aliases**: Save and reuse criteria configurations with the ability to override properties when referenced
 - 🎛️ **Flexible**: Customizable default values and source path resolution
 - 🔄 **Dynamic Values**: Support for dynamic value resolution using `$path` and custom functions
-- 📊 **Detailed Logging**: Optional detailed diagnostics for understanding filter results
+- 📊 **Detailed Logging**: Detailed diagnostics for understanding filter results
 - 🎯 **Array Matching Control**: Fine-grained control over array matching behavior with `matchInArray` option
 
 ## Installation
@@ -143,7 +143,7 @@ const matchingUsers = await filter.matchMany(users, complexFilterGroup);
 console.log(matchingUsers);
 
 // With detailed logging
-const detailedResult = await filter.match(users[0], complexFilterGroup, true);
+const detailedResult = await filter.match(users[0], complexFilterGroup);
 console.log(detailedResult);
 ```
 
@@ -242,10 +242,10 @@ Each input format supports all the filter types and operators described in the "
 
 ## Detailed Logging
 
-The `match` and `matchMany` functions support detailed logging that provides comprehensive information about why filters passed or failed. Enable detailed logging by passing `true` as the third parameter to `match`:
+The `match` function returns detailed logging that provides comprehensive information about why filters passed or failed:
 
 ```typescript
-const result = await filter.match(data, filter, true);
+const result = await filter.match(data, filter);
 ```
 
 The detailed output includes:
@@ -289,7 +289,7 @@ const stringFilterCriteria = FilterCriteria.filterGroup({
 	]
 });
 
-const stringResult = await filter.match(users[0], stringFilterCriteria, true);
+const stringResult = await filter.match(users[0], stringFilterCriteria);
 /* Output:
 {
   operator: 'AND',
@@ -332,7 +332,7 @@ const geoFilterCriteria = FilterCriteria.filterGroup({
 	]
 });
 
-const geoResult = await filter.match(users[0], geoFilterCriteria, true);
+const geoResult = await filter.match(users[0], geoFilterCriteria);
 /* Output shows detailed radius check results:
 {
   operator: 'AND',
@@ -392,7 +392,7 @@ const nestedFilterCriteria = FilterCriteria.filterGroup({
 	]
 });
 
-const nestedResult = await filter.match(users[0], nestedFilter, true);
+const nestedResult = await filter.match(users[0], nestedFilter);
 /* Output shows the complete evaluation tree:
 {
   operator: 'OR',
