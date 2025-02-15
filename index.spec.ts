@@ -492,6 +492,63 @@ describe('/index', () => {
 		});
 	});
 
+	describe('matchManyMultiple', () => {
+		it('should filter by multiple criteria simultaneously', async () => {
+			const filters = {
+				developers: FilterCriteria.criteria({
+					matchValue: 'developer',
+					operator: 'HAS',
+					type: 'SET',
+					valuePath: ['tagsSet']
+				}),
+				activeUsers: FilterCriteria.criteria({
+					matchValue: true,
+					operator: 'EQUALS',
+					type: 'BOOLEAN',
+					valuePath: ['active']
+				}),
+				usPhones: FilterCriteria.criteria({
+					matchValue: 'us',
+					operator: 'EQUALS',
+					type: 'STRING',
+					valuePath: ['phones', 'country']
+				})
+			};
+
+			const results = await filterCriteria.matchManyMultiple(testData, filters);
+
+			expect(results.developers).toHaveLength(2);
+			expect(_.map(results.developers, 'id')).toEqual([1, 3]);
+
+			expect(results.activeUsers).toHaveLength(2);
+			expect(_.map(results.activeUsers, 'id')).toEqual([1, 3]);
+
+			expect(results.usPhones).toHaveLength(3);
+			expect(_.map(results.usPhones, 'id')).toEqual([1, 2, 3]);
+		});
+
+		it('should handle empty results', async () => {
+			const filters = {
+				empty: FilterCriteria.criteria({
+					matchValue: 'inexistent',
+					operator: 'EQUALS',
+					type: 'STRING',
+					valuePath: ['name']
+				})
+			};
+
+			const results = await filterCriteria.matchManyMultiple(testData, filters);
+
+			expect(results.empty).toEqual([]);
+		});
+
+		it('should handle empty filters object', async () => {
+			const results = await filterCriteria.matchManyMultiple(testData, {});
+
+			expect(results).toEqual({});
+		});
+	});
+
 	describe('applyCriteria', () => {
 		it('should handle matchValue as a path', async () => {
 			const criteria = FilterCriteria.criteria({

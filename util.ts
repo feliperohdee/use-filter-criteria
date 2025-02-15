@@ -29,4 +29,8 @@ const stringify = (value: any) => {
 	return _.isString(value) ? value : JSON.stringify(value);
 };
 
-export { isStringArray, isNumberArray, objectContainKeys, stringify };
+const toArray = <T>(value: T): T[] => {
+	return _.isArray(value) ? value : [value];
+};
+
+export { isStringArray, isNumberArray, objectContainKeys, stringify, toArray };

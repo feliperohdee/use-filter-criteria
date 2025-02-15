@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isStringArray, isNumberArray, objectContainKeys, stringify } from './util';
+import { isStringArray, isNumberArray, objectContainKeys, stringify, toArray } from './util';
 
 describe('/util', () => {
 	describe('isStringArray', () => {
@@ -87,6 +87,24 @@ describe('/util', () => {
 		it('should handle null and undefined', () => {
 			expect(stringify(null)).toBe('null');
 			expect(stringify(undefined)).toBe('undefined');
+		});
+	});
+
+	describe('toArray', () => {
+		it('should return array for string', () => {
+			expect(toArray('test')).toEqual(['test']);
+		});
+
+		it('should return array for number', () => {
+			expect(toArray(123)).toEqual([123]);
+		});
+
+		it('should return array for array', () => {
+			expect(toArray([1, 2, 3])).toEqual([1, 2, 3]);
+		});
+
+		it('should return array for object', () => {
+			expect(toArray({ a: 1 })).toEqual([{ a: 1 }]);
 		});
 	});
 });

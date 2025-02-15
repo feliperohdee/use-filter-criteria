@@ -138,9 +138,25 @@ const complexFilterGroup = FilterCriteria.filterGroup({
 	]
 });
 
-// Basic usage
+// Match many
 const matchingUsers = await filter.matchMany(users, complexFilterGroup);
 console.log(matchingUsers);
+
+// Match many multiple
+const results = await filter.matchManyMultiple(users, {
+	developers: FilterCriteria.criteria({
+		type: 'SET',
+		operator: 'HAS',
+		valuePath: ['tagsSet'],
+		matchValue: 'developer'
+	}),
+	activeUsers: FilterCriteria.criteria({
+		type: 'BOOLEAN',
+		operator: 'EQUALS',
+		valuePath: ['active'],
+		matchValue: true
+	})
+});
 
 // With detailed logging
 const detailedResult = await filter.match(users[0], complexFilterGroup);
@@ -435,6 +451,51 @@ const nestedResult = await filter.match(users[0], nestedFilter);
 }
 */
 ```
+
+## Multiple Simultaneous Filters with matchManyMultiple
+
+The `matchManyMultiple` function allows you to apply multiple different filters to the same dataset simultaneously, returning matched items for each filter in a single operation. This is particularly useful when you need to categorize data into multiple groups based on different criteria.
+
+```typescript
+const filters = {
+	developers: FilterCriteria.criteria({
+		type: 'SET',
+		operator: 'HAS',
+		valuePath: ['tagsSet'],
+		matchValue: 'developer'
+	}),
+	activeUsers: FilterCriteria.criteria({
+		type: 'BOOLEAN',
+		operator: 'EQUALS',
+		valuePath: ['active'],
+		matchValue: true
+	}),
+	usPhones: FilterCriteria.criteria({
+		type: 'STRING',
+		operator: 'EQUALS',
+		valuePath: ['phones', 'country'],
+		matchValue: 'us'
+	})
+};
+
+// Apply all filters simultaneously
+const results = await filter.matchManyMultiple(users, filters);
+
+// Results contains an object with the same keys as the filters
+console.log(results.developers); // Users with 'developer' tag
+console.log(results.activeUsers); // Active users
+console.log(results.usPhones); // Users with US phone numbers
+```
+
+Key features of matchManyMultiple:
+
+- Process multiple filters in a single pass through the data
+- Return separate result sets for each filter
+- Support for concurrency control via the optional concurrency parameter
+- Each filter can use any supported criteria type and complexity level
+- Results maintain the original filter keys for easy access
+
+This is more efficient than running multiple separate matchMany operations when you need to apply multiple filters to the same dataset.
 
 ## Supported Filter Types
 

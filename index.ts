@@ -1,9 +1,9 @@
 import _ from 'lodash';
 import z from 'zod';
 import zDefault from 'use-zod-default';
-import { promiseFilter } from 'use-async-helpers';
+import { promiseFilter, promiseMap, promiseReduce } from 'use-async-helpers';
 
-import { isNumberArray, isStringArray, objectContainKeys, stringify } from './util';
+import { isNumberArray, isStringArray, objectContainKeys, stringify, toArray } from './util';
 
 const zDatetime = z.string().datetime({ offset: true });
 const zFunction = z.custom<Function>(
@@ -444,11 +444,9 @@ class FilterCriteria {
 			value,
 			async item => {
 				try {
-					const filtersResults = await Promise.all(
-						_.map(args.filters, filter => {
-							return this.applyFilter(item, filter);
-						})
-					);
+					const filtersResults = await promiseMap(args.filters, filter => {
+						return this.applyFilter(item, filter);
+					});
 
 					return args.operator === 'AND'
 						? _.every(filtersResults, r => {
@@ -463,6 +461,60 @@ class FilterCriteria {
 			},
 			concurrency
 		);
+	}
+
+	async matchManyMultiple(
+		value: any[],
+		input: Record<string, FilterCriteria.MatchInput>,
+		concurrency: number = Infinity
+	): Promise<Record<string, any[]>> {
+		const multiArgs = _.mapValues(input, filter => {
+			const converted = this.translateToFilterGroupInput(filter);
+
+			return filterGroup.parse(converted.input);
+		});
+
+		const results = await promiseReduce<any, Record<string, any>>(
+			value,
+			async (reduction, item) => {
+				for (const key in multiArgs) {
+					if (!reduction[key]) {
+						reduction[key] = [];
+					}
+
+					const args = multiArgs[key];
+
+					try {
+						const filtersResults = await promiseMap(args.filters, filter => {
+							return this.applyFilter(item, filter);
+						});
+
+						const passed =
+							args.operator === 'AND'
+								? _.every(filtersResults, r => {
+										return r.passed;
+									})
+								: _.some(filtersResults, r => {
+										return r.passed;
+									});
+
+						if (passed) {
+							reduction[key].push(item);
+						}
+					} catch {
+						// ignore
+					}
+				}
+
+				return reduction;
+			},
+			{},
+			concurrency
+		);
+
+		return _.mapValues(multiArgs, (value, key) => {
+			return results[key] || [];
+		});
 	}
 
 	private async applyCriteria(
@@ -624,9 +676,7 @@ class FilterCriteria {
 
 		switch (operator) {
 			case 'EXACTLY-MATCHES': {
-				if (!_.isArray(matchValue)) {
-					return false;
-				}
+				matchValue = toArray(matchValue);
 
 				return _.isEqual(_.sortBy(value), _.sortBy(matchValue));
 			}
@@ -638,9 +688,7 @@ class FilterCriteria {
 			}
 
 			case 'INCLUDES-ALL': {
-				if (!_.isArray(matchValue)) {
-					return false;
-				}
+				matchValue = toArray(matchValue);
 
 				return _.every(matchValue, v => {
 					return _.includes(value, v);
@@ -648,9 +696,7 @@ class FilterCriteria {
 			}
 
 			case 'INCLUDES-ANY': {
-				if (!_.isArray(matchValue)) {
-					return false;
-				}
+				matchValue = toArray(matchValue);
 
 				return _.some(matchValue, v => {
 					return _.includes(value, v);
@@ -666,9 +712,7 @@ class FilterCriteria {
 			}
 
 			case 'NOT-INCLUDES-ALL': {
-				if (!_.isArray(matchValue)) {
-					return false;
-				}
+				matchValue = toArray(matchValue);
 
 				return !_.every(matchValue, v => {
 					return _.includes(value, v);

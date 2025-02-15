@@ -907,9 +907,9 @@ typescript@^5.7.2:
   integrity sha512-i5t66RHxDvVN40HfDd1PsEThGNnlMCMT3jMUuoh9/0TaqWevNontacunWyN02LA9/fIbEWlcHZcgTKb9QoaLfg==
 
 use-async-helpers@^1.0.24:
-  version "1.0.24"
-  resolved "https://registry.yarnpkg.com/use-async-helpers/-/use-async-helpers-1.0.24.tgz#349d9e9ee5a797fdb29f1c58df751af88df7cee4"
-  integrity sha512-YkkqZg+S67lgqPVOkRo+RxB3rM8HiA13CPW6cwVGQ4uOBi80y2J5FvWxiV60wWDtLN53On9d4f1mMxJiUu9JPg==
+  version "1.0.25"
+  resolved "https://registry.yarnpkg.com/use-async-helpers/-/use-async-helpers-1.0.25.tgz#8074adb816a68fcb88266bf93dcee29ae94ae7f5"
+  integrity sha512-bqr7Df5OVL/FUgUpgw5FRbFJ2+KyLjyFC2NwJRLWb1UcU4SDqVjFBBJDPPxDoj6EB87x9lFLo0LK+/fQhQln2Q==
 
 use-data-loader@^1.0.0:
   version "1.0.0"
