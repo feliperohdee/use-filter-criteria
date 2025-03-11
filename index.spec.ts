@@ -3964,8 +3964,10 @@ describe('/index', () => {
 					valuePath: ['name']
 				});
 
-				const res = await filterCriteria.validate(input);
-				expect(res).toBe(true);
+				const { valid, error } = await filterCriteria.validate(input);
+
+				expect(valid).toBe(true);
+				expect(error).toBeNull();
 			});
 
 			it('should validate a simple filter', async () => {
@@ -3981,8 +3983,10 @@ describe('/index', () => {
 					]
 				});
 
-				const res = await filterCriteria.validate(input);
-				expect(res).toBe(true);
+				const { valid, error } = await filterCriteria.validate(input);
+
+				expect(valid).toBe(true);
+				expect(error).toBeNull();
 			});
 
 			it('should validate a simple filter group', async () => {
@@ -4003,8 +4007,10 @@ describe('/index', () => {
 					]
 				});
 
-				const res = await filterCriteria.validate(input);
-				expect(res).toBe(true);
+				const { valid, error } = await filterCriteria.validate(input);
+				
+				expect(valid).toBe(true);
+				expect(error).toBeNull();
 			});
 		});
 
@@ -4012,8 +4018,10 @@ describe('/index', () => {
 			it('should validate criteria with valid alias', async () => {
 				const input = FilterCriteria.alias('test-boolean');
 
-				const res = await filterCriteria.validate(input);
-				expect(res).toBe(true);
+				const { valid, error } = await filterCriteria.validate(input);
+				
+				expect(valid).toBe(true);
+				expect(error).toBeNull();
 			});
 
 			it('should validate filter with valid alias', async () => {
@@ -4022,8 +4030,10 @@ describe('/index', () => {
 					criterias: [FilterCriteria.alias('test-boolean')]
 				});
 
-				const res = await filterCriteria.validate(input);
-				expect(res).toBe(true);
+				const { valid, error } = await filterCriteria.validate(input);
+				
+				expect(valid).toBe(true);
+				expect(error).toBeNull();
 			});
 
 			it('should validate filter group with valid alias', async () => {
@@ -4037,38 +4047,33 @@ describe('/index', () => {
 					]
 				});
 
-				const res = await filterCriteria.validate(input);
-				expect(res).toBe(true);
+				const { valid, error } = await filterCriteria.validate(input);
+				
+				expect(valid).toBe(true);
+				expect(error).toBeNull();
 			});
 
-			it('should throw error for non-existent alias', async () => {
+			it('should return error for non-existent alias', async () => {
 				const input = FilterCriteria.alias('non-existent-alias');
+				const { valid, error } = await filterCriteria.validate(input);
 
-				try {
-					await filterCriteria.validate(input);
-
-					throw new Error('Expected to throw');
-				} catch (err) {
-					expect(err).toEqual(new Error('Criteria "non-existent-alias" not found'));
-				}
+				expect(valid).toBe(false);
+				expect(error).toEqual(new Error('Criteria "non-existent-alias" not found'));
 			});
 
-			it('should throw error when alias is in a filter', async () => {
+			it('should return error when alias is in a filter', async () => {
 				const input = FilterCriteria.filter({
 					operator: 'AND',
 					criterias: [FilterCriteria.alias('non-existent-alias')]
 				});
 
-				try {
-					await filterCriteria.validate(input);
+				const { valid, error } = await filterCriteria.validate(input);
 
-					throw new Error('Expected to throw');
-				} catch (err) {
-					expect(err).toEqual(new Error('Criteria "non-existent-alias" not found'));
-				}
+				expect(valid).toBe(false);
+				expect(error).toEqual(new Error('Criteria "non-existent-alias" not found'));
 			});
 
-			it('should throw error when alias is in a filter group', async () => {
+			it('should return error when alias is in a filter group', async () => {
 				const input = FilterCriteria.filterGroup({
 					operator: 'AND',
 					filters: [
@@ -4079,18 +4084,15 @@ describe('/index', () => {
 					]
 				});
 
-				try {
-					await filterCriteria.validate(input);
+				const { valid, error } = await filterCriteria.validate(input);
 
-					throw new Error('Expected to throw');
-				} catch (err) {
-					expect(err).toEqual(new Error('Criteria "non-existent-alias" not found'));
-				}
+				expect(valid).toBe(false);
+				expect(error).toEqual(new Error('Criteria "non-existent-alias" not found'));
 			});
 		});
 
 		describe('schema validation', () => {
-			it('should throw error for invalid criteria type', async () => {
+			it('should return error for invalid criteria type', async () => {
 				const input = {
 					matchValue: 'John',
 					operator: 'CONTAINS',
@@ -4098,14 +4100,11 @@ describe('/index', () => {
 					valuePath: ['name']
 				};
 
-				try {
-					// @ts-expect-error
-					await filterCriteria.validate(input);
+				// @ts-expect-error
+				const { valid, error } = await filterCriteria.validate(input);
 
-					throw new Error('Expected to throw');
-				} catch (err) {
-					expect(err).toBeInstanceOf(Error);
-				}
+				expect(valid).toBe(false);
+				expect(error).toBeInstanceOf(Error);
 			});
 
 			it('should throw error for invalid operator', async () => {
@@ -4116,14 +4115,11 @@ describe('/index', () => {
 					valuePath: ['name']
 				};
 
-				try {
-					// @ts-expect-error
-					await filterCriteria.validate(input);
+				// @ts-expect-error
+				const { valid, error } = await filterCriteria.validate(input);
 
-					throw new Error('Expected to throw');
-				} catch (err) {
-					expect(err).toBeInstanceOf(Error);
-				}
+				expect(valid).toBe(false);
+				expect(error).toBeInstanceOf(Error);
 			});
 
 			it('should throw error for invalid filter operator', async () => {
@@ -4139,14 +4135,11 @@ describe('/index', () => {
 					]
 				};
 
-				try {
-					// @ts-expect-error - Testing invalid operator
-					await filterCriteria.validate(input);
+				// @ts-expect-error - Testing invalid operator
+				const { valid, error } = await filterCriteria.validate(input);
 
-					throw new Error('Expected to throw');
-				} catch (err) {
-					expect(err).toBeInstanceOf(Error);
-				}
+				expect(valid).toBe(false);
+				expect(error).toBeInstanceOf(Error);
 			});
 
 			it('should throw error for invalid filter group operator', async () => {
@@ -4167,14 +4160,11 @@ describe('/index', () => {
 					]
 				};
 
-				try {
-					// @ts-expect-error - Testing invalid operator
-					await filterCriteria.validate(input);
+				// @ts-expect-error - Testing invalid operator
+				const { valid, error } = await filterCriteria.validate(input);
 
-					throw new Error('Expected to throw');
-				} catch (err) {
-					expect(err).toBeInstanceOf(Error);
-				}
+				expect(valid).toBe(false);
+				expect(error).toBeInstanceOf(Error);
 			});
 		});
 	});

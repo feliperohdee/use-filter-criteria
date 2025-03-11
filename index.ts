@@ -1620,11 +1620,15 @@ class FilterCriteria {
 		};
 	}
 
-	async validate(input: FilterCriteria.MatchInput): Promise<boolean> {
-		const converted = this.translateToFilterGroupInput(input);
-		await filterGroup.parseAsync(converted.input);
+	async validate(input: FilterCriteria.MatchInput): Promise<{ valid: boolean; error: Error | null }> {
+		try {
+			const converted = this.translateToFilterGroupInput(input);
+			await filterGroup.parseAsync(converted.input);
 
-		return true;
+			return { valid: true, error: null };
+		} catch (err) {
+			return { valid: false, error: err as Error };
+		}
 	}
 }
 
