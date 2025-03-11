@@ -3318,10 +3318,10 @@ describe('/index', () => {
 				})
 			);
 
-			const result = JSON.parse(filterCriteria.inspect());
+			const res = JSON.parse(filterCriteria.inspect());
 
 			// Check operators
-			expect(result.operators).toEqual({
+			expect(res.operators).toEqual({
 				array: [
 					'EXACTLY-MATCHES',
 					'INCLUDES-ALL',
@@ -3399,7 +3399,7 @@ describe('/index', () => {
 			});
 
 			// Check saved criteria
-			expect(result.savedCriteria).toEqual({
+			expect(res.savedCriteria).toEqual({
 				'test-boolean': {
 					alias: 'test-boolean',
 					criteriaMapper: null,
@@ -3426,10 +3426,10 @@ describe('/index', () => {
 		});
 
 		it('should return empty savedCriteria when no criteria are saved', () => {
-			const result = JSON.parse(filterCriteria.inspect());
+			const res = JSON.parse(filterCriteria.inspect());
 
-			expect(result.savedCriteria).toEqual({});
-			expect(Object.keys(result.operators).length).toBe(9); // Check that operators are still present
+			expect(res.savedCriteria).toEqual({});
+			expect(Object.keys(res.operators).length).toBe(9); // Check that operators are still present
 		});
 	});
 
@@ -3922,6 +3922,259 @@ describe('/index', () => {
 					},
 					level: 'criteria'
 				});
+			});
+		});
+	});
+
+	describe('validate', () => {
+		let filterCriteria: FilterCriteria;
+
+		beforeEach(() => {
+			filterCriteria = new FilterCriteria();
+
+			// @ts-expect-error
+			filterCriteria.savedCriteria.clear();
+
+			// Add some test criteria for validation
+			filterCriteria.saveCriteria(
+				FilterCriteria.criteria({
+					alias: 'test-boolean',
+					operator: 'IS-TRUE',
+					type: 'BOOLEAN',
+					valuePath: ['active']
+				})
+			);
+
+			filterCriteria.saveCriteria(
+				FilterCriteria.criteria({
+					alias: 'test-string',
+					operator: 'STARTS-WITH',
+					type: 'STRING',
+					valuePath: ['name']
+				})
+			);
+		});
+
+		describe('basic validation', () => {
+			it('should validate a simple criteria', async () => {
+				const input = FilterCriteria.criteria({
+					matchValue: 'John',
+					operator: 'CONTAINS',
+					type: 'STRING',
+					valuePath: ['name']
+				});
+
+				const res = await filterCriteria.validate(input);
+				expect(res).toBe(true);
+			});
+
+			it('should validate a simple filter', async () => {
+				const input = FilterCriteria.filter({
+					operator: 'AND',
+					criterias: [
+						{
+							matchValue: 'John',
+							operator: 'CONTAINS',
+							type: 'STRING',
+							valuePath: ['name']
+						}
+					]
+				});
+
+				const res = await filterCriteria.validate(input);
+				expect(res).toBe(true);
+			});
+
+			it('should validate a simple filter group', async () => {
+				const input = FilterCriteria.filterGroup({
+					operator: 'AND',
+					filters: [
+						{
+							operator: 'OR',
+							criterias: [
+								{
+									matchValue: 'John',
+									operator: 'CONTAINS',
+									type: 'STRING',
+									valuePath: ['name']
+								}
+							]
+						}
+					]
+				});
+
+				const res = await filterCriteria.validate(input);
+				expect(res).toBe(true);
+			});
+		});
+
+		describe('alias validation', () => {
+			it('should validate criteria with valid alias', async () => {
+				const input = FilterCriteria.alias('test-boolean');
+
+				const res = await filterCriteria.validate(input);
+				expect(res).toBe(true);
+			});
+
+			it('should validate filter with valid alias', async () => {
+				const input = FilterCriteria.filter({
+					operator: 'AND',
+					criterias: [FilterCriteria.alias('test-boolean')]
+				});
+
+				const res = await filterCriteria.validate(input);
+				expect(res).toBe(true);
+			});
+
+			it('should validate filter group with valid alias', async () => {
+				const input = FilterCriteria.filterGroup({
+					operator: 'AND',
+					filters: [
+						{
+							operator: 'OR',
+							criterias: [FilterCriteria.alias('test-boolean'), FilterCriteria.alias('test-string')]
+						}
+					]
+				});
+
+				const res = await filterCriteria.validate(input);
+				expect(res).toBe(true);
+			});
+
+			it('should throw error for non-existent alias', async () => {
+				const input = FilterCriteria.alias('non-existent-alias');
+
+				try {
+					await filterCriteria.validate(input);
+
+					throw new Error('Expected to throw');
+				} catch (err) {
+					expect(err).toEqual(new Error('Criteria "non-existent-alias" not found'));
+				}
+			});
+
+			it('should throw error when alias is in a filter', async () => {
+				const input = FilterCriteria.filter({
+					operator: 'AND',
+					criterias: [FilterCriteria.alias('non-existent-alias')]
+				});
+
+				try {
+					await filterCriteria.validate(input);
+
+					throw new Error('Expected to throw');
+				} catch (err) {
+					expect(err).toEqual(new Error('Criteria "non-existent-alias" not found'));
+				}
+			});
+
+			it('should throw error when alias is in a filter group', async () => {
+				const input = FilterCriteria.filterGroup({
+					operator: 'AND',
+					filters: [
+						{
+							operator: 'OR',
+							criterias: [FilterCriteria.alias('test-boolean'), FilterCriteria.alias('non-existent-alias')]
+						}
+					]
+				});
+
+				try {
+					await filterCriteria.validate(input);
+
+					throw new Error('Expected to throw');
+				} catch (err) {
+					expect(err).toEqual(new Error('Criteria "non-existent-alias" not found'));
+				}
+			});
+		});
+
+		describe('schema validation', () => {
+			it('should throw error for invalid criteria type', async () => {
+				const input = {
+					matchValue: 'John',
+					operator: 'CONTAINS',
+					type: 'INVALID-TYPE',
+					valuePath: ['name']
+				};
+
+				try {
+					// @ts-expect-error
+					await filterCriteria.validate(input);
+
+					throw new Error('Expected to throw');
+				} catch (err) {
+					expect(err).toBeInstanceOf(Error);
+				}
+			});
+
+			it('should throw error for invalid operator', async () => {
+				const input = {
+					matchValue: 'John',
+					operator: 'INVALID-OPERATOR',
+					type: 'STRING',
+					valuePath: ['name']
+				};
+
+				try {
+					// @ts-expect-error
+					await filterCriteria.validate(input);
+
+					throw new Error('Expected to throw');
+				} catch (err) {
+					expect(err).toBeInstanceOf(Error);
+				}
+			});
+
+			it('should throw error for invalid filter operator', async () => {
+				const input = {
+					operator: 'INVALID-OPERATOR',
+					criterias: [
+						{
+							matchValue: 'John',
+							operator: 'CONTAINS',
+							type: 'STRING',
+							valuePath: ['name']
+						}
+					]
+				};
+
+				try {
+					// @ts-expect-error - Testing invalid operator
+					await filterCriteria.validate(input);
+
+					throw new Error('Expected to throw');
+				} catch (err) {
+					expect(err).toBeInstanceOf(Error);
+				}
+			});
+
+			it('should throw error for invalid filter group operator', async () => {
+				const input = {
+					operator: 'INVALID-OPERATOR',
+					filters: [
+						{
+							operator: 'AND',
+							criterias: [
+								{
+									matchValue: 'John',
+									operator: 'CONTAINS',
+									type: 'STRING',
+									valuePath: ['name']
+								}
+							]
+						}
+					]
+				};
+
+				try {
+					// @ts-expect-error - Testing invalid operator
+					await filterCriteria.validate(input);
+
+					throw new Error('Expected to throw');
+				} catch (err) {
+					expect(err).toBeInstanceOf(Error);
+				}
 			});
 		});
 	});

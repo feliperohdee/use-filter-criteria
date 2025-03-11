@@ -1,7 +1,7 @@
 import _ from 'lodash';
+import { promiseFilter, promiseMap, promiseReduce } from 'use-async-helpers';
 import z from 'zod';
 import zDefault from 'use-zod-default';
-import { promiseFilter, promiseMap, promiseReduce } from 'use-async-helpers';
 
 import { isNumberArray, isStringArray, objectContainKeys, stringify, toArray } from './util';
 
@@ -1618,6 +1618,13 @@ class FilterCriteria {
 				})
 			}
 		};
+	}
+
+	async validate(input: FilterCriteria.MatchInput): Promise<boolean> {
+		const converted = this.translateToFilterGroupInput(input);
+		await filterGroup.parseAsync(converted.input);
+
+		return true;
 	}
 }
 
