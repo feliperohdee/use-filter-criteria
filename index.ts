@@ -436,7 +436,7 @@ class FilterCriteria {
 		};
 	}
 
-	async matchMany(value: any[], input: FilterCriteria.MatchInput, concurrency: number = Infinity): Promise<any[]> {
+	async matchMany<T = any>(value: T[], input: FilterCriteria.MatchInput, concurrency: number = Infinity): Promise<T[]> {
 		const converted = this.translateToFilterGroupInput(input);
 		const args = await filterGroup.parseAsync(converted.input);
 
@@ -463,11 +463,11 @@ class FilterCriteria {
 		);
 	}
 
-	async matchManyMultiple(
-		value: any[],
+	async matchManyMultiple<T = any>(
+		value: T[],
 		input: Record<string, FilterCriteria.MatchInput>,
 		concurrency: number = Infinity
-	): Promise<Record<string, any[]>> {
+	): Promise<Record<string, T[]>> {
 		const multiArgs = _.mapValues(input, filter => {
 			const converted = this.translateToFilterGroupInput(filter);
 
