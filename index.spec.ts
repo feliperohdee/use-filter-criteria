@@ -157,6 +157,20 @@ describe('/index', () => {
 	});
 
 	describe('match', () => {
+		it('should return truthy when no filters', async () => {
+			const res = await filterCriteria.match(testData[0], {
+				operator: 'AND',
+				criterias: []
+			});
+
+			expect(res).toEqual({
+				operator: 'AND',
+				passed: true,
+				reason: 'Filter "AND" check PASSED',
+				results: []
+			});
+		});
+
 		it('should return by filter group with AND', async () => {
 			const input = FilterCriteria.filterGroup({
 				operator: 'AND',
@@ -327,6 +341,18 @@ describe('/index', () => {
 	});
 
 	describe('matchMany', () => {
+		it('should return all items when no filters', async () => {
+			const input = FilterCriteria.filterGroup({
+				operator: 'AND',
+				filters: []
+			});
+
+			const res = await filterCriteria.matchMany(testData, input);
+
+			expect(res).toHaveLength(3);
+			expect(_.map(res, 'id').sort()).toEqual([1, 2, 3]);
+		});
+
 		describe('complex filters', () => {
 			it('should handle nested AND/OR combinations', async () => {
 				const input = FilterCriteria.filterGroup({
@@ -493,6 +519,12 @@ describe('/index', () => {
 	});
 
 	describe('matchManyMultiple', () => {
+		it('should return empty object when no filters', async () => {
+			const res = await filterCriteria.matchManyMultiple(testData, {});
+
+			expect(res).toEqual({});
+		});
+
 		it('should filter by multiple criteria simultaneously', async () => {
 			const filters = {
 				developers: FilterCriteria.criteria({
@@ -4008,7 +4040,7 @@ describe('/index', () => {
 				});
 
 				const { valid, error } = await filterCriteria.validate(input);
-				
+
 				expect(valid).toBe(true);
 				expect(error).toBeNull();
 			});
@@ -4019,7 +4051,7 @@ describe('/index', () => {
 				const input = FilterCriteria.alias('test-boolean');
 
 				const { valid, error } = await filterCriteria.validate(input);
-				
+
 				expect(valid).toBe(true);
 				expect(error).toBeNull();
 			});
@@ -4031,7 +4063,7 @@ describe('/index', () => {
 				});
 
 				const { valid, error } = await filterCriteria.validate(input);
-				
+
 				expect(valid).toBe(true);
 				expect(error).toBeNull();
 			});
@@ -4048,7 +4080,7 @@ describe('/index', () => {
 				});
 
 				const { valid, error } = await filterCriteria.validate(input);
-				
+
 				expect(valid).toBe(true);
 				expect(error).toBeNull();
 			});
