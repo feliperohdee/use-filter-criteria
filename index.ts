@@ -327,26 +327,27 @@ class FilterCriteria {
 	static filterGroup = filterGroupFactory;
 	static schema = schema;
 
-	async count(input: FilterCriteria.MatchInput): Promise<{ count: number }> {
+	async count(input: FilterCriteria.MatchInput): Promise<number> {
 		const converted = this.translateToFilterGroupInput(input);
 		const args = await filterGroup.parseAsync(converted.input);
-		const count = _.size(_.filter(args.filters, f => {
-			return _.size(f.criterias) > 0;
-		}));
 
-		return { count };
+		return _.size(
+			_.filter(args.filters, f => {
+				return _.size(f.criterias) > 0;
+			})
+		);
 	}
 
-	async empty(input: FilterCriteria.MatchInput): Promise<{ empty: boolean }> {
+	async empty(input: FilterCriteria.MatchInput): Promise<boolean> {
 		const converted = this.translateToFilterGroupInput(input);
 		const args = await filterGroup.parseAsync(converted.input);
-		const empty =
+
+		return (
 			_.size(args.filters) === 0 ||
 			_.every(args.filters, f => {
 				return _.size(f.criterias) === 0;
-			});
-
-		return { empty };
+			})
+		);
 	}
 
 	async match(value: any, input: FilterCriteria.MatchInput): Promise<FilterCriteria.MatchResult> {

@@ -165,7 +165,7 @@ describe('/index', () => {
 				})
 			);
 
-			expect(res).toEqual({ count: 0 });
+			expect(res).toEqual(0);
 		});
 
 		it('should count over filters with criterias', async () => {
@@ -192,7 +192,7 @@ describe('/index', () => {
 				})
 			);
 
-			expect(res).toEqual({ count: 1 });
+			expect(res).toEqual(1);
 		});
 	});
 
@@ -205,7 +205,7 @@ describe('/index', () => {
 				})
 			);
 
-			expect(res).toEqual({ empty: true });
+			expect(res).toEqual(true);
 		});
 
 		it('should return true when no criterias in filter group', async () => {
@@ -221,7 +221,7 @@ describe('/index', () => {
 				})
 			);
 
-			expect(res).toEqual({ empty: true });
+			expect(res).toEqual(true);
 		});
 
 		it('should return false when there are criterias in filter group', async () => {
@@ -244,7 +244,7 @@ describe('/index', () => {
 				})
 			);
 
-			expect(res).toEqual({ empty: false });
+			expect(res).toEqual(false);
 		});
 
 		it('should return true when empty filter', async () => {
@@ -255,9 +255,7 @@ describe('/index', () => {
 				})
 			);
 
-			expect(res).toEqual({
-				empty: true
-			});
+			expect(res).toEqual(true);
 		});
 
 		it('should return false when there are criterias in filter', async () => {
@@ -275,9 +273,7 @@ describe('/index', () => {
 				})
 			);
 
-			expect(res).toEqual({
-				empty: false
-			});
+			expect(res).toEqual(false);
 		});
 	});
 
