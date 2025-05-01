@@ -156,6 +156,131 @@ describe('/index', () => {
 		});
 	});
 
+	describe('count', () => {
+		it('should return 0 when empty filter group', async () => {
+			const res = await filterCriteria.count(
+				FilterCriteria.filterGroup({
+					operator: 'AND',
+					filters: []
+				})
+			);
+
+			expect(res).toEqual({ count: 0 });
+		});
+
+		it('should count over filters with criterias', async () => {
+			const res = await filterCriteria.count(
+				FilterCriteria.filterGroup({
+					operator: 'AND',
+					filters: [
+						FilterCriteria.filter({
+							operator: 'AND',
+							criterias: []
+						}),
+						FilterCriteria.filter({
+							operator: 'AND',
+							criterias: [
+								FilterCriteria.criteria({
+									matchValue: 'john',
+									operator: 'CONTAINS',
+									type: 'STRING',
+									valuePath: ['name']
+								})
+							]
+						})
+					]
+				})
+			);
+
+			expect(res).toEqual({ count: 1 });
+		});
+	});
+
+	describe('empty', () => {
+		it('should return true when empty filter group', async () => {
+			const res = await filterCriteria.empty(
+				FilterCriteria.filterGroup({
+					operator: 'AND',
+					filters: []
+				})
+			);
+
+			expect(res).toEqual({ empty: true });
+		});
+
+		it('should return true when no criterias in filter group', async () => {
+			const res = await filterCriteria.empty(
+				FilterCriteria.filterGroup({
+					operator: 'AND',
+					filters: [
+						FilterCriteria.filter({
+							operator: 'AND',
+							criterias: []
+						})
+					]
+				})
+			);
+
+			expect(res).toEqual({ empty: true });
+		});
+
+		it('should return false when there are criterias in filter group', async () => {
+			const res = await filterCriteria.empty(
+				FilterCriteria.filterGroup({
+					operator: 'AND',
+					filters: [
+						FilterCriteria.filter({
+							operator: 'AND',
+							criterias: [
+								FilterCriteria.criteria({
+									matchValue: 'john',
+									operator: 'CONTAINS',
+									type: 'STRING',
+									valuePath: ['name']
+								})
+							]
+						})
+					]
+				})
+			);
+
+			expect(res).toEqual({ empty: false });
+		});
+
+		it('should return true when empty filter', async () => {
+			const res = await filterCriteria.empty(
+				FilterCriteria.filter({
+					operator: 'AND',
+					criterias: []
+				})
+			);
+
+			expect(res).toEqual({
+				empty: true
+			});
+		});
+
+		it('should return false when there are criterias in filter', async () => {
+			const res = await filterCriteria.empty(
+				FilterCriteria.filter({
+					operator: 'AND',
+					criterias: [
+						FilterCriteria.criteria({
+							matchValue: 'john',
+							operator: 'CONTAINS',
+							type: 'STRING',
+							valuePath: ['name']
+						})
+					]
+				})
+			);
+
+			expect(res).toEqual({
+				empty: false
+			});
+		});
+	});
+
 	describe('match', () => {
 		it('should return truthy when no filters', async () => {
 			const res = await filterCriteria.match(testData[0], {
