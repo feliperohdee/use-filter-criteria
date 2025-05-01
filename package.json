@@ -2,7 +2,7 @@
 	"name": "use-filter-criteria",
 	"dependencies": {
 		"lodash": "^4.17.21",
-		"use-async-helpers": "^1.0.24",
+		"use-async-helpers": "^1.0.29",
 		"use-zod-default": "^1.0.1",
 		"zod": "^3.24.1"
 	},
@@ -32,5 +32,5 @@
 		"test:coverage": "rm -rf coverage && vitest --run --coverage",
 		"test:coverage:watch": "rm -rf coverage && vitest --coverage"
 	},
-	"version": "1.0.65"
+	"version": "1.0.66"
 }
