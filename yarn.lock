@@ -919,10 +919,10 @@ use-data-loader@^1.0.0:
     "@types/lodash" "^4.17.14"
     lodash "^4.17.21"
 
-use-zod-default@^1.0.1:
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/use-zod-default/-/use-zod-default-1.0.1.tgz#9bc52f8856886d48fbe6bb31d21257c3e206c568"
-  integrity sha512-hzukYfF+3p8kFhEiXWCXoCyFrHgHZXESCMAz3lXV/6hxd7LnLODJj4s3EfewcgqP8SrJiEDUFM89a9KKJI3SjQ==
+use-zod-default@^1.0.10:
+  version "1.0.10"
+  resolved "https://registry.yarnpkg.com/use-zod-default/-/use-zod-default-1.0.10.tgz#5413dbd47628e64022266f71b69035cc18ab177b"
+  integrity sha512-LhSREceUKGVTtI21wfTko+8byHYTIc4eXdjyBfvCe28zW0efN1BXyS7ZxgWOI9vIsqZ93nihqyC4IyyeTN//kw==
   dependencies:
     zod "^3.23.8"
 

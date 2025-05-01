@@ -287,6 +287,7 @@ const criteriaAliasFactory = <T extends FilterCriteria.Criteria = FilterCriteria
 	}
 ): T => {
 	const source = { ...input, alias };
+	// @ts-expect-error
 	const res: Record<string, any> = zDefault(criteria, source);
 
 	// nullify inexistent keys on source
@@ -305,6 +306,7 @@ const criteriaFactory = <T extends FilterCriteria.Criteria = FilterCriteria.Crit
 		valueMapper?: (input: { context: Map<string, any>; criteria: T; value: any }) => any;
 	}
 ): T => {
+	// @ts-expect-error
 	return zDefault(criteria, input) as T;
 };
 
