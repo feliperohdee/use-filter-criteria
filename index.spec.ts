@@ -3978,6 +3978,52 @@ describe('/index', () => {
 					level: 'filter-group'
 				});
 			});
+
+			it('should convert with translateCriteriaAlias = false', () => {
+				const criteria = FilterCriteria.criteria({
+					matchValue: 'John Doe',
+					operator: 'EQUALS',
+					type: 'STRING',
+					valuePath: ['name']
+				});
+
+				const filterGroupInput = FilterCriteria.filterGroup({
+					operator: 'AND',
+					filters: [
+						{
+							operator: 'AND',
+							criterias: [criteria, FilterCriteria.alias('test')]
+						}
+					]
+				});
+
+				// @ts-expect-error
+				expect(filterCriteria.translateToFilterGroupInput(filterGroupInput, false)).toEqual({
+					input: {
+						...filterGroupInput,
+						filters: _.map(filterGroupInput.filters, filter => {
+							return {
+								...filter,
+								criterias: [
+									criteria,
+									{
+                                        alias: 'test',
+                                        criteriaMapper: null,
+                                        defaultValue: null,
+                                        matchValue: null,
+                                        normalize: null,
+                                        operator: null,
+                                        type: null,
+                                        valueMapper: null,
+                                        valuePath: null
+                                    }
+								]
+							};
+						})
+					},
+					level: 'filter-group'
+				});
+			});
 		});
 
 		describe('from filter', () => {

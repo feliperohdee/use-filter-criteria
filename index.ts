@@ -330,7 +330,7 @@ class FilterCriteria {
 	static schema = schema;
 
 	async count(input: FilterCriteria.MatchInput): Promise<number> {
-		const converted = this.translateToFilterGroupInput(input);
+		const converted = this.translateToFilterGroupInput(input, false);
 		const args = await filterGroup.parseAsync(converted.input);
 
 		return _.size(
@@ -341,7 +341,7 @@ class FilterCriteria {
 	}
 
 	async empty(input: FilterCriteria.MatchInput): Promise<boolean> {
-		const converted = this.translateToFilterGroupInput(input);
+		const converted = this.translateToFilterGroupInput(input, false);
 		const args = await filterGroup.parseAsync(converted.input);
 
 		return (
@@ -1510,7 +1510,10 @@ class FilterCriteria {
 		return savedCriteria;
 	}
 
-	private translateToFilterGroupInput(input: FilterCriteria.MatchInput): {
+	private translateToFilterGroupInput(
+		input: FilterCriteria.MatchInput,
+		translateCriteriaAlias: boolean = true
+	): {
 		input: FilterCriteria.FilterGroupInput;
 		level: 'filter-group' | 'filter' | 'criteria';
 	} {
@@ -1558,7 +1561,7 @@ class FilterCriteria {
 					return {
 						...filter,
 						criterias: _.map(filter.criterias, criteria => {
-							if (criteria.alias) {
+							if (criteria.alias && translateCriteriaAlias) {
 								return this.translateCriteriaAlias(criteria as FilterCriteria.CriteriaInput & { alias: string });
 							}
 
