@@ -75,7 +75,21 @@ const operatorsSet = z.enum([
 	'SIZE-LESS',
 	'SIZE-LESS-OR-EQUALS'
 ]);
-const operatorsString = z.enum(['CONTAINS', 'ENDS-WITH', 'EQUALS', 'IN', 'IS-EMPTY', 'MATCHES-REGEX', 'STARTS-WITH']);
+const operatorsString = z.enum([
+	'CONTAINS',
+	'ENDS-WITH',
+	'EQUALS',
+	'IN',
+	'IS-EMPTY',
+	'MATCHES-REGEX',
+	'NOT-CONTAINS',
+	'NOT-ENDS-WITH',
+	'NOT-EQUALS',
+	'NOT-IN',
+	'NOT-STARTS-WITH',
+	'NOT-MATCHES-REGEX',
+	'STARTS-WITH'
+]);
 const operators = {
 	array: operatorsArray,
 	boolean: operatorsBoolean,

@@ -3125,9 +3125,123 @@ describe('/index', () => {
 				});
 			});
 
+			it('should handle NOT-CONTAINS operator', async () => {
+				const criteria = FilterCriteria.criteria({
+					matchValue: 'Doe',
+					operator: 'NOT-CONTAINS',
+					type: 'STRING',
+					valuePath: ['name']
+				});
+
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
+
+				expect(res).toEqual({
+					matchValue: 'doe',
+					passed: false,
+					reason: 'STRING criteria "NOT-CONTAINS" check FAILED',
+					value: 'john-doe'
+				});
+			});
+
+			it('should handle NOT-ENDS-WITH operator', async () => {
+				const criteria = FilterCriteria.criteria({
+					matchValue: 'Doe',
+					operator: 'NOT-ENDS-WITH',
+					type: 'STRING',
+					valuePath: ['name']
+				});
+
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
+
+				expect(res).toEqual({
+					matchValue: 'doe',
+					passed: false,
+					reason: 'STRING criteria "NOT-ENDS-WITH" check FAILED',
+					value: 'john-doe'
+				});
+			});
+
+			it('should handle NOT-EQUALS operator', async () => {
+				const criteria = FilterCriteria.criteria({
+					matchValue: 'John Doe',
+					operator: 'NOT-EQUALS',
+					type: 'STRING',
+					valuePath: ['name']
+				});
+
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
+
+				expect(res).toEqual({
+					matchValue: 'john-doe',
+					passed: false,
+					reason: 'STRING criteria "NOT-EQUALS" check FAILED',
+					value: 'john-doe'
+				});
+			});
+
+			it('should handle NOT-IN operator', async () => {
+				const criteria = FilterCriteria.criteria({
+					matchValue: ['DOE', 'JOHN DOE', 'JOHN'],
+					operator: 'NOT-IN',
+					type: 'STRING',
+					valuePath: ['name']
+				});
+
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
+
+				expect(res).toEqual({
+					matchValue: JSON.stringify(['doe', 'john-doe', 'john']),
+					passed: false,
+					reason: 'STRING criteria "NOT-IN" check FAILED',
+					value: 'john-doe'
+				});
+			});
+
+			it('should handle NOT-STARTS-WITH operator', async () => {
+				const criteria = FilterCriteria.criteria({
+					matchValue: 'John',
+					operator: 'NOT-STARTS-WITH',
+					type: 'STRING',
+					valuePath: ['name']
+				});
+
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
+
+				expect(res).toEqual({
+					matchValue: 'john',
+					passed: false,
+					reason: 'STRING criteria "NOT-STARTS-WITH" check FAILED',
+					value: 'john-doe'
+				});
+			});
+
+			it('should handle NOT-MATCHES-REGEX operator', async () => {
+				const criteria = FilterCriteria.criteria({
+					matchValue: /john/i,
+					operator: 'NOT-MATCHES-REGEX',
+					type: 'STRING',
+					valuePath: ['name']
+				});
+
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
+
+				expect(res).toEqual({
+					matchValue: '/john/i',
+					passed: false,
+					reason: 'STRING criteria "NOT-MATCHES-REGEX" check FAILED',
+					value: 'john-doe'
+				});
+			});
+
 			it('should handle STARTS-WITH operator', async () => {
 				const criteria = FilterCriteria.criteria({
-					matchValue: 'john',
+					matchValue: 'John',
 					operator: 'STARTS-WITH',
 					type: 'STRING',
 					valuePath: ['name']
@@ -3548,7 +3662,21 @@ describe('/index', () => {
 					'SIZE-LESS',
 					'SIZE-LESS-OR-EQUALS'
 				],
-				string: ['CONTAINS', 'ENDS-WITH', 'EQUALS', 'IN', 'IS-EMPTY', 'MATCHES-REGEX', 'STARTS-WITH']
+				string: [
+					'CONTAINS',
+					'ENDS-WITH',
+					'EQUALS',
+					'IN',
+					'IS-EMPTY',
+					'MATCHES-REGEX',
+					'NOT-CONTAINS',
+					'NOT-ENDS-WITH',
+					'NOT-EQUALS',
+					'NOT-IN',
+					'NOT-STARTS-WITH',
+					'NOT-MATCHES-REGEX',
+					'STARTS-WITH'
+				]
 			});
 
 			// Check saved criteria
@@ -4007,16 +4135,16 @@ describe('/index', () => {
 								criterias: [
 									criteria,
 									{
-                                        alias: 'test',
-                                        criteriaMapper: null,
-                                        defaultValue: null,
-                                        matchValue: null,
-                                        normalize: null,
-                                        operator: null,
-                                        type: null,
-                                        valueMapper: null,
-                                        valuePath: null
-                                    }
+										alias: 'test',
+										criteriaMapper: null,
+										defaultValue: null,
+										matchValue: null,
+										normalize: null,
+										operator: null,
+										type: null,
+										valueMapper: null,
+										valuePath: null
+									}
 								]
 							};
 						})

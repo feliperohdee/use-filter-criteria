@@ -1260,6 +1260,54 @@ class FilterCriteria {
 				return new RegExp(matchValue).test(value);
 			}
 
+			case 'NOT-CONTAINS': {
+				if (!_.isString(matchValue)) {
+					return false;
+				}
+
+				return !_.includes(value, matchValue);
+			}
+
+			case 'NOT-ENDS-WITH': {
+				if (!_.isString(matchValue)) {
+					return false;
+				}
+
+				return !_.endsWith(value, matchValue);
+			}
+
+			case 'NOT-EQUALS': {
+				if (!_.isString(matchValue)) {
+					return false;
+				}
+
+				return value !== matchValue;
+			}
+
+			case 'NOT-IN': {
+				if (!isStringArray(matchValue)) {
+					return false;
+				}
+
+				return !matchValue.includes(value);
+			}
+
+			case 'NOT-STARTS-WITH': {
+				if (!_.isString(matchValue)) {
+					return false;
+				}
+
+				return !_.startsWith(value, matchValue);
+			}
+
+			case 'NOT-MATCHES-REGEX': {
+				if (!_.isString(matchValue) && !_.isRegExp(matchValue)) {
+					return false;
+				}
+
+				return !new RegExp(matchValue).test(value);
+			}
+
 			case 'STARTS-WITH': {
 				if (!_.isString(matchValue)) {
 					return false;
