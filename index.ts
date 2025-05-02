@@ -624,6 +624,12 @@ class FilterCriteria {
 			return false;
 		}
 
+		const containsDeepEqual = (value: any[], matchValue: any) => {
+			return _.some(value, v => {
+				return _.isEqual(v, matchValue);
+			});
+		};
+
 		switch (operator) {
 			case 'EXACTLY-MATCHES': {
 				matchValue = toArray(matchValue);
@@ -641,7 +647,7 @@ class FilterCriteria {
 				matchValue = toArray(matchValue);
 
 				return _.every(matchValue, v => {
-					return _.includes(value, v);
+					return containsDeepEqual(value, v);
 				});
 			}
 
@@ -649,7 +655,7 @@ class FilterCriteria {
 				matchValue = toArray(matchValue);
 
 				return _.some(matchValue, v => {
-					return _.includes(value, v);
+					return containsDeepEqual(value, v);
 				});
 			}
 
@@ -665,7 +671,7 @@ class FilterCriteria {
 				matchValue = toArray(matchValue);
 
 				return !_.every(matchValue, v => {
-					return _.includes(value, v);
+					return containsDeepEqual(value, v);
 				});
 			}
 
@@ -675,7 +681,7 @@ class FilterCriteria {
 				}
 
 				return !_.some(matchValue, v => {
-					return _.includes(value, v);
+					return containsDeepEqual(value, v);
 				});
 			}
 
