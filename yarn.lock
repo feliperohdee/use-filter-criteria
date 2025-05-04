@@ -906,10 +906,10 @@ typescript@^5.7.2:
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-5.7.2.tgz#3169cf8c4c8a828cde53ba9ecb3d2b1d5dd67be6"
   integrity sha512-i5t66RHxDvVN40HfDd1PsEThGNnlMCMT3jMUuoh9/0TaqWevNontacunWyN02LA9/fIbEWlcHZcgTKb9QoaLfg==
 
-use-async-helpers@^1.0.30:
-  version "1.0.30"
-  resolved "https://registry.yarnpkg.com/use-async-helpers/-/use-async-helpers-1.0.30.tgz#3deb4edda492da91183e6edbdbf513f735ff02a5"
-  integrity sha512-ud2ADzkfAPFOaa+duAm3PmCiYKek6TKEAYTyrgfZcxWySzFXG6BGZaMayOAEHTu5uQJ5uQfimF/WhEzIYemD6A==
+use-async-helpers@^1.0.31:
+  version "1.0.31"
+  resolved "https://registry.yarnpkg.com/use-async-helpers/-/use-async-helpers-1.0.31.tgz#cc9673eead6b4509f361a63887fe0bf15471ec86"
+  integrity sha512-sbw+jBC82bzQ6JLCiE8g9Er6eodeepxg8Q1YSrs3MhO8oT7xMV9Rqh1RzrxM2Xy331MX09zAmWwg4WRZQBTkNw==
 
 use-data-loader@^1.0.0:
   version "1.0.0"
