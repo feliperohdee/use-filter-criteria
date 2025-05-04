@@ -911,10 +911,10 @@ use-async-helpers@^1.0.31:
   resolved "https://registry.yarnpkg.com/use-async-helpers/-/use-async-helpers-1.0.31.tgz#cc9673eead6b4509f361a63887fe0bf15471ec86"
   integrity sha512-sbw+jBC82bzQ6JLCiE8g9Er6eodeepxg8Q1YSrs3MhO8oT7xMV9Rqh1RzrxM2Xy331MX09zAmWwg4WRZQBTkNw==
 
-use-data-loader@^1.0.0:
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/use-data-loader/-/use-data-loader-1.0.0.tgz#6610c1c826072ea7c53b4d0bd4fc76539a464d42"
-  integrity sha512-ptoMLjsNTuY5MBXLb10hHDEcH0uDqORwI++3yuQ3LO8zvti04y/jvZxF7PyUsticaUoMDYzy+6ubq8/hbwaC8w==
+use-data-loader@^1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/use-data-loader/-/use-data-loader-1.0.1.tgz#e4694686e1fed583497490b1321b35e330d8a54d"
+  integrity sha512-5hDZc4bI7tbQIrpa9eOl6ozmL6czEcdZhU/hRwJ6+42d4BE0N/ELvCN61Km4ka8t0JHx61ssH5UxVdreMjZhSA==
   dependencies:
     "@types/lodash" "^4.17.14"
     lodash "^4.17.21"
