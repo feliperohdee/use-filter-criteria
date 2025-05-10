@@ -342,11 +342,14 @@ class FilterCriteria {
 
 	async empty(input: FilterCriteria.MatchInput): Promise<boolean> {
 		const converted = this.translateToFilterGroupInput(input, false);
-		const args = await filterGroup.parseAsync(converted.input);
 
+		return this.$empty(converted.input);
+	}
+
+	$empty(input: FilterCriteria.FilterGroupInput): boolean {
 		return (
-			_.size(args.filters) === 0 ||
-			_.every(args.filters, f => {
+			_.size(input.filters) === 0 ||
+			_.every(input.filters, f => {
 				return _.size(f.criterias) === 0;
 			})
 		);
@@ -390,7 +393,7 @@ class FilterCriteria {
 		const converted = this.translateToFilterGroupInput(input);
 		const args = await filterGroup.parseAsync(converted.input);
 
-		if (await this.empty(input)) {
+		if (this.$empty(converted.input)) {
 			return value;
 		}
 
@@ -438,7 +441,7 @@ class FilterCriteria {
 
 					const args = multiArgs[key];
 
-					if (await this.empty(args)) {
+					if (this.$empty(args)) {
 						reduction[key].push(item);
 
 						continue;
