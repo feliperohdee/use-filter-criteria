@@ -390,6 +390,10 @@ class FilterCriteria {
 		const converted = this.translateToFilterGroupInput(input);
 		const args = await filterGroup.parseAsync(converted.input);
 
+		if (await this.empty(input)) {
+			return value;
+		}
+
 		return promiseFilter(
 			value,
 			async item => {
@@ -433,6 +437,12 @@ class FilterCriteria {
 					}
 
 					const args = multiArgs[key];
+
+					if (await this.empty(args)) {
+						reduction[key].push(item);
+
+						continue;
+					}
 
 					try {
 						const filtersResults = await promiseMap(args.filters, filter => {

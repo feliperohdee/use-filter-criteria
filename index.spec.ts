@@ -463,15 +463,59 @@ describe('/index', () => {
 
 	describe('matchMany', () => {
 		it('should return all items when no filters', async () => {
-			const input = FilterCriteria.filterGroup({
-				operator: 'AND',
-				filters: []
-			});
+			const input = [
+				FilterCriteria.filterGroup({
+					operator: 'AND',
+					filters: []
+				}),
+				FilterCriteria.filterGroup({
+					operator: 'OR',
+					filters: []
+				}),
+				FilterCriteria.filterGroup({
+					operator: 'AND',
+					filters: [
+						FilterCriteria.filter({
+							operator: 'AND',
+							criterias: []
+						})
+					]
+				}),
+				FilterCriteria.filterGroup({
+					operator: 'AND',
+					filters: [
+						FilterCriteria.filter({
+							operator: 'OR',
+							criterias: []
+						})
+					]
+				}),
+				FilterCriteria.filterGroup({
+					operator: 'OR',
+					filters: [
+						FilterCriteria.filter({
+							operator: 'AND',
+							criterias: []
+						})
+					]
+				}),
+				FilterCriteria.filterGroup({
+					operator: 'OR',
+					filters: [
+						FilterCriteria.filter({
+							operator: 'OR',
+							criterias: []
+						})
+					]
+				})
+			];
 
-			const res = await filterCriteria.matchMany(testData, input);
+			for (const filter of input) {
+				const res = await filterCriteria.matchMany(testData, filter);
 
-			expect(res).toHaveLength(3);
-			expect(_.map(res, 'id').sort()).toEqual([1, 2, 3]);
+				expect(res).toHaveLength(3);
+				expect(_.map(res, 'id').sort()).toEqual([1, 2, 3]);
+			}
 		});
 
 		describe('complex filters', () => {
@@ -641,9 +685,60 @@ describe('/index', () => {
 
 	describe('matchManyMultiple', () => {
 		it('should return empty object when no filters', async () => {
-			const res = await filterCriteria.matchManyMultiple(testData, {});
+			const input = [
+				FilterCriteria.filterGroup({
+					operator: 'AND',
+					filters: []
+				}),
+				FilterCriteria.filterGroup({
+					operator: 'OR',
+					filters: []
+				}),
+				FilterCriteria.filterGroup({
+					operator: 'AND',
+					filters: [
+						FilterCriteria.filter({
+							operator: 'AND',
+							criterias: []
+						})
+					]
+				}),
+				FilterCriteria.filterGroup({
+					operator: 'AND',
+					filters: [
+						FilterCriteria.filter({
+							operator: 'OR',
+							criterias: []
+						})
+					]
+				}),
+				FilterCriteria.filterGroup({
+					operator: 'OR',
+					filters: [
+						FilterCriteria.filter({
+							operator: 'AND',
+							criterias: []
+						})
+					]
+				}),
+				FilterCriteria.filterGroup({
+					operator: 'OR',
+					filters: [
+						FilterCriteria.filter({
+							operator: 'OR',
+							criterias: []
+						})
+					]
+				})
+			];
 
-			expect(res).toEqual({});
+			const res = await filterCriteria.matchManyMultiple(testData, {});
+			expect(_.size(res)).toEqual(0);
+
+			for (const filter of input) {
+				const res = await filterCriteria.matchManyMultiple(testData, { filter: filter });
+				expect(_.size(res.filter)).toEqual(3);
+			}
 		});
 
 		it('should filter by multiple criteria simultaneously', async () => {
