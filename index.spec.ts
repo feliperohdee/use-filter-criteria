@@ -3693,6 +3693,13 @@ describe('/index', () => {
 						type: 'CUSTOM'
 					}),
 					FilterCriteria.criteria({
+						heavy: false,
+						predicate: () => {
+							return true;
+						},
+						type: 'CUSTOM'
+					}),
+					FilterCriteria.criteria({
 						heavy: true,
 						predicate: heavyPredicate,
 						type: 'CUSTOM'
@@ -3706,10 +3713,10 @@ describe('/index', () => {
 			expect(heavyPredicate).not.toHaveBeenCalled();
 			expect(res.passed).toBe(false);
 			expect(res.reason).toContain('short-circuited');
-			expect(res.results).toHaveLength(1); // short-circuited
+			expect(res.results).toHaveLength(2); // short-circuited
 		});
 
-		it('should process all criteria in AND filter when non-heavy criteria passes', async () => {
+		it('should process heavy criteria in AND filter when non-heavy criteria passes', async () => {
 			const heavyPredicate = vi.fn(() => {
 				return true;
 			});
@@ -3717,6 +3724,13 @@ describe('/index', () => {
 			const filter = FilterCriteria.filter({
 				operator: 'AND',
 				criterias: [
+					FilterCriteria.criteria({
+						heavy: false,
+						predicate: () => {
+							return true;
+						},
+						type: 'CUSTOM'
+					}),
 					FilterCriteria.criteria({
 						heavy: false,
 						predicate: () => {
@@ -3738,7 +3752,7 @@ describe('/index', () => {
 			expect(heavyPredicate).toHaveBeenCalled();
 			expect(res.passed).toBe(true);
 			expect(res.reason).toContain('PASSED');
-			expect(res.results).toHaveLength(2); // non-short-circuited
+			expect(res.results).toHaveLength(3); // non-short-circuited
 		});
 
 		it('should preserve original order of criteria results', async () => {
