@@ -74,6 +74,7 @@ describe('/index', () => {
 					alias: 'test',
 					criteriaMapper: null,
 					defaultValue: null,
+					heavy: null,
 					matchValue: null,
 					normalize: null,
 					operator: null,
@@ -85,14 +86,15 @@ describe('/index', () => {
 
 			it('should return with input', () => {
 				const res = FilterCriteria.alias('test', {
-					matchInArray: false,
-					type: 'NUMBER'
+					type: 'NUMBER',
+					matchInArray: false
 				});
 
 				expect(res).toEqual({
 					alias: 'test',
 					criteriaMapper: null,
 					defaultValue: null,
+					heavy: null,
 					matchInArray: false,
 					matchValue: null,
 					operator: null,
@@ -106,16 +108,17 @@ describe('/index', () => {
 		describe('criteria', () => {
 			it('should return', () => {
 				const res = FilterCriteria.criteria({
-					matchValue: 'john',
-					operator: 'CONTAINS',
 					type: 'STRING',
-					valuePath: ['name']
+					matchValue: 'john',
+					valuePath: ['name'],
+					operator: 'CONTAINS'
 				});
 
 				expect(res).toEqual({
 					alias: '',
 					criteriaMapper: null,
 					defaultValue: '',
+					heavy: false,
 					matchInArray: true,
 					matchValue: 'john',
 					normalize: true,
@@ -880,25 +883,25 @@ describe('/index', () => {
 				})
 			};
 
-			const results = await filterCriteria.matchManyMultiple(testData, filters);
+			const ress = await filterCriteria.matchManyMultiple(testData, filters);
 
-			expect(results.developers).toHaveLength(2);
-			expect(_.map(results.developers, 'id')).toEqual([1, 3]);
+			expect(ress.developers).toHaveLength(2);
+			expect(_.map(ress.developers, 'id')).toEqual([1, 3]);
 
-			expect(results.activeUsers).toHaveLength(2);
-			expect(_.map(results.activeUsers, 'id')).toEqual([1, 3]);
+			expect(ress.activeUsers).toHaveLength(2);
+			expect(_.map(ress.activeUsers, 'id')).toEqual([1, 3]);
 
-			expect(results.usPhones).toHaveLength(3);
-			expect(_.map(results.usPhones, 'id')).toEqual([1, 2, 3]);
+			expect(ress.usPhones).toHaveLength(3);
+			expect(_.map(ress.usPhones, 'id')).toEqual([1, 2, 3]);
 
-			expect(results.activeDevelopers).toHaveLength(2);
-			expect(_.map(results.activeDevelopers, 'id')).toEqual([1, 3]);
+			expect(ress.activeDevelopers).toHaveLength(2);
+			expect(_.map(ress.activeDevelopers, 'id')).toEqual([1, 3]);
 
-			expect(results.activeDevelopersOrDesigners).toHaveLength(2);
-			expect(_.map(results.activeDevelopersOrDesigners, 'id')).toEqual([1, 3]);
+			expect(ress.activeDevelopersOrDesigners).toHaveLength(2);
+			expect(_.map(ress.activeDevelopersOrDesigners, 'id')).toEqual([1, 3]);
 		});
 
-		it('should handle empty results', async () => {
+		it('should handle empty ress', async () => {
 			const filters = {
 				empty: FilterCriteria.criteria({
 					matchValue: 'inexistent',
@@ -908,15 +911,15 @@ describe('/index', () => {
 				})
 			};
 
-			const results = await filterCriteria.matchManyMultiple(testData, filters);
+			const ress = await filterCriteria.matchManyMultiple(testData, filters);
 
-			expect(results.empty).toEqual([]);
+			expect(ress.empty).toEqual([]);
 		});
 
 		it('should handle empty filters object', async () => {
-			const results = await filterCriteria.matchManyMultiple(testData, {});
+			const ress = await filterCriteria.matchManyMultiple(testData, {});
 
-			expect(results).toEqual({});
+			expect(ress).toEqual({});
 		});
 	});
 
@@ -3902,6 +3905,7 @@ describe('/index', () => {
 				'test-boolean': {
 					alias: 'test-boolean',
 					criteriaMapper: null,
+					heavy: false,
 					matchInArray: false,
 					matchValue: null,
 					operator: 'IS-TRUE',
@@ -3913,6 +3917,7 @@ describe('/index', () => {
 					alias: 'test-string',
 					criteriaMapper: null,
 					defaultValue: '',
+					heavy: false,
 					matchInArray: true,
 					matchValue: null,
 					normalize: true,
@@ -4153,6 +4158,7 @@ describe('/index', () => {
 					alias: 'test',
 					criteriaMapper: null,
 					defaultValue: '',
+					heavy: false,
 					matchInArray: true,
 					matchValue: 'John',
 					normalize: true,
@@ -4223,6 +4229,7 @@ describe('/index', () => {
 				alias: 'test',
 				criteriaMapper,
 				defaultValue: 0,
+				heavy: false,
 				matchInArray: false,
 				matchValue: 25,
 				operator: 'EQUALS',
@@ -4245,6 +4252,7 @@ describe('/index', () => {
 				alias: 'test',
 				criteriaMapper: null,
 				defaultValue: '',
+				heavy: false,
 				matchInArray: true,
 				matchValue: null,
 				normalize: false,
@@ -4301,6 +4309,7 @@ describe('/index', () => {
 									FilterCriteria.criteria({
 										alias: 'test',
 										defaultValue: 0,
+										heavy: false,
 										matchInArray: true,
 										matchValue: null,
 										operator: 'GREATER',
@@ -4346,6 +4355,8 @@ describe('/index', () => {
 										alias: 'test',
 										// @ts-expect-error
 										defaultValue: null,
+										// @ts-expect-error
+										heavy: null,
 										// @ts-expect-error
 										matchInArray: null,
 										matchValue: null,
@@ -4394,6 +4405,7 @@ describe('/index', () => {
 									FilterCriteria.criteria({
 										alias: 'test',
 										defaultValue: 0,
+										heavy: false,
 										matchInArray: true,
 										matchValue: null,
 										operator: 'GREATER',
@@ -4451,6 +4463,7 @@ describe('/index', () => {
 									FilterCriteria.criteria({
 										alias: 'test',
 										defaultValue: 0,
+										heavy: false,
 										matchInArray: true,
 										matchValue: null,
 										operator: 'GREATER',
@@ -4707,6 +4720,209 @@ describe('/index', () => {
 				expect(valid).toBe(false);
 				expect(error).toBeInstanceOf(Error);
 			});
+		});
+	});
+
+	describe('heavy criteria optimization', () => {
+		it('should short-circuit in filter when non-heavy criteria fails', async () => {
+			const heavyPredicate = vi.fn(() => {
+				return false;
+			});
+
+			const filter = FilterCriteria.filter({
+				operator: 'AND',
+				criterias: [
+					// This criteria will fail
+					FilterCriteria.criteria({
+						heavy: false,
+						matchValue: 'test',
+						operator: 'EQUALS',
+						type: 'STRING'
+					}),
+					// This heavy criteria should never be evaluated
+					FilterCriteria.criteria({
+						heavy: true,
+						predicate: heavyPredicate,
+						type: 'CUSTOM'
+					})
+				]
+			});
+
+			const res = await filterCriteria.match('not-matching', filter);
+
+			expect(res.passed).toBe(false);
+			expect(heavyPredicate).not.toHaveBeenCalled();
+		});
+
+		it('should evaluate heavy criteria when non-heavy criteria passes', async () => {
+			const heavyPredicate = vi.fn(() => {
+				return true;
+			});
+
+			const filter = FilterCriteria.filter({
+				operator: 'AND',
+				criterias: [
+					// This criteria will pass
+					FilterCriteria.criteria({
+						heavy: false,
+						matchValue: 'test',
+						operator: 'EQUALS',
+						type: 'STRING'
+					}),
+					// This heavy criteria should be evaluated
+					FilterCriteria.criteria({
+						heavy: true,
+						predicate: heavyPredicate,
+						type: 'CUSTOM'
+					})
+				]
+			});
+
+			const res = await filterCriteria.match('test', filter);
+
+			expect(res.passed).toBe(true);
+			expect(heavyPredicate).toHaveBeenCalled();
+		});
+
+		it('should short-circuit filter group evaluation when a filter fails', async () => {
+			const heavyPredicate = vi.fn(() => {
+				return true;
+			});
+
+			const firstFilter = FilterCriteria.filter({
+				operator: 'AND',
+				criterias: [
+					FilterCriteria.criteria({
+						heavy: false,
+						matchValue: 'test',
+						operator: 'EQUALS',
+						type: 'STRING'
+					})
+				]
+			});
+
+			const secondFilter = FilterCriteria.filter({
+				operator: 'AND',
+				criterias: [
+					FilterCriteria.criteria({
+						heavy: true,
+						predicate: heavyPredicate,
+						type: 'CUSTOM'
+					})
+				]
+			});
+
+			const filterGroup = FilterCriteria.filterGroup({
+				operator: 'AND',
+				filters: [firstFilter, secondFilter]
+			});
+
+			const res = await filterCriteria.match('not-matching', filterGroup);
+
+			expect(res.passed).toBe(false);
+			expect(heavyPredicate).not.toHaveBeenCalled();
+		});
+
+		it('should evaluate all filters in an AND filter group until one fails', async () => {
+			// Create tracking variables to see order of evaluation
+			const evaluationOrder: number[] = [];
+
+			const filterGroup = FilterCriteria.filterGroup({
+				operator: 'AND',
+				filters: [
+					FilterCriteria.filter({
+						operator: 'AND',
+						criterias: [
+							FilterCriteria.criteria({
+								type: 'CUSTOM',
+								predicate: () => {
+									evaluationOrder.push(1);
+									return true; // This filter will pass
+								}
+							})
+						]
+					}),
+					FilterCriteria.filter({
+						operator: 'AND',
+						criterias: [
+							FilterCriteria.criteria({
+								type: 'CUSTOM',
+								predicate: () => {
+									evaluationOrder.push(2);
+									return false; // This filter will fail
+								}
+							})
+						]
+					}),
+					FilterCriteria.filter({
+						operator: 'AND',
+						criterias: [
+							FilterCriteria.criteria({
+								type: 'CUSTOM',
+								predicate: () => {
+									evaluationOrder.push(3);
+									return true; // This filter will pass
+								}
+							})
+						]
+					})
+				]
+			});
+
+			const res = await filterCriteria.match('test', filterGroup);
+
+			expect(res.passed).toBe(false);
+			expect(evaluationOrder).toEqual([1, 2]); // Third filter should not be evaluated
+		});
+
+		it('should short-circuit in matchMany when a filter fails', async () => {
+			// Create tracking variables
+			const evaluationsPerItem: Record<string, number[]> = {};
+
+			const filterGroup = FilterCriteria.filterGroup({
+				operator: 'AND',
+				filters: [
+					FilterCriteria.filter({
+						operator: 'AND',
+						criterias: [
+							FilterCriteria.criteria({
+								type: 'CUSTOM',
+								predicate: ({ value }: { value?: any }) => {
+									if (!evaluationsPerItem[value]) {
+										evaluationsPerItem[value] = [];
+									}
+
+									evaluationsPerItem[value].push(1);
+									return value !== 'fail-first';
+								}
+							})
+						]
+					}),
+					FilterCriteria.filter({
+						operator: 'AND',
+						criterias: [
+							FilterCriteria.criteria({
+								type: 'CUSTOM',
+								predicate: ({ value }: { value?: any }) => {
+									if (!evaluationsPerItem[value]) {
+										evaluationsPerItem[value] = [];
+									}
+									evaluationsPerItem[value].push(2);
+									return value !== 'fail-second';
+								}
+							})
+						]
+					})
+				]
+			});
+
+			const items = ['pass-all', 'fail-first', 'fail-second'];
+			const res = await filterCriteria.matchMany(items, filterGroup);
+
+			expect(res).toEqual(['pass-all']);
+			expect(evaluationsPerItem['pass-all']).toEqual([1, 2]);
+			expect(evaluationsPerItem['fail-first']).toEqual([1]); // Second filter not evaluated
+			expect(evaluationsPerItem['fail-second']).toEqual([1, 2]);
 		});
 	});
 });

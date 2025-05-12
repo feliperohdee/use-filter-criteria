@@ -55,6 +55,7 @@ const criteriaArray = z.object({
 	alias: z.string().default(''),
 	criteriaMapper,
 	defaultValue: z.array(z.unknown()).default([]),
+	heavy: z.boolean().default(false),
 	matchValue: matchValueGetter(z.any()).default(null),
 	normalize: z.boolean().default(true),
 	operator: operatorsArray.default('EXACTLY-MATCHES'),
@@ -67,6 +68,7 @@ const criteriaBoolean = z.object({
 	alias: z.string().default(''),
 	criteriaMapper,
 	defaultValue: z.any().default(undefined),
+	heavy: z.boolean().default(false),
 	matchInArray: z.boolean().default(true),
 	matchValue: matchValueGetter(z.any()).default(null),
 	operator: operatorsBoolean.default('EQUALS'),
@@ -79,6 +81,7 @@ const criteriaCustom = z.object({
 	alias: z.string().default(''),
 	matchValue: z.any().default(null),
 	predicate: criteriaCustomPredicate,
+	heavy: z.boolean().default(false),
 	type: z.literal('CUSTOM')
 });
 
@@ -86,6 +89,7 @@ const criteriaDate = z.object({
 	alias: z.string().default(''),
 	criteriaMapper,
 	defaultValue: z.string().default(''),
+	heavy: z.boolean().default(false),
 	matchInArray: z.boolean().default(true),
 	matchValue: matchValueGetter(z.union([zDatetime, z.tuple([zDatetime, zDatetime])])),
 	operator: operatorsDate.default('AFTER'),
@@ -98,6 +102,7 @@ const criteriaGeo = z.object({
 	alias: z.string().default(''),
 	criteriaMapper,
 	defaultValue: z.record(z.number()).default({ lat: 0, lng: 0 }),
+	heavy: z.boolean().default(false),
 	matchValue: matchValueGetter(
 		z.object({
 			lat: z.number(),
@@ -116,6 +121,7 @@ const criteriaMap = z.object({
 	alias: z.string().default(''),
 	criteriaMapper,
 	defaultValue: z.map(z.unknown(), z.unknown()).default(new Map()),
+	heavy: z.boolean().default(false),
 	matchInArray: z.boolean().default(true),
 	matchValue: matchValueGetter(z.any()).default(null),
 	normalize: z.boolean().default(true),
@@ -129,6 +135,7 @@ const criteriaNumber = z.object({
 	alias: z.string().default(''),
 	criteriaMapper,
 	defaultValue: z.number().default(0),
+	heavy: z.boolean().default(false),
 	matchInArray: z.boolean().default(true),
 	matchValue: matchValueGetter(z.union([z.number(), z.array(z.number())]))
 		.nullable()
@@ -143,6 +150,7 @@ const criteriaObject = z.object({
 	alias: z.string().default(''),
 	criteriaMapper,
 	defaultValue: z.record(z.unknown()).default({}),
+	heavy: z.boolean().default(false),
 	matchInArray: z.boolean().default(true),
 	matchValue: matchValueGetter(z.any()).default(null),
 	normalize: z.boolean().default(true),
@@ -156,6 +164,7 @@ const criteriaSet = z.object({
 	alias: z.string().default(''),
 	criteriaMapper,
 	defaultValue: z.set(z.unknown()).default(new Set()),
+	heavy: z.boolean().default(false),
 	matchInArray: z.boolean().default(true),
 	matchValue: matchValueGetter(z.union([z.array(z.unknown()), z.number(), z.string()]))
 		.nullable()
@@ -171,6 +180,7 @@ const criteriaString = z.object({
 	alias: z.string().default(''),
 	criteriaMapper,
 	defaultValue: z.string().default(''),
+	heavy: z.boolean().default(false),
 	matchInArray: z.boolean().default(true),
 	matchValue: matchValueGetter(z.union([z.string(), z.array(z.string()), z.instanceof(RegExp)]))
 		.nullable()
@@ -365,6 +375,73 @@ class FilterCriteria {
 			return _.size(filter.criterias) > 0;
 		});
 
+		// Optimization for AND filter groups - process one filter at a time and short-circuit if any fails
+		if (args.operator === 'AND' && _.size(args.filters) > 0) {
+			let filtersResults: FilterCriteria.FilterResult[] = [];
+
+			for (const filter of args.filters) {
+				const filterResult = await this.applyFilter(value, filter);
+
+				filtersResults = [...filtersResults, filterResult];
+
+				// If any filter fails in an AND group, we can stop evaluating
+				if (!filterResult.passed) {
+					// When filters are empty, return as passed
+					if (_.size(filtersResults) === 0) {
+						if (converted.level === 'filter') {
+							const filter = converted.input.filters[0];
+
+							return {
+								operator: filter.operator,
+								passed: true,
+								reason: `Filter "${filter.operator}" check PASSED`,
+								results: []
+							};
+						}
+
+						return {
+							operator: args.operator,
+							passed: true,
+							reason: `Filter group "${args.operator}" check PASSED`,
+							results: []
+						};
+					}
+
+					if (converted.level === 'criteria') {
+						return (filtersResults[0] as FilterCriteria.FilterResult).results[0];
+					}
+
+					if (converted.level === 'filter') {
+						return filtersResults[0] as FilterCriteria.FilterResult;
+					}
+
+					return {
+						operator: args.operator,
+						passed: false,
+						reason: `Filter group "${args.operator}" check FAILED (short-circuited)`,
+						results: filtersResults as FilterCriteria.FilterResult[]
+					};
+				}
+			}
+
+			// All filters passed
+			if (converted.level === 'criteria') {
+				return (filtersResults[0] as FilterCriteria.FilterResult).results[0];
+			}
+
+			if (converted.level === 'filter') {
+				return filtersResults[0] as FilterCriteria.FilterResult;
+			}
+
+			return {
+				operator: args.operator,
+				passed: true,
+				reason: `Filter group "${args.operator}" check PASSED`,
+				results: filtersResults as FilterCriteria.FilterResult[]
+			};
+		}
+
+		// Original logic for OR filter groups or when optimization is not applied
 		const filtersResults = await Promise.all(
 			_.map(args.filters, filter => {
 				return this.applyFilter(value, filter);
@@ -435,17 +512,25 @@ class FilterCriteria {
 			value,
 			async item => {
 				try {
-					const filtersResults = await promiseMap(args.filters, filter => {
-						return this.applyFilter(item, filter);
-					});
+					// For AND operator, process one filter at a time and short-circuit when one fails
+					if (args.operator === 'AND') {
+						for (const filter of args.filters) {
+							const filterResult = await this.applyFilter(item, filter);
+							if (!filterResult.passed) {
+								return false; // Short-circuit on first filter failure
+							}
+						}
+						return true; // All filters passed
+					} else {
+						// For OR operator, process filters in parallel and short-circuit when one passes
+						const filtersResults = await promiseMap(args.filters, filter => {
+							return this.applyFilter(item, filter);
+						});
 
-					return args.operator === 'AND'
-						? _.every(filtersResults, r => {
-								return r.passed;
-							})
-						: _.some(filtersResults, r => {
-								return r.passed;
-							});
+						return _.some(filtersResults, r => {
+							return r.passed;
+						});
+					}
 				} catch {
 					return false;
 				}
@@ -487,18 +572,28 @@ class FilterCriteria {
 					});
 
 					try {
-						const filtersResults = await promiseMap(args.filters, filter => {
-							return this.applyFilter(item, filter);
-						});
+						let passed = false;
 
-						const passed =
-							args.operator === 'AND'
-								? _.every(filtersResults, r => {
-										return r.passed;
-									})
-								: _.some(filtersResults, r => {
-										return r.passed;
-									});
+						if (args.operator === 'AND') {
+							// For AND, process filters sequentially and short-circuit on first failure
+							passed = true;
+							for (const filter of args.filters) {
+								const filterResult = await this.applyFilter(item, filter);
+								if (!filterResult.passed) {
+									passed = false;
+									break; // Short-circuit on first filter failure
+								}
+							}
+						} else {
+							// For OR, process filters in parallel and short-circuit on first success
+							const filtersResults = await promiseMap(args.filters, filter => {
+								return this.applyFilter(item, filter);
+							});
+
+							passed = _.some(filtersResults, r => {
+								return r.passed;
+							});
+						}
 
 						if (passed) {
 							reduction[key].push(item);
@@ -514,6 +609,7 @@ class FilterCriteria {
 			concurrency
 		);
 
+		// Ensure all keys from multiArgs are present in the results
 		return _.mapValues(multiArgs, (value, key) => {
 			return results[key] || [];
 		});
@@ -607,6 +703,80 @@ class FilterCriteria {
 	}
 
 	private async applyFilter(value: any, filter: FilterCriteria.FilterInput): Promise<FilterCriteria.FilterResult> {
+		// Short-circuit optimization for AND operator
+		if (filter.operator === 'AND' && _.size(filter.criterias) > 1) {
+			// First check if we have any heavy criteria
+			const hasHeavyCriteria = _.some(filter.criterias, criteria => {
+				return 'heavy' in criteria && criteria.heavy;
+			});
+
+			if (hasHeavyCriteria) {
+				// First evaluate all non-heavy criteria
+				const nonHeavyCriterias = _.filter(filter.criterias, criteria => {
+					return !('heavy' in criteria) || !criteria.heavy;
+				});
+
+				if (_.size(nonHeavyCriterias) > 0) {
+					const nonHeavyResults = await Promise.all(
+						_.map(nonHeavyCriterias, criteria => {
+							return this.applyCriteria(value, criteria);
+						})
+					);
+
+					// If any non-heavy criteria fails, we can skip the heavy ones
+					const allNonHeavyPassed = _.every(nonHeavyResults, r => {
+						return r.passed;
+					});
+
+					if (!allNonHeavyPassed) {
+						// Short-circuit and return early with failure
+						return {
+							operator: filter.operator,
+							passed: false,
+							reason: `Filter "${filter.operator}" check FAILED (short-circuited)`,
+							results: nonHeavyResults as FilterCriteria.CriteriaResult[]
+						};
+					}
+
+					// If all non-heavy passed, continue with heavy criteria
+					const heavyCriterias = _.filter(filter.criterias, criteria => {
+						return 'heavy' in criteria && criteria.heavy;
+					});
+
+					const heavyResults = await Promise.all(
+						_.map(heavyCriterias, criteria => {
+							return this.applyCriteria(value, criteria as FilterCriteria.CriteriaInput);
+						})
+					);
+
+					// Combine results in the original order
+					let allResults: FilterCriteria.CriteriaResult[] = [];
+					let heavyIndex = 0;
+					let nonHeavyIndex = 0;
+
+					for (const criteria of filter.criterias) {
+						if ('heavy' in criteria && criteria.heavy) {
+							allResults = [...allResults, heavyResults[heavyIndex++]];
+						} else {
+							allResults = [...allResults, nonHeavyResults[nonHeavyIndex++]];
+						}
+					}
+
+					const passed = _.every(allResults, r => {
+						return r.passed;
+					});
+
+					return {
+						operator: filter.operator,
+						passed,
+						reason: `Filter "${filter.operator}" check ${passed ? 'PASSED' : 'FAILED'}`,
+						results: allResults
+					};
+				}
+			}
+		}
+
+		// Default behavior for OR operator or when no optimization is possible
 		const criteriaResults = await Promise.all(
 			_.map(filter.criterias, criteria => {
 				return this.applyCriteria(value, criteria);
