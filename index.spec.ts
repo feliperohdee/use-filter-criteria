@@ -278,7 +278,7 @@ describe('/index', () => {
 	});
 
 	describe('match', () => {
-		it('should return truthy when no filters', async () => {
+		it('should handle empty filters', async () => {
 			const filterGroupInput = [
 				FilterCriteria.filterGroup({
 					operator: 'AND',
@@ -347,6 +347,7 @@ describe('/index', () => {
 							]
 						});
 					}),
+					// must be ignored
 					FilterCriteria.filter({
 						operator: 'OR',
 						criterias: []
@@ -360,35 +361,27 @@ describe('/index', () => {
 				operator: 'AND',
 				passed: true,
 				reason: 'Filter group "AND" check PASSED',
-				results: [
-					..._.times(2, () => {
-						return {
-							operator: 'OR',
-							passed: true,
-							reason: 'Filter "OR" check PASSED',
-							results: [
-								{
-									matchValue: 'jo_hn',
-									passed: false,
-									reason: 'STRING criteria "CONTAINS" check FAILED',
-									value: 'john-doe'
-								},
-								{
-									matchValue: 'john',
-									passed: true,
-									reason: 'STRING criteria "CONTAINS" check PASSED',
-									value: 'john-doe'
-								}
-							]
-						};
-					}),
-					{
+				results: _.times(2, () => {
+					return {
 						operator: 'OR',
 						passed: true,
 						reason: 'Filter "OR" check PASSED',
-						results: []
-					}
-				]
+						results: [
+							{
+								matchValue: 'jo_hn',
+								passed: false,
+								reason: 'STRING criteria "CONTAINS" check FAILED',
+								value: 'john-doe'
+							},
+							{
+								matchValue: 'john',
+								passed: true,
+								reason: 'STRING criteria "CONTAINS" check PASSED',
+								value: 'john-doe'
+							}
+						]
+					};
+				})
 			});
 		});
 
@@ -429,35 +422,27 @@ describe('/index', () => {
 				operator: 'OR',
 				passed: true,
 				reason: 'Filter group "OR" check PASSED',
-				results: [
-					..._.times(2, () => {
-						return {
-							operator: 'OR',
-							passed: true,
-							reason: 'Filter "OR" check PASSED',
-							results: [
-								{
-									matchValue: 'jo_hn',
-									passed: false,
-									reason: 'STRING criteria "CONTAINS" check FAILED',
-									value: 'john-doe'
-								},
-								{
-									matchValue: 'john',
-									passed: true,
-									reason: 'STRING criteria "CONTAINS" check PASSED',
-									value: 'john-doe'
-								}
-							]
-						};
-					}),
-					{
+				results: _.times(2, () => {
+					return {
 						operator: 'OR',
 						passed: true,
 						reason: 'Filter "OR" check PASSED',
-						results: []
-					}
-				]
+						results: [
+							{
+								matchValue: 'jo_hn',
+								passed: false,
+								reason: 'STRING criteria "CONTAINS" check FAILED',
+								value: 'john-doe'
+							},
+							{
+								matchValue: 'john',
+								passed: true,
+								reason: 'STRING criteria "CONTAINS" check PASSED',
+								value: 'john-doe'
+							}
+						]
+					};
+				})
 			});
 		});
 
@@ -612,6 +597,7 @@ describe('/index', () => {
 								})
 							]
 						}),
+						// must be ignored
 						FilterCriteria.filter({
 							operator: 'AND',
 							criterias: []
@@ -655,6 +641,11 @@ describe('/index', () => {
 									valuePath: ['age']
 								})
 							]
+						}),
+						// must be ignored
+						FilterCriteria.filter({
+							operator: 'AND',
+							criterias: []
 						})
 					]
 				});
@@ -879,6 +870,11 @@ describe('/index', () => {
 									valuePath: ['active']
 								})
 							]
+						}),
+						// must be ignored
+						FilterCriteria.filter({
+							operator: 'AND',
+							criterias: []
 						})
 					]
 				})

@@ -359,14 +359,31 @@ class FilterCriteria {
 	async match(value: any, input: FilterCriteria.MatchInput): Promise<FilterCriteria.MatchResult> {
 		const converted = this.translateToFilterGroupInput(input);
 		const args = await filterGroup.parseAsync(converted.input);
+
+		// filter out filters with no criterias
+		args.filters = _.filter(args.filters, filter => {
+			return _.size(filter.criterias) > 0;
+		});
+
 		const filtersResults = await Promise.all(
 			_.map(args.filters, filter => {
 				return this.applyFilter(value, filter);
 			})
 		);
 
-		// when filters are empty, return filter group as passed
+		// when filters are empty, return as passed
 		if (_.size(filtersResults) === 0) {
+			if (converted.level === 'filter') {
+				const filter = converted.input.filters[0];
+
+				return {
+					operator: filter.operator,
+					passed: true,
+					reason: `Filter "${filter.operator}" check PASSED`,
+					results: []
+				};
+			}
+
 			return {
 				operator: args.operator,
 				passed: true,
@@ -404,10 +421,15 @@ class FilterCriteria {
 		const converted = this.translateToFilterGroupInput(input);
 		const args = await filterGroup.parseAsync(converted.input);
 
-		// when filter group is empty, return all items
+		// when filter is empty, return all items
 		if (this.$empty(converted.input)) {
 			return value;
 		}
+
+		// filter out filters with no criterias
+		args.filters = _.filter(args.filters, f => {
+			return _.size(f.criterias) > 0;
+		});
 
 		return promiseFilter(
 			value,
@@ -453,10 +475,16 @@ class FilterCriteria {
 
 					const args = multiArgs[key];
 
+					// when filter is empty, return all items
 					if (this.$empty(args)) {
 						reduction[key].push(item);
 						continue;
 					}
+
+					// filter out filters with no criterias
+					args.filters = _.filter(args.filters, f => {
+						return _.size(f.criterias) > 0;
+					});
 
 					try {
 						const filtersResults = await promiseMap(args.filters, filter => {
@@ -584,16 +612,6 @@ class FilterCriteria {
 				return this.applyCriteria(value, criteria);
 			})
 		);
-
-		// when criterias are empty, return filter as passed
-		if (_.size(criteriaResults) === 0) {
-			return {
-				operator: filter.operator,
-				passed: true,
-				reason: `Filter "${filter.operator}" check PASSED`,
-				results: []
-			};
-		}
 
 		const passed =
 			filter.operator === 'AND'
