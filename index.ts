@@ -376,6 +376,7 @@ class FilterCriteria {
 		});
 
 		// Optimization for AND filter groups - process one filter at a time and short-circuit if any fails
+		// ** Converted from filter or criteria, alwayt create an AND filter group
 		if (args.operator === 'AND' && _.size(args.filters) > 0) {
 			let filtersResults: FilterCriteria.FilterResult[] = [];
 
@@ -386,27 +387,6 @@ class FilterCriteria {
 
 				// If any filter fails in an AND group, we can stop evaluating
 				if (!filterResult.passed) {
-					// When filters are empty, return as passed
-					if (_.size(filtersResults) === 0) {
-						if (converted.level === 'filter') {
-							const filter = converted.input.filters[0];
-
-							return {
-								operator: filter.operator,
-								passed: true,
-								reason: `Filter "${filter.operator}" check PASSED`,
-								results: []
-							};
-						}
-
-						return {
-							operator: args.operator,
-							passed: true,
-							reason: `Filter group "${args.operator}" check PASSED`,
-							results: []
-						};
-					}
-
 					if (converted.level === 'criteria') {
 						return (filtersResults[0] as FilterCriteria.FilterResult).results[0];
 					}
@@ -442,6 +422,7 @@ class FilterCriteria {
 		}
 
 		// Original logic for OR filter groups or when optimization is not applied
+		// ** just OR filter groups are  going to be processed here
 		const filtersResults = await Promise.all(
 			_.map(args.filters, filter => {
 				return this.applyFilter(value, filter);
@@ -469,22 +450,9 @@ class FilterCriteria {
 			};
 		}
 
-		const passed =
-			args.operator === 'AND'
-				? _.every(filtersResults, r => {
-						return r.passed;
-					})
-				: _.some(filtersResults, r => {
-						return r.passed;
-					});
-
-		if (converted.level === 'criteria') {
-			return (filtersResults[0] as FilterCriteria.FilterResult).results[0];
-		}
-
-		if (converted.level === 'filter') {
-			return filtersResults[0] as FilterCriteria.FilterResult;
-		}
+		const passed = _.some(filtersResults, r => {
+			return r.passed;
+		});
 
 		return {
 			operator: args.operator,
@@ -706,11 +674,11 @@ class FilterCriteria {
 		// Short-circuit optimization for AND operator
 		if (filter.operator === 'AND' && _.size(filter.criterias) > 1) {
 			// First check if we have any heavy criteria
-			const hasHeavyCriteria = _.some(filter.criterias, criteria => {
+			const someHeavyCriteria = _.some(filter.criterias, criteria => {
 				return 'heavy' in criteria && criteria.heavy;
 			});
 
-			if (hasHeavyCriteria) {
+			if (someHeavyCriteria) {
 				// First evaluate all non-heavy criteria
 				const nonHeavyCriterias = _.filter(filter.criterias, criteria => {
 					return !('heavy' in criteria) || !criteria.heavy;

@@ -160,7 +160,7 @@ describe('/index', () => {
 	});
 
 	describe('count', () => {
-		it('should return 0 when empty filter group', async () => {
+		it('should return 0 when empty filterGroup', async () => {
 			const res = await filterCriteria.count(
 				FilterCriteria.filterGroup({
 					operator: 'AND',
@@ -200,7 +200,7 @@ describe('/index', () => {
 	});
 
 	describe('empty', () => {
-		it('should return true when empty filter group', async () => {
+		it('should return true when empty filterGroup', async () => {
 			const res = await filterCriteria.empty(
 				FilterCriteria.filterGroup({
 					operator: 'AND',
@@ -211,7 +211,7 @@ describe('/index', () => {
 			expect(res).toEqual(true);
 		});
 
-		it('should return true when no criterias in filter group', async () => {
+		it('should return true when no criterias in filterGroup', async () => {
 			const res = await filterCriteria.empty(
 				FilterCriteria.filterGroup({
 					operator: 'AND',
@@ -227,7 +227,7 @@ describe('/index', () => {
 			expect(res).toEqual(true);
 		});
 
-		it('should return false when there are criterias in filter group', async () => {
+		it('should return false when there are criterias in filterGroup', async () => {
 			const res = await filterCriteria.empty(
 				FilterCriteria.filterGroup({
 					operator: 'AND',
@@ -327,7 +327,7 @@ describe('/index', () => {
 			}
 		});
 
-		it('should return by filter group with AND', async () => {
+		it('should return by filterGroup [AND]', async () => {
 			const input = FilterCriteria.filterGroup({
 				operator: 'AND',
 				filters: [
@@ -388,7 +388,84 @@ describe('/index', () => {
 			});
 		});
 
-		it('should return by filter group with OR', async () => {
+		it('should short-circuit by filterGroup [AND] when non-heavy criteria fails', async () => {
+			const heavyPredicate = vi.fn(() => {
+				return true;
+			});
+
+			const input = FilterCriteria.filterGroup({
+				operator: 'AND',
+				filters: [
+					FilterCriteria.filter({
+						operator: 'AND',
+						criterias: [
+							FilterCriteria.criteria({
+								type: 'CUSTOM',
+								predicate: () => {
+									return false;
+								}
+							})
+						]
+					}),
+					FilterCriteria.filter({
+						operator: 'AND',
+						criterias: [
+							FilterCriteria.criteria({
+								heavy: true,
+								predicate: heavyPredicate,
+								type: 'CUSTOM'
+							})
+						]
+					})
+				]
+			});
+
+			const res = await filterCriteria.match('test', input);
+
+			expect(heavyPredicate).not.toHaveBeenCalled();
+			expect(res.passed).toBe(false);
+			expect(res.reason).toContain('short-circuited');
+		});
+
+		it('should not short-circuit by filterGroup [AND] when non-heavy criteria passes', async () => {
+			const heavyPredicate = vi.fn(() => {
+				return true;
+			});
+
+			const input = FilterCriteria.filterGroup({
+				operator: 'AND',
+				filters: [
+					FilterCriteria.filter({
+						operator: 'AND',
+						criterias: [
+							FilterCriteria.criteria({
+								type: 'CUSTOM',
+								predicate: () => {
+									return true;
+								}
+							})
+						]
+					}),
+					FilterCriteria.filter({
+						operator: 'AND',
+						criterias: [
+							FilterCriteria.criteria({
+								heavy: true,
+								type: 'CUSTOM',
+								predicate: heavyPredicate
+							})
+						]
+					})
+				]
+			});
+
+			const res = await filterCriteria.match('test', input);
+
+			expect(heavyPredicate).toHaveBeenCalled();
+			expect(res.passed).toBe(true);
+		});
+
+		it('should return by filterGroup [OR]', async () => {
 			const input = FilterCriteria.filterGroup({
 				operator: 'OR',
 				filters: [
@@ -491,7 +568,64 @@ describe('/index', () => {
 			});
 		});
 
-		it('should return by criteria', async () => {
+		it('should short-circuit by filter when non-heavy criteria fails', async () => {
+			const heavyPredicate = vi.fn(() => {
+				return false;
+			});
+
+			const input = FilterCriteria.filter({
+				operator: 'AND',
+				criterias: [
+					FilterCriteria.criteria({
+						type: 'CUSTOM',
+						predicate: () => {
+							return false;
+						}
+					}),
+					FilterCriteria.criteria({
+						heavy: true,
+						predicate: heavyPredicate,
+						type: 'CUSTOM'
+					})
+				]
+			});
+
+			const res = await filterCriteria.match('test', input);
+
+			expect(heavyPredicate).not.toHaveBeenCalled();
+			expect(res.passed).toBe(false);
+			expect(res.reason).toContain('short-circuited');
+		});
+
+		it('should not short-circuit by filter when non-heavy criteria passes', async () => {
+			const heavyPredicate = vi.fn(() => {
+				return true;
+			});
+
+			const input = FilterCriteria.filter({
+				operator: 'AND',
+				criterias: [
+					FilterCriteria.criteria({
+						type: 'CUSTOM',
+						predicate: () => {
+							return true;
+						}
+					}),
+					FilterCriteria.criteria({
+						heavy: true,
+						predicate: heavyPredicate,
+						type: 'CUSTOM'
+					})
+				]
+			});
+
+			const res = await filterCriteria.match('test', input);
+
+			expect(heavyPredicate).toHaveBeenCalled();
+			expect(res.passed).toBe(true);
+		});
+
+		it('should return truthy by criteria', async () => {
 			const input = FilterCriteria.criteria({
 				matchValue: 'john',
 				operator: 'CONTAINS',
@@ -505,6 +639,24 @@ describe('/index', () => {
 				matchValue: 'john',
 				passed: true,
 				reason: 'STRING criteria "CONTAINS" check PASSED',
+				value: 'john-doe'
+			});
+		});
+
+		it('should return falsy by criteria', async () => {
+			const input = FilterCriteria.criteria({
+				matchValue: 'jane',
+				operator: 'CONTAINS',
+				type: 'STRING',
+				valuePath: ['name']
+			});
+
+			const res = await filterCriteria.match(testData[0], input);
+
+			expect(res).toEqual({
+				matchValue: 'jane',
+				passed: false,
+				reason: 'STRING criteria "CONTAINS" check FAILED',
 				value: 'john-doe'
 			});
 		});
@@ -3483,7 +3635,7 @@ describe('/index', () => {
 
 	describe('applyFilter', () => {
 		it('should return', async () => {
-			const filter = FilterCriteria.filter({
+			const input = FilterCriteria.filter({
 				operator: 'OR',
 				criterias: [
 					FilterCriteria.criteria({
@@ -3502,7 +3654,7 @@ describe('/index', () => {
 			});
 
 			// @ts-expect-error
-			const res = await filterCriteria.applyFilter(testData[0], filter);
+			const res = await filterCriteria.applyFilter(testData[0], input);
 
 			expect(res).toEqual({
 				operator: 'OR',
@@ -3523,6 +3675,189 @@ describe('/index', () => {
 					}
 				]
 			});
+		});
+
+		it('should short-circuit AND filter when non-heavy criteria fails', async () => {
+			const heavyPredicate = vi.fn(() => {
+				return true;
+			});
+
+			const filter = FilterCriteria.filter({
+				operator: 'AND',
+				criterias: [
+					FilterCriteria.criteria({
+						heavy: false,
+						predicate: () => {
+							return false;
+						},
+						type: 'CUSTOM'
+					}),
+					FilterCriteria.criteria({
+						heavy: true,
+						predicate: heavyPredicate,
+						type: 'CUSTOM'
+					})
+				]
+			});
+
+			// @ts-expect-error
+			const res = await filterCriteria.applyFilter(testData[0], filter);
+
+			expect(heavyPredicate).not.toHaveBeenCalled();
+			expect(res.passed).toBe(false);
+			expect(res.reason).toContain('short-circuited');
+			expect(res.results).toHaveLength(1); // short-circuited
+		});
+
+		it('should process all criteria in AND filter when non-heavy criteria passes', async () => {
+			const heavyPredicate = vi.fn(() => {
+				return true;
+			});
+
+			const filter = FilterCriteria.filter({
+				operator: 'AND',
+				criterias: [
+					FilterCriteria.criteria({
+						heavy: false,
+						predicate: () => {
+							return true;
+						},
+						type: 'CUSTOM'
+					}),
+					FilterCriteria.criteria({
+						heavy: true,
+						predicate: heavyPredicate,
+						type: 'CUSTOM'
+					})
+				]
+			});
+
+			// @ts-expect-error
+			const res = await filterCriteria.applyFilter(testData[0], filter);
+
+			expect(heavyPredicate).toHaveBeenCalled();
+			expect(res.passed).toBe(true);
+			expect(res.reason).toContain('PASSED');
+			expect(res.results).toHaveLength(2); // non-short-circuited
+		});
+
+		it('should preserve original order of criteria results', async () => {
+			const execution: string[] = [];
+
+			const filter = FilterCriteria.filter({
+				operator: 'AND',
+				criterias: [
+					FilterCriteria.criteria({
+						heavy: true,
+						predicate: () => {
+							execution.push('heavy-1');
+							return true;
+						},
+						type: 'CUSTOM'
+					}),
+					FilterCriteria.criteria({
+						heavy: false,
+						predicate: () => {
+							execution.push('non-heavy-1');
+							return true;
+						},
+						type: 'CUSTOM'
+					}),
+					FilterCriteria.criteria({
+						heavy: true,
+						predicate: () => {
+							execution.push('heavy-2');
+							return true;
+						},
+						type: 'CUSTOM'
+					}),
+					FilterCriteria.criteria({
+						heavy: false,
+						predicate: () => {
+							execution.push('non-heavy-2');
+							return true;
+						},
+						type: 'CUSTOM'
+					})
+				]
+			});
+
+			// @ts-expect-error
+			const res = await filterCriteria.applyFilter(testData[0], filter);
+
+			expect(res.passed).toBe(true);
+			expect(execution).toEqual(['non-heavy-1', 'non-heavy-2', 'heavy-1', 'heavy-2']);
+		});
+
+		it('should not optimize when only heavy criteria are present', async () => {
+			const heavyPredicate1 = vi.fn(() => {
+				return false;
+			});
+			const heavyPredicate2 = vi.fn(() => {
+				return true;
+			});
+
+			const filter = FilterCriteria.filter({
+				operator: 'AND',
+				criterias: [
+					FilterCriteria.criteria({
+						heavy: true,
+						predicate: heavyPredicate1,
+						type: 'CUSTOM'
+					}),
+					FilterCriteria.criteria({
+						heavy: true,
+						predicate: heavyPredicate2,
+						type: 'CUSTOM'
+					})
+				]
+			});
+
+			// @ts-expect-error
+			const res = await filterCriteria.applyFilter(testData[0], filter);
+
+			expect(heavyPredicate1).toHaveBeenCalled();
+			expect(heavyPredicate2).toHaveBeenCalled();
+
+			expect(res.passed).toBe(false);
+			expect(res.reason).not.toContain('short-circuited');
+			expect(res.reason).toContain('FAILED');
+			expect(res.results).toHaveLength(2); //
+		});
+
+		it('should not optimize OR filters', async () => {
+			const predicate1 = vi.fn(() => {
+				return false;
+			});
+			const predicate2 = vi.fn(() => {
+				return true;
+			});
+
+			const filter = FilterCriteria.filter({
+				operator: 'OR',
+				criterias: [
+					FilterCriteria.criteria({
+						heavy: true,
+						predicate: predicate1,
+						type: 'CUSTOM'
+					}),
+					FilterCriteria.criteria({
+						heavy: false,
+						predicate: predicate2,
+						type: 'CUSTOM'
+					})
+				]
+			});
+
+			// @ts-expect-error
+			const res = await filterCriteria.applyFilter(testData[0], filter);
+
+			expect(predicate1).toHaveBeenCalled();
+			expect(predicate2).toHaveBeenCalled();
+
+			expect(res.passed).toBe(true);
+			expect(res.reason).toContain('PASSED');
+			expect(res.results).toHaveLength(2); // non-short-circuited
 		});
 	});
 
@@ -4387,19 +4722,19 @@ describe('/index', () => {
 					valuePath: ['name']
 				});
 
-				const filter = FilterCriteria.filter({
+				const filterInput = FilterCriteria.filter({
 					operator: 'AND',
 					criterias: [criteria, FilterCriteria.alias('test')]
 				});
 
 				// @ts-expect-error
-				const filterGroupInput = filterCriteria.translateToFilterGroupInput(filter);
+				const filterGroupInput = filterCriteria.translateToFilterGroupInput(filterInput);
 				expect(filterGroupInput).toEqual({
 					input: {
 						operator: 'AND',
 						filters: [
 							FilterCriteria.filter({
-								...filter,
+								...filterInput,
 								criterias: [
 									criteria,
 									FilterCriteria.criteria({
@@ -4543,7 +4878,7 @@ describe('/index', () => {
 				expect(error).toBeNull();
 			});
 
-			it('should validate a simple filter group', async () => {
+			it('should validate a simple filterGroup', async () => {
 				const input = FilterCriteria.filterGroup({
 					operator: 'AND',
 					filters: [
@@ -4590,7 +4925,7 @@ describe('/index', () => {
 				expect(error).toBeNull();
 			});
 
-			it('should validate filter group with valid alias', async () => {
+			it('should validate filterGroup with valid alias', async () => {
 				const input = FilterCriteria.filterGroup({
 					operator: 'AND',
 					filters: [
@@ -4627,7 +4962,7 @@ describe('/index', () => {
 				expect(error).toEqual(new Error('Criteria "non-existent-alias" not found'));
 			});
 
-			it('should return error when alias is in a filter group', async () => {
+			it('should return error when alias is in a filterGroup', async () => {
 				const input = FilterCriteria.filterGroup({
 					operator: 'AND',
 					filters: [
@@ -4696,7 +5031,7 @@ describe('/index', () => {
 				expect(error).toBeInstanceOf(Error);
 			});
 
-			it('should throw error for invalid filter group operator', async () => {
+			it('should throw error for invalid filterGroup operator', async () => {
 				const input = {
 					operator: 'INVALID-OPERATOR',
 					filters: [
@@ -4720,209 +5055,6 @@ describe('/index', () => {
 				expect(valid).toBe(false);
 				expect(error).toBeInstanceOf(Error);
 			});
-		});
-	});
-
-	describe('heavy criteria optimization', () => {
-		it('should short-circuit in filter when non-heavy criteria fails', async () => {
-			const heavyPredicate = vi.fn(() => {
-				return false;
-			});
-
-			const filter = FilterCriteria.filter({
-				operator: 'AND',
-				criterias: [
-					// This criteria will fail
-					FilterCriteria.criteria({
-						heavy: false,
-						matchValue: 'test',
-						operator: 'EQUALS',
-						type: 'STRING'
-					}),
-					// This heavy criteria should never be evaluated
-					FilterCriteria.criteria({
-						heavy: true,
-						predicate: heavyPredicate,
-						type: 'CUSTOM'
-					})
-				]
-			});
-
-			const res = await filterCriteria.match('not-matching', filter);
-
-			expect(res.passed).toBe(false);
-			expect(heavyPredicate).not.toHaveBeenCalled();
-		});
-
-		it('should evaluate heavy criteria when non-heavy criteria passes', async () => {
-			const heavyPredicate = vi.fn(() => {
-				return true;
-			});
-
-			const filter = FilterCriteria.filter({
-				operator: 'AND',
-				criterias: [
-					// This criteria will pass
-					FilterCriteria.criteria({
-						heavy: false,
-						matchValue: 'test',
-						operator: 'EQUALS',
-						type: 'STRING'
-					}),
-					// This heavy criteria should be evaluated
-					FilterCriteria.criteria({
-						heavy: true,
-						predicate: heavyPredicate,
-						type: 'CUSTOM'
-					})
-				]
-			});
-
-			const res = await filterCriteria.match('test', filter);
-
-			expect(res.passed).toBe(true);
-			expect(heavyPredicate).toHaveBeenCalled();
-		});
-
-		it('should short-circuit filter group evaluation when a filter fails', async () => {
-			const heavyPredicate = vi.fn(() => {
-				return true;
-			});
-
-			const firstFilter = FilterCriteria.filter({
-				operator: 'AND',
-				criterias: [
-					FilterCriteria.criteria({
-						heavy: false,
-						matchValue: 'test',
-						operator: 'EQUALS',
-						type: 'STRING'
-					})
-				]
-			});
-
-			const secondFilter = FilterCriteria.filter({
-				operator: 'AND',
-				criterias: [
-					FilterCriteria.criteria({
-						heavy: true,
-						predicate: heavyPredicate,
-						type: 'CUSTOM'
-					})
-				]
-			});
-
-			const filterGroup = FilterCriteria.filterGroup({
-				operator: 'AND',
-				filters: [firstFilter, secondFilter]
-			});
-
-			const res = await filterCriteria.match('not-matching', filterGroup);
-
-			expect(res.passed).toBe(false);
-			expect(heavyPredicate).not.toHaveBeenCalled();
-		});
-
-		it('should evaluate all filters in an AND filter group until one fails', async () => {
-			// Create tracking variables to see order of evaluation
-			const evaluationOrder: number[] = [];
-
-			const filterGroup = FilterCriteria.filterGroup({
-				operator: 'AND',
-				filters: [
-					FilterCriteria.filter({
-						operator: 'AND',
-						criterias: [
-							FilterCriteria.criteria({
-								type: 'CUSTOM',
-								predicate: () => {
-									evaluationOrder.push(1);
-									return true; // This filter will pass
-								}
-							})
-						]
-					}),
-					FilterCriteria.filter({
-						operator: 'AND',
-						criterias: [
-							FilterCriteria.criteria({
-								type: 'CUSTOM',
-								predicate: () => {
-									evaluationOrder.push(2);
-									return false; // This filter will fail
-								}
-							})
-						]
-					}),
-					FilterCriteria.filter({
-						operator: 'AND',
-						criterias: [
-							FilterCriteria.criteria({
-								type: 'CUSTOM',
-								predicate: () => {
-									evaluationOrder.push(3);
-									return true; // This filter will pass
-								}
-							})
-						]
-					})
-				]
-			});
-
-			const res = await filterCriteria.match('test', filterGroup);
-
-			expect(res.passed).toBe(false);
-			expect(evaluationOrder).toEqual([1, 2]); // Third filter should not be evaluated
-		});
-
-		it('should short-circuit in matchMany when a filter fails', async () => {
-			// Create tracking variables
-			const evaluationsPerItem: Record<string, number[]> = {};
-
-			const filterGroup = FilterCriteria.filterGroup({
-				operator: 'AND',
-				filters: [
-					FilterCriteria.filter({
-						operator: 'AND',
-						criterias: [
-							FilterCriteria.criteria({
-								type: 'CUSTOM',
-								predicate: ({ value }: { value?: any }) => {
-									if (!evaluationsPerItem[value]) {
-										evaluationsPerItem[value] = [];
-									}
-
-									evaluationsPerItem[value].push(1);
-									return value !== 'fail-first';
-								}
-							})
-						]
-					}),
-					FilterCriteria.filter({
-						operator: 'AND',
-						criterias: [
-							FilterCriteria.criteria({
-								type: 'CUSTOM',
-								predicate: ({ value }: { value?: any }) => {
-									if (!evaluationsPerItem[value]) {
-										evaluationsPerItem[value] = [];
-									}
-									evaluationsPerItem[value].push(2);
-									return value !== 'fail-second';
-								}
-							})
-						]
-					})
-				]
-			});
-
-			const items = ['pass-all', 'fail-first', 'fail-second'];
-			const res = await filterCriteria.matchMany(items, filterGroup);
-
-			expect(res).toEqual(['pass-all']);
-			expect(evaluationsPerItem['pass-all']).toEqual([1, 2]);
-			expect(evaluationsPerItem['fail-first']).toEqual([1]); // Second filter not evaluated
-			expect(evaluationsPerItem['fail-second']).toEqual([1, 2]);
 		});
 	});
 });
