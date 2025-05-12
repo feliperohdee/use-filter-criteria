@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import { beforeEach, describe, expect, it, vi, Mock } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import DataLoader from 'use-data-loader';
 
 import FilterCriteria from './index';
@@ -279,41 +279,79 @@ describe('/index', () => {
 
 	describe('match', () => {
 		it('should return truthy when no filters', async () => {
-			const res = await filterCriteria.match(testData[0], {
-				operator: 'AND',
-				criterias: []
-			});
+			const filterGroupInput = [
+				FilterCriteria.filterGroup({
+					operator: 'AND',
+					filters: []
+				}),
+				FilterCriteria.filterGroup({
+					operator: 'OR',
+					filters: []
+				})
+			];
 
-			expect(res).toEqual({
-				operator: 'AND',
-				passed: true,
-				reason: 'Filter "AND" check PASSED',
-				results: []
-			});
+			const filterInput = [
+				FilterCriteria.filter({
+					operator: 'AND',
+					criterias: []
+				}),
+				FilterCriteria.filter({
+					operator: 'OR',
+					criterias: []
+				})
+			];
+
+			for (const filterGroup of filterGroupInput) {
+				const res = await filterCriteria.match(testData[0], filterGroup);
+
+				expect(res).toEqual({
+					operator: filterGroup.operator,
+					passed: true,
+					reason: `Filter group "${filterGroup.operator}" check PASSED`,
+					results: []
+				});
+			}
+
+			for (const filter of filterInput) {
+				const res = await filterCriteria.match(testData[0], filter);
+
+				expect(res).toEqual({
+					operator: filter.operator,
+					passed: true,
+					reason: `Filter "${filter.operator}" check PASSED`,
+					results: []
+				});
+			}
 		});
 
 		it('should return by filter group with AND', async () => {
 			const input = FilterCriteria.filterGroup({
 				operator: 'AND',
-				filters: _.times(2, () => {
-					return {
+				filters: [
+					..._.times(2, () => {
+						return FilterCriteria.filter({
+							operator: 'OR',
+							criterias: [
+								FilterCriteria.criteria({
+									matchValue: 'jo_hn',
+									operator: 'CONTAINS',
+									type: 'STRING',
+									valuePath: ['name']
+								}),
+								FilterCriteria.criteria({
+									matchValue: 'john',
+									operator: 'CONTAINS',
+									type: 'STRING',
+									valuePath: ['name']
+								})
+							]
+						});
+					}),
+					FilterCriteria.filter({
 						operator: 'OR',
-						criterias: [
-							{
-								matchValue: 'jo_hn',
-								operator: 'CONTAINS',
-								type: 'STRING',
-								valuePath: ['name']
-							},
-							{
-								matchValue: 'john',
-								operator: 'CONTAINS',
-								type: 'STRING',
-								valuePath: ['name']
-							}
-						]
-					};
-				})
+						criterias: []
+					})
+				]
 			});
 
 			const res = await filterCriteria.match(testData[0], input);
@@ -322,52 +360,67 @@ describe('/index', () => {
 				operator: 'AND',
 				passed: true,
 				reason: 'Filter group "AND" check PASSED',
-				results: _.times(2, () => {
-					return {
+				results: [
+					..._.times(2, () => {
+						return {
+							operator: 'OR',
+							passed: true,
+							reason: 'Filter "OR" check PASSED',
+							results: [
+								{
+									matchValue: 'jo_hn',
+									passed: false,
+									reason: 'STRING criteria "CONTAINS" check FAILED',
+									value: 'john-doe'
+								},
+								{
+									matchValue: 'john',
+									passed: true,
+									reason: 'STRING criteria "CONTAINS" check PASSED',
+									value: 'john-doe'
+								}
+							]
+						};
+					}),
+					{
 						operator: 'OR',
 						passed: true,
 						reason: 'Filter "OR" check PASSED',
-						results: [
-							{
-								matchValue: 'jo_hn',
-								passed: false,
-								reason: 'STRING criteria "CONTAINS" check FAILED',
-								value: 'john-doe'
-							},
-							{
-								matchValue: 'john',
-								passed: true,
-								reason: 'STRING criteria "CONTAINS" check PASSED',
-								value: 'john-doe'
-							}
-						]
-					};
-				})
+						results: []
+					}
+				]
 			});
 		});
 
 		it('should return by filter group with OR', async () => {
 			const input = FilterCriteria.filterGroup({
 				operator: 'OR',
-				filters: _.times(2, () => {
-					return {
+				filters: [
+					..._.times(2, () => {
+						return FilterCriteria.filter({
+							operator: 'OR',
+							criterias: [
+								FilterCriteria.criteria({
+									matchValue: 'jo_hn',
+									operator: 'CONTAINS',
+									type: 'STRING',
+									valuePath: ['name']
+								}),
+								FilterCriteria.criteria({
+									matchValue: 'john',
+									operator: 'CONTAINS',
+									type: 'STRING',
+									valuePath: ['name']
+								})
+							]
+						});
+					}),
+					// must be ignored
+					FilterCriteria.filter({
 						operator: 'OR',
-						criterias: [
-							{
-								matchValue: 'jo_hn',
-								operator: 'CONTAINS',
-								type: 'STRING',
-								valuePath: ['name']
-							},
-							{
-								matchValue: 'john',
-								operator: 'CONTAINS',
-								type: 'STRING',
-								valuePath: ['name']
-							}
-						]
-					};
-				})
+						criterias: []
+					})
+				]
 			});
 
 			const res = await filterCriteria.match(testData[0], input);
@@ -376,27 +429,35 @@ describe('/index', () => {
 				operator: 'OR',
 				passed: true,
 				reason: 'Filter group "OR" check PASSED',
-				results: _.times(2, () => {
-					return {
+				results: [
+					..._.times(2, () => {
+						return {
+							operator: 'OR',
+							passed: true,
+							reason: 'Filter "OR" check PASSED',
+							results: [
+								{
+									matchValue: 'jo_hn',
+									passed: false,
+									reason: 'STRING criteria "CONTAINS" check FAILED',
+									value: 'john-doe'
+								},
+								{
+									matchValue: 'john',
+									passed: true,
+									reason: 'STRING criteria "CONTAINS" check PASSED',
+									value: 'john-doe'
+								}
+							]
+						};
+					}),
+					{
 						operator: 'OR',
 						passed: true,
 						reason: 'Filter "OR" check PASSED',
-						results: [
-							{
-								matchValue: 'jo_hn',
-								passed: false,
-								reason: 'STRING criteria "CONTAINS" check FAILED',
-								value: 'john-doe'
-							},
-							{
-								matchValue: 'john',
-								passed: true,
-								reason: 'STRING criteria "CONTAINS" check PASSED',
-								value: 'john-doe'
-							}
-						]
-					};
-				})
+						results: []
+					}
+				]
 			});
 		});
 
@@ -404,18 +465,18 @@ describe('/index', () => {
 			const input = FilterCriteria.filter({
 				operator: 'OR',
 				criterias: [
-					{
+					FilterCriteria.criteria({
 						matchValue: 'jo_hn',
 						operator: 'CONTAINS',
 						type: 'STRING',
 						valuePath: ['name']
-					},
-					{
+					}),
+					FilterCriteria.criteria({
 						matchValue: 'john',
 						operator: 'CONTAINS',
 						type: 'STRING',
 						valuePath: ['name']
-					}
+					})
 				]
 			});
 
@@ -523,34 +584,38 @@ describe('/index', () => {
 				const input = FilterCriteria.filterGroup({
 					operator: 'AND',
 					filters: [
-						{
+						FilterCriteria.filter({
 							operator: 'AND',
 							criterias: [
-								{
+								FilterCriteria.criteria({
 									matchValue: true,
 									operator: 'EQUALS',
 									type: 'BOOLEAN',
 									valuePath: ['active']
-								}
+								})
 							]
-						},
-						{
+						}),
+						FilterCriteria.filter({
 							operator: 'OR',
 							criterias: [
-								{
+								FilterCriteria.criteria({
 									matchValue: 'John',
 									operator: 'CONTAINS',
 									type: 'STRING',
 									valuePath: ['name']
-								},
-								{
+								}),
+								FilterCriteria.criteria({
 									matchValue: 30,
 									operator: 'LESS',
 									type: 'NUMBER',
 									valuePath: ['age']
-								}
+								})
 							]
-						}
+						}),
+						FilterCriteria.filter({
+							operator: 'AND',
+							criterias: []
+						})
 					]
 				});
 
@@ -563,34 +628,34 @@ describe('/index', () => {
 				const input = FilterCriteria.filterGroup({
 					operator: 'OR',
 					filters: [
-						{
+						FilterCriteria.filter({
 							operator: 'AND',
 							criterias: [
-								{
+								FilterCriteria.criteria({
 									matchValue: true,
 									operator: 'EQUALS',
 									type: 'BOOLEAN',
 									valuePath: ['active']
-								}
+								})
 							]
-						},
-						{
+						}),
+						FilterCriteria.filter({
 							operator: 'OR',
 							criterias: [
-								{
+								FilterCriteria.criteria({
 									matchValue: 'John',
 									operator: 'CONTAINS',
 									type: 'STRING',
 									valuePath: ['name']
-								},
-								{
+								}),
+								FilterCriteria.criteria({
 									matchValue: 30,
 									operator: 'LESS',
 									type: 'NUMBER',
 									valuePath: ['age']
-								}
+								})
 							]
-						}
+						})
 					]
 				});
 
@@ -614,14 +679,14 @@ describe('/index', () => {
 				const input = FilterCriteria.filter({
 					operator: 'AND',
 					criterias: [
-						{
+						FilterCriteria.criteria({
 							predicate,
 							type: 'CUSTOM'
-						},
-						{
+						}),
+						FilterCriteria.criteria({
 							predicate,
 							type: 'CUSTOM'
-						}
+						})
 					]
 				});
 
@@ -640,18 +705,18 @@ describe('/index', () => {
 				const input = FilterCriteria.filterGroup({
 					operator: 'AND',
 					filters: [
-						{
+						FilterCriteria.filter({
 							operator: 'AND',
 							criterias: [
-								{
+								FilterCriteria.criteria({
 									defaultValue: 40,
 									matchValue: 30,
 									operator: 'GREATER-OR-EQUALS',
 									type: 'NUMBER',
 									valuePath: ['missing']
-								}
+								})
 							]
-						}
+						})
 					]
 				});
 
@@ -663,17 +728,17 @@ describe('/index', () => {
 				const input = FilterCriteria.filterGroup({
 					operator: 'AND',
 					filters: [
-						{
+						FilterCriteria.filter({
 							operator: 'AND',
 							criterias: [
-								{
+								FilterCriteria.criteria({
 									matchValue: 30,
 									operator: 'GREATER-OR-EQUALS',
 									type: 'NUMBER',
 									valuePath: ['missing']
-								}
+								})
 							]
-						}
+						})
 					]
 				});
 
@@ -760,6 +825,62 @@ describe('/index', () => {
 					operator: 'EQUALS',
 					type: 'STRING',
 					valuePath: ['phones', 'country']
+				}),
+				activeDevelopers: FilterCriteria.filter({
+					operator: 'AND',
+					criterias: [
+						FilterCriteria.criteria({
+							matchValue: 'developer',
+							operator: 'HAS',
+							type: 'SET',
+							valuePath: ['tagsSet']
+						}),
+						FilterCriteria.criteria({
+							matchValue: true,
+							operator: 'EQUALS',
+							type: 'BOOLEAN',
+							valuePath: ['active']
+						})
+					]
+				}),
+				activeDevelopersOrDesigners: FilterCriteria.filterGroup({
+					operator: 'OR',
+					filters: [
+						FilterCriteria.filter({
+							operator: 'AND',
+							criterias: [
+								FilterCriteria.criteria({
+									matchValue: 'developer',
+									operator: 'HAS',
+									type: 'SET',
+									valuePath: ['tagsSet']
+								}),
+								FilterCriteria.criteria({
+									matchValue: true,
+									operator: 'EQUALS',
+									type: 'BOOLEAN',
+									valuePath: ['active']
+								})
+							]
+						}),
+						FilterCriteria.filter({
+							operator: 'AND',
+							criterias: [
+								FilterCriteria.criteria({
+									matchValue: 'designer',
+									operator: 'HAS',
+									type: 'SET',
+									valuePath: ['tagsSet']
+								}),
+								FilterCriteria.criteria({
+									matchValue: true,
+									operator: 'EQUALS',
+									type: 'BOOLEAN',
+									valuePath: ['active']
+								})
+							]
+						})
+					]
 				})
 			};
 
@@ -773,6 +894,12 @@ describe('/index', () => {
 
 			expect(results.usPhones).toHaveLength(3);
 			expect(_.map(results.usPhones, 'id')).toEqual([1, 2, 3]);
+
+			expect(results.activeDevelopers).toHaveLength(2);
+			expect(_.map(results.activeDevelopers, 'id')).toEqual([1, 3]);
+
+			expect(results.activeDevelopersOrDesigners).toHaveLength(2);
+			expect(_.map(results.activeDevelopersOrDesigners, 'id')).toEqual([1, 3]);
 		});
 
 		it('should handle empty results', async () => {
@@ -3360,18 +3487,18 @@ describe('/index', () => {
 			const filter = FilterCriteria.filter({
 				operator: 'OR',
 				criterias: [
-					{
+					FilterCriteria.criteria({
 						matchValue: 'jo_hn',
 						operator: 'CONTAINS',
 						type: 'STRING',
 						valuePath: ['name']
-					},
-					{
+					}),
+					FilterCriteria.criteria({
 						matchValue: 'john',
 						operator: 'CONTAINS',
 						type: 'STRING',
 						valuePath: ['name']
-					}
+					})
 				]
 			});
 
@@ -4110,14 +4237,6 @@ describe('/index', () => {
 		});
 
 		it('should override [normalize]', async () => {
-			const criteriaMapper = vi.fn(({ criteria }) => {
-				return criteria;
-			});
-
-			const valueMapper = vi.fn(({ value }) => {
-				return value;
-			});
-
 			let criteria = FilterCriteria.alias('test', {
 				normalize: false,
 				type: 'STRING'
@@ -4167,10 +4286,10 @@ describe('/index', () => {
 				const filterGroupInput = FilterCriteria.filterGroup({
 					operator: 'AND',
 					filters: [
-						{
+						FilterCriteria.filter({
 							operator: 'AND',
 							criterias: [criteria, FilterCriteria.alias('test')]
-						}
+						})
 					]
 				});
 
@@ -4183,17 +4302,15 @@ describe('/index', () => {
 								...filter,
 								criterias: [
 									criteria,
-									{
+									FilterCriteria.criteria({
 										alias: 'test',
-										criteriaMapper: null,
 										defaultValue: 0,
 										matchInArray: true,
 										matchValue: null,
 										operator: 'GREATER',
 										type: 'NUMBER',
-										valueMapper: null,
 										valuePath: ['age']
-									}
+									})
 								]
 							};
 						})
@@ -4213,10 +4330,10 @@ describe('/index', () => {
 				const filterGroupInput = FilterCriteria.filterGroup({
 					operator: 'AND',
 					filters: [
-						{
+						FilterCriteria.filter({
 							operator: 'AND',
 							criterias: [criteria, FilterCriteria.alias('test')]
-						}
+						})
 					]
 				});
 
@@ -4229,17 +4346,22 @@ describe('/index', () => {
 								...filter,
 								criterias: [
 									criteria,
-									{
+									FilterCriteria.criteria({
 										alias: 'test',
-										criteriaMapper: null,
+										// @ts-expect-error
 										defaultValue: null,
+										// @ts-expect-error
+										matchInArray: null,
 										matchValue: null,
+										// @ts-expect-error
 										normalize: null,
+										// @ts-expect-error
 										operator: null,
+										// @ts-expect-error
 										type: null,
-										valueMapper: null,
+										// @ts-expect-error
 										valuePath: null
-									}
+									})
 								]
 							};
 						})
@@ -4269,23 +4391,21 @@ describe('/index', () => {
 					input: {
 						operator: 'AND',
 						filters: [
-							{
+							FilterCriteria.filter({
 								...filter,
 								criterias: [
 									criteria,
-									{
+									FilterCriteria.criteria({
 										alias: 'test',
-										criteriaMapper: null,
 										defaultValue: 0,
 										matchInArray: true,
 										matchValue: null,
 										operator: 'GREATER',
 										type: 'NUMBER',
-										valueMapper: null,
 										valuePath: ['age']
-									}
+									})
 								]
-							}
+							})
 						]
 					},
 					level: 'filter'
@@ -4308,7 +4428,12 @@ describe('/index', () => {
 				expect(filterInput).toEqual({
 					input: {
 						operator: 'AND',
-						filters: [{ operator: 'AND', criterias: [criteria] }]
+						filters: [
+							FilterCriteria.filter({
+								operator: 'AND',
+								criterias: [criteria]
+							})
+						]
 					},
 					level: 'criteria'
 				});
@@ -4324,22 +4449,20 @@ describe('/index', () => {
 					input: {
 						operator: 'AND',
 						filters: [
-							{
+							FilterCriteria.filter({
 								operator: 'AND',
 								criterias: [
-									{
+									FilterCriteria.criteria({
 										alias: 'test',
-										criteriaMapper: null,
 										defaultValue: 0,
 										matchInArray: true,
 										matchValue: null,
 										operator: 'GREATER',
 										type: 'NUMBER',
-										valueMapper: null,
 										valuePath: ['age']
-									}
+									})
 								]
-							}
+							})
 						]
 					},
 					level: 'criteria'
@@ -4396,12 +4519,12 @@ describe('/index', () => {
 				const input = FilterCriteria.filter({
 					operator: 'AND',
 					criterias: [
-						{
+						FilterCriteria.criteria({
 							matchValue: 'John',
 							operator: 'CONTAINS',
 							type: 'STRING',
 							valuePath: ['name']
-						}
+						})
 					]
 				});
 
@@ -4415,17 +4538,17 @@ describe('/index', () => {
 				const input = FilterCriteria.filterGroup({
 					operator: 'AND',
 					filters: [
-						{
+						FilterCriteria.filter({
 							operator: 'OR',
 							criterias: [
-								{
+								FilterCriteria.criteria({
 									matchValue: 'John',
 									operator: 'CONTAINS',
 									type: 'STRING',
 									valuePath: ['name']
-								}
+								})
 							]
-						}
+						})
 					]
 				});
 
@@ -4462,10 +4585,10 @@ describe('/index', () => {
 				const input = FilterCriteria.filterGroup({
 					operator: 'AND',
 					filters: [
-						{
+						FilterCriteria.filter({
 							operator: 'OR',
 							criterias: [FilterCriteria.alias('test-boolean'), FilterCriteria.alias('test-string')]
-						}
+						})
 					]
 				});
 
@@ -4499,10 +4622,10 @@ describe('/index', () => {
 				const input = FilterCriteria.filterGroup({
 					operator: 'AND',
 					filters: [
-						{
+						FilterCriteria.filter({
 							operator: 'OR',
 							criterias: [FilterCriteria.alias('test-boolean'), FilterCriteria.alias('non-existent-alias')]
-						}
+						})
 					]
 				});
 
@@ -4548,12 +4671,12 @@ describe('/index', () => {
 				const input = {
 					operator: 'INVALID-OPERATOR',
 					criterias: [
-						{
+						FilterCriteria.criteria({
 							matchValue: 'John',
 							operator: 'CONTAINS',
 							type: 'STRING',
 							valuePath: ['name']
-						}
+						})
 					]
 				};
 
@@ -4568,17 +4691,17 @@ describe('/index', () => {
 				const input = {
 					operator: 'INVALID-OPERATOR',
 					filters: [
-						{
+						FilterCriteria.filter({
 							operator: 'AND',
 							criterias: [
-								{
+								FilterCriteria.criteria({
 									matchValue: 'John',
 									operator: 'CONTAINS',
 									type: 'STRING',
 									valuePath: ['name']
-								}
+								})
 							]
-						}
+						})
 					]
 				};
 

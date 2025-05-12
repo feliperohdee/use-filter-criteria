@@ -205,6 +205,7 @@ const filterGroup = z.object({
 	operator: logicalOperator
 });
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const matchManyInput = filterGroup;
 const matchInput = z.union([criteria, filter, filterGroup]);
 
@@ -364,6 +365,16 @@ class FilterCriteria {
 			})
 		);
 
+		// when filters are empty, return filter group as passed
+		if (_.size(filtersResults) === 0) {
+			return {
+				operator: args.operator,
+				passed: true,
+				reason: `Filter group "${args.operator}" check PASSED`,
+				results: []
+			};
+		}
+
 		const passed =
 			args.operator === 'AND'
 				? _.every(filtersResults, r => {
@@ -393,6 +404,7 @@ class FilterCriteria {
 		const converted = this.translateToFilterGroupInput(input);
 		const args = await filterGroup.parseAsync(converted.input);
 
+		// when filter group is empty, return all items
 		if (this.$empty(converted.input)) {
 			return value;
 		}
@@ -443,7 +455,6 @@ class FilterCriteria {
 
 					if (this.$empty(args)) {
 						reduction[key].push(item);
-
 						continue;
 					}
 
@@ -573,6 +584,16 @@ class FilterCriteria {
 				return this.applyCriteria(value, criteria);
 			})
 		);
+
+		// when criterias are empty, return filter as passed
+		if (_.size(criteriaResults) === 0) {
+			return {
+				operator: filter.operator,
+				passed: true,
+				reason: `Filter "${filter.operator}" check PASSED`,
+				results: []
+			};
+		}
 
 		const passed =
 			filter.operator === 'AND'

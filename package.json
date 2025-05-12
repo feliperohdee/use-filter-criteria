@@ -1,7 +1,9 @@
 {
 	"name": "use-filter-criteria",
 	"dependencies": {
+		"eslint": "^9.26.0",
 		"lodash": "^4.17.21",
+		"typescript-eslint": "^8.32.0",
 		"use-async-helpers": "^1.0.31",
 		"use-zod-default": "^1.0.10",
 		"zod": "^3.24.1"
@@ -25,12 +27,13 @@
 	},
 	"scripts": {
 		"build": "rm -rf dist && yarn lint && tsc -p tsconfig.json",
-		"lint": "prettier --write . && tsc -p tsconfig.json",
+		"lint": "prettier --write . && eslint . --fix && tsc -p tsconfig.json",
 		"npm-publish": "yarn test --run && yarn build && yarn version --patch --no-git-tag-version && yarn publish --non-interactive",
 		"npm-publish-only": "yarn build && yarn version --patch --no-git-tag-version && yarn publish --non-interactive",
 		"test": "vitest",
+		"test:basic": "vitest --reporter=basic",
 		"test:coverage": "rm -rf coverage && vitest --run --coverage",
 		"test:coverage:watch": "rm -rf coverage && vitest --coverage"
 	},
-	"version": "1.0.75"
+	"version": "1.0.76"
 }
