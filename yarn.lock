@@ -2118,10 +2118,10 @@ use-data-loader@^1.0.1:
     "@types/lodash" "^4.17.14"
     lodash "^4.17.21"
 
-use-zod-default@^1.0.13:
-  version "1.0.13"
-  resolved "https://registry.yarnpkg.com/use-zod-default/-/use-zod-default-1.0.13.tgz#7ddfd350a5eace91274a1ccf70c1467e30a5bcf1"
-  integrity sha512-7kZlWVLW+ZiSURYgqSdqByR0iNzkTP+WeyNFlLocnakmDr/UoFcOVn7HuC+urnC9iqBqwzzF9sEByJznDaYcUQ==
+use-zod-default@^1.0.14:
+  version "1.0.14"
+  resolved "https://registry.yarnpkg.com/use-zod-default/-/use-zod-default-1.0.14.tgz#e13c87c5ab8d85c3ae05ed30331a25bca92fcc68"
+  integrity sha512-82MvLEaa23FBKzi8B94+IQ0LrSgnNOEKN2GCGjtetSXTjH8gTbVMl9OCxYQ7jSZmtSnzdeHPgHODpXXWHfu6uA==
   dependencies:
     lodash "^4.17.21"
     zod "^3.23.8"
