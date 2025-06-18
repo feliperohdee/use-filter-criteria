@@ -3,17 +3,17 @@
 	"dependencies": {
 		"lodash": "^4.17.21",
 		"use-async-helpers": "^1.0.31",
-		"use-zod-default": "^1.0.14",
-		"zod": "^3.24.1"
+		"use-zod-default": "^1.0.15",
+		"zod": "^3.25.67"
 	},
 	"devDependencies": {
-		"@types/lodash": "^4.17.13",
+		"@types/lodash": "^4.17.18",
 		"@vitest/coverage-v8": "2.1.8",
 		"eslint": "^9.26.0",
 		"prettier": "^3.4.2",
 		"typescript": "^5.7.2",
 		"typescript-eslint": "^8.32.0",
-		"use-data-loader": "^1.0.1",
+		"use-data-loader": "^1.0.2",
 		"vitest": "2.1.8"
 	},
 	"files": [
@@ -35,5 +35,5 @@
 		"test:coverage": "rm -rf coverage && vitest --run --coverage",
 		"test:coverage:watch": "rm -rf coverage && vitest --coverage"
 	},
-	"version": "1.0.81"
+	"version": "1.0.82"
 }
