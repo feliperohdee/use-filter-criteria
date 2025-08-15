@@ -2112,13 +2112,10 @@ use-data-loader@^1.0.2:
   dependencies:
     lodash "^4.17.21"
 
-use-zod-default@^1.0.15:
-  version "1.0.15"
-  resolved "https://registry.yarnpkg.com/use-zod-default/-/use-zod-default-1.0.15.tgz#a5ded1a88ac3cd1e58c97a259838b09be1fa569a"
-  integrity sha512-mQq3BycYIXbfZ87pFC/5CO4//X7/ONAPi5bp465dJpbDYG8i0frhPLC231cE9YQ7EZPURZ+YG48Kdah+aTYsig==
-  dependencies:
-    lodash "^4.17.21"
-    zod "^3.25.67"
+use-zod-default@^1.0.18:
+  version "1.0.18"
+  resolved "https://registry.yarnpkg.com/use-zod-default/-/use-zod-default-1.0.18.tgz#001e1cfa22db78a7f8a70a0fbe93bd551d714f8f"
+  integrity sha512-PInf/+2rWoJCdO7eNU+W6sN54y41xGgNM2HNYOpxy5TkKoV/4n8NiA4hKgNl2HdK90ydg4tlYBPKA0fS4y1pmA==
 
 vary@^1, vary@^1.1.2:
   version "1.1.2"
@@ -2236,7 +2233,7 @@ zod@^3.24.2:
   resolved "https://registry.yarnpkg.com/zod/-/zod-3.24.4.tgz#e2e2cca5faaa012d76e527d0d36622e0a90c315f"
   integrity sha512-OdqJE9UDRPwWsrHjLN2F8bPxvwJBK22EHLWtanu0LSYr5YqzsaaW3RMgmjwr8Rypg5k+meEJdSPXJZXE/yqOMg==
 
-zod@^3.25.67:
-  version "3.25.67"
-  resolved "https://registry.yarnpkg.com/zod/-/zod-3.25.67.tgz#62987e4078e2ab0f63b491ef0c4f33df24236da8"
-  integrity sha512-idA2YXwpCdqUSKRCACDE6ItZD9TZzy3OZMtpfLoh6oPR47lipysRrJfjzMqFxQ3uJuUPyUeWe1r9vLH33xO/Qw==
+zod@^4.0.17:
+  version "4.0.17"
+  resolved "https://registry.yarnpkg.com/zod/-/zod-4.0.17.tgz#95931170715f73f7426c385c237b7477750d6c8d"
+  integrity sha512-1PHjlYRevNxxdy2JZ8JcNAw7rX8V9P1AKkP+x/xZfxB0K5FYfuV+Ug6P/6NVSR2jHQ+FzDDoDHS04nYUsOIyLQ==

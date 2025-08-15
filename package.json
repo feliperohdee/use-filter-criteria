@@ -1,20 +1,24 @@
 {
 	"name": "use-filter-criteria",
-	"dependencies": {
-		"lodash": "^4.17.21",
-		"use-async-helpers": "^1.0.31",
-		"use-zod-default": "^1.0.15",
-		"zod": "^3.25.67"
-	},
 	"devDependencies": {
 		"@types/lodash": "^4.17.18",
 		"@vitest/coverage-v8": "2.1.8",
 		"eslint": "^9.26.0",
+		"lodash": "^4.17.21",
 		"prettier": "^3.4.2",
 		"typescript": "^5.7.2",
 		"typescript-eslint": "^8.32.0",
+		"use-async-helpers": "^1.0.31",
 		"use-data-loader": "^1.0.2",
-		"vitest": "2.1.8"
+		"use-zod-default": "^1.0.18",
+		"vitest": "2.1.8",
+		"zod": "^4.0.17"
+	},
+	"peerDependencies": {
+		"lodash": "^4.17.21",
+		"use-async-helpers": "^1.0.31",
+		"use-zod-default": "^1.0.18",
+		"zod": "^4.0.17"
 	},
 	"files": [
 		"dist"
@@ -28,12 +32,11 @@
 	"scripts": {
 		"build": "rm -rf dist && yarn lint && tsc -p tsconfig.json",
 		"lint": "prettier --write . && eslint . --fix && tsc -p tsconfig.json",
-		"npm-publish": "yarn test --run && yarn build && yarn version --patch --no-git-tag-version && yarn publish --non-interactive",
-		"npm-publish-only": "yarn build && yarn version --patch --no-git-tag-version && yarn publish --non-interactive",
+		"npm:publish": "yarn test --run && yarn build && yarn version --patch --no-git-tag-version && yarn publish --non-interactive",
 		"test": "vitest",
 		"test:basic": "vitest --reporter=basic",
 		"test:coverage": "rm -rf coverage && vitest --run --coverage",
 		"test:coverage:watch": "rm -rf coverage && vitest --coverage"
 	},
-	"version": "1.0.82"
+	"version": "1.0.83"
 }

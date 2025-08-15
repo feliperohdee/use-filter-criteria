@@ -75,10 +75,11 @@ describe('/index', () => {
 					criteriaMapper: null,
 					defaultValue: null,
 					heavy: null,
+					matchInArray: null,
 					matchValue: null,
 					normalize: null,
 					operator: null,
-					type: null,
+					type: 'ALIAS',
 					valueMapper: null,
 					valuePath: null
 				});
@@ -2023,7 +2024,6 @@ describe('/index', () => {
 
 		describe('date', () => {
 			it('should handle invalid valuePath', async () => {
-				// @ts-expect-error
 				const criteria = FilterCriteria.criteria({
 					type: 'DATE',
 					valuePath: ['age']
@@ -4552,7 +4552,28 @@ describe('/index', () => {
 			}
 		});
 
-		it('should override [criteriaMapper, matchInArray, matchValue, operator, type, valuePath, valueMapper]', async () => {
+		it('should translate criteria alias', async () => {
+			let criteria = FilterCriteria.alias('test');
+
+			// @ts-expect-error
+			criteria = filterCriteria.translateCriteriaAlias(criteria);
+
+			expect(criteria).toEqual({
+				alias: 'test',
+				criteriaMapper: null,
+				defaultValue: '',
+				heavy: false,
+				matchInArray: true,
+				matchValue: null,
+				normalize: true,
+				operator: 'EQUALS',
+				type: 'STRING',
+				valueMapper: null,
+				valuePath: ['name']
+			});
+		});
+
+		it('should override [criteriaMapper, defaultValue, matchInArray, matchValue, operator, type, valuePath, valueMapper]', async () => {
 			const criteriaMapper = vi.fn(({ criteria }) => {
 				return criteria;
 			});
@@ -4588,8 +4609,9 @@ describe('/index', () => {
 			});
 		});
 
-		it('should override [normalize]', async () => {
+		it('should override [defaultValue, normalize]', async () => {
 			let criteria = FilterCriteria.alias('test', {
+				defaultValue: 'John',
 				normalize: false,
 				type: 'STRING'
 			});
@@ -4600,7 +4622,7 @@ describe('/index', () => {
 			expect(criteria).toEqual({
 				alias: 'test',
 				criteriaMapper: null,
-				defaultValue: '',
+				defaultValue: 'John',
 				heavy: false,
 				matchInArray: true,
 				matchValue: null,
@@ -4702,20 +4724,13 @@ describe('/index', () => {
 									criteria,
 									FilterCriteria.criteria({
 										alias: 'test',
-										// @ts-expect-error
 										defaultValue: null,
-										// @ts-expect-error
 										heavy: null,
-										// @ts-expect-error
 										matchInArray: null,
 										matchValue: null,
-										// @ts-expect-error
 										normalize: null,
-										// @ts-expect-error
 										operator: null,
-										// @ts-expect-error
-										type: null,
-										// @ts-expect-error
+										type: 'ALIAS',
 										valuePath: null
 									})
 								]

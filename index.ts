@@ -17,7 +17,7 @@ import {
 	operatorsString
 } from './operators';
 
-const zDatetime = z.string().datetime({ offset: true });
+const zDatetime = z.iso.datetime({ offset: true }).default('');
 const zFunction = z.custom<Function>(
 	value => {
 		return _.isFunction(value);
@@ -39,18 +39,39 @@ const matchValueGetter = <T extends z.ZodSchema>(schema: T) => {
 };
 
 const criteriaCustomPredicate = z
-	.function()
-	.args(
-		z.object({
-			matchValue: z.any(),
-			value: z.any()
-		})
+	.custom<null | ((params: { matchValue: any; value: any }) => boolean | Promise<boolean>)>(
+		func => {
+			if (_.isNil(func)) {
+				return true;
+			}
+
+			if (_.isFunction(func)) {
+				return true;
+			}
+
+			return false;
+		},
+		{
+			message: 'Value must be a function or null'
+		}
 	)
-	.returns(z.union([z.boolean(), z.promise(z.boolean())]))
-	.nullable()
 	.default(null);
 
 const criteriaMapper = zFunction.nullable().default(null);
+const aliasCriteria = z.object({
+	alias: z.string().default(''),
+	criteriaMapper: z.literal(null),
+	defaultValue: z.literal(null),
+	heavy: z.literal(null),
+	matchInArray: z.literal(null),
+	matchValue: z.literal(null),
+	normalize: z.literal(null),
+	operator: z.literal(null),
+	type: z.literal('ALIAS'),
+	valueMapper: z.literal(null),
+	valuePath: z.literal(null)
+});
+
 const criteriaArray = z.object({
 	alias: z.string().default(''),
 	criteriaMapper,
@@ -101,7 +122,7 @@ const criteriaDate = z.object({
 const criteriaGeo = z.object({
 	alias: z.string().default(''),
 	criteriaMapper,
-	defaultValue: z.record(z.number()).default({ lat: 0, lng: 0 }),
+	defaultValue: z.record(z.string(), z.number()).default({ lat: 0, lng: 0 }),
 	heavy: z.boolean().default(false),
 	matchValue: matchValueGetter(
 		z.object({
@@ -149,7 +170,7 @@ const criteriaNumber = z.object({
 const criteriaObject = z.object({
 	alias: z.string().default(''),
 	criteriaMapper,
-	defaultValue: z.record(z.unknown()).default({}),
+	defaultValue: z.record(z.string(), z.unknown()).default({}),
 	heavy: z.boolean().default(false),
 	matchInArray: z.boolean().default(true),
 	matchValue: matchValueGetter(z.any()).default(null),
@@ -193,6 +214,7 @@ const criteriaString = z.object({
 });
 
 const criteria = z.discriminatedUnion('type', [
+	aliasCriteria,
 	criteriaArray,
 	criteriaBoolean,
 	criteriaCustom,
@@ -297,7 +319,12 @@ const criteriaAliasFactory = <T extends FilterCriteria.Criteria = FilterCriteria
 		valueMapper?: (input: { context: Map<string, any>; criteria: T; value: any }) => any;
 	}
 ): T => {
-	const source = { ...input, alias };
+	const source = {
+		...input,
+		alias,
+		type: input?.type || 'ALIAS'
+	};
+
 	// @ts-expect-error
 	const res: Record<string, any> = zDefault(criteria, source);
 
@@ -1677,9 +1704,7 @@ class FilterCriteria {
 			throw new Error('Alias is required');
 		}
 
-		this.savedCriteria.set(criteria.alias, {
-			criteria
-		});
+		this.savedCriteria.set(criteria.alias, { criteria });
 
 		return this;
 	}
@@ -1688,55 +1713,76 @@ class FilterCriteria {
 		return (value * Math.PI) / 180;
 	}
 
-	private translateCriteriaAlias(criteria: FilterCriteria.CriteriaInput & { alias: string }) {
-		const saved = this.savedCriteria.get(criteria.alias);
+	private translateCriteriaAlias(aliasCriteria: FilterCriteria.CriteriaInput & { alias: string }) {
+		const saved = this.savedCriteria.get(aliasCriteria.alias);
 
 		if (!saved) {
-			throw new Error(`Criteria "${criteria.alias}" not found`);
+			throw new Error(`Criteria "${aliasCriteria.alias}" not found`);
 		}
 
-		// ensure immutable
 		let savedCriteria = { ...saved.criteria };
 
-		if ('criteriaMapper' in criteria && !_.isNil(criteria.criteriaMapper) && 'criteriaMapper' in savedCriteria) {
-			savedCriteria.criteriaMapper = criteria.criteriaMapper;
+		if ('criteriaMapper' in aliasCriteria && !_.isNil(aliasCriteria.criteriaMapper) && 'criteriaMapper' in savedCriteria) {
+			savedCriteria.criteriaMapper = aliasCriteria.criteriaMapper;
 		}
 
-		if ('matchInArray' in criteria && !_.isNil(criteria.matchInArray) && 'matchInArray' in savedCriteria) {
-			savedCriteria.matchInArray = criteria.matchInArray;
+		if ('defaultValue' in aliasCriteria && !_.isNil(aliasCriteria.defaultValue) && 'defaultValue' in savedCriteria) {
+			savedCriteria.defaultValue = aliasCriteria.defaultValue;
 		}
 
-		if ('matchValue' in criteria && !_.isNil(criteria.matchValue) && 'matchValue' in savedCriteria) {
-			savedCriteria.matchValue = criteria.matchValue;
+		if ('matchInArray' in aliasCriteria && !_.isNil(aliasCriteria.matchInArray) && 'matchInArray' in savedCriteria) {
+			savedCriteria.matchInArray = aliasCriteria.matchInArray;
 		}
 
-		if ('normalize' in criteria && !_.isNil(criteria.normalize) && 'normalize' in savedCriteria) {
-			savedCriteria.normalize = criteria.normalize;
+		if ('matchValue' in aliasCriteria && !_.isNil(aliasCriteria.matchValue) && 'matchValue' in savedCriteria) {
+			savedCriteria.matchValue = aliasCriteria.matchValue;
 		}
 
-		if ('operator' in criteria && !_.isNil(criteria.operator) && 'operator' in savedCriteria) {
-			savedCriteria.operator = criteria.operator;
+		if ('normalize' in aliasCriteria && !_.isNil(aliasCriteria.normalize) && 'normalize' in savedCriteria) {
+			savedCriteria.normalize = aliasCriteria.normalize;
 		}
 
-		if ('valueMapper' in criteria && !_.isNil(criteria.valueMapper) && 'valueMapper' in savedCriteria) {
-			savedCriteria.valueMapper = criteria.valueMapper;
+		if ('operator' in aliasCriteria && !_.isNil(aliasCriteria.operator) && 'operator' in savedCriteria) {
+			savedCriteria.operator = aliasCriteria.operator;
 		}
 
-		if ('valuePath' in criteria && !_.isNil(criteria.valuePath) && _.size(criteria.valuePath) > 0 && 'valuePath' in savedCriteria) {
-			savedCriteria.valuePath = criteria.valuePath;
+		if ('valueMapper' in aliasCriteria && !_.isNil(aliasCriteria.valueMapper) && 'valueMapper' in savedCriteria) {
+			savedCriteria.valueMapper = aliasCriteria.valueMapper;
 		}
 
-		if ('type' in criteria && !_.isNil(criteria.type) && 'type' in savedCriteria) {
-			savedCriteria.type = criteria.type;
+		if (
+			'valuePath' in aliasCriteria &&
+			!_.isNil(aliasCriteria.valuePath) &&
+			_.size(aliasCriteria.valuePath) > 0 &&
+			'valuePath' in savedCriteria
+		) {
+			savedCriteria.valuePath = aliasCriteria.valuePath;
+		}
 
+		// if different type
+		if (aliasCriteria.type !== 'ALIAS' && aliasCriteria.type !== savedCriteria.type) {
+			savedCriteria.type = aliasCriteria.type;
+
+			// assume default value from new criteria's type
 			if ('defaultValue' in savedCriteria) {
-				const matchedSchema = schema.criteria.optionsMap.get(savedCriteria.type);
-				const newDefaultValue = matchedSchema?.shape?.defaultValue?._def?.defaultValue();
+				const matchedSchema = schema.criteria._zod.def.options.find(option => {
+					const propValues = option._zod.propValues;
 
-				savedCriteria.defaultValue = newDefaultValue;
+					if (propValues && propValues['type']) {
+						return propValues['type'].has(savedCriteria.type);
+					}
+
+					return false;
+				});
+
+				if (matchedSchema && 'defaultValue' in matchedSchema?.def?.shape && 'defaultValue' in matchedSchema?.def?.shape.defaultValue.def) {
+					const newDefaultValue = matchedSchema?.def?.shape.defaultValue.def?.defaultValue;
+
+					savedCriteria.defaultValue = newDefaultValue;
+				}
 			}
 
-			// revalidate schema
+			// revalidate schema as type changed
 			savedCriteria = schema.criteria.parse(savedCriteria);
 		}
 
