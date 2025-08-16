@@ -2205,10 +2205,10 @@ use-data-loader@^1.0.3:
   resolved "https://registry.yarnpkg.com/use-data-loader/-/use-data-loader-1.0.3.tgz#fea63e755751fce5070f59ec0834b8fb6a069b41"
   integrity sha512-RNbWUOJhCKiuMVVQzti+cfdTLx1k5RJgGOSSCrVvDhgCXstrSB2pNJtqmnfmVExGubVN20Zba5B73Rq6CnRXNg==
 
-use-zod-default@^1.0.20:
-  version "1.0.20"
-  resolved "https://registry.yarnpkg.com/use-zod-default/-/use-zod-default-1.0.20.tgz#29b07776db95e49267e89720ab080ba509cff6c8"
-  integrity sha512-zAUH7hUMKcdlhSVBXosFBuYA2Ub5Gc7Py/AGspK8QtS5cNUcHzqGx1Wh77lZMAV6RVqfb9oPLTQ0+q3ey6RIow==
+use-zod-default@^1.0.21:
+  version "1.0.21"
+  resolved "https://registry.yarnpkg.com/use-zod-default/-/use-zod-default-1.0.21.tgz#d456842320bec0dd31281bd3ecabfff35226a976"
+  integrity sha512-Lx/TuRSf5BCZ/c+6v6jvGzev9prq0/mmwVf0lEAekxEiWwDxUMMj/+irPQ65wxy6VhtULNKvNV+7D1sEYQDZsg==
 
 vary@^1, vary@^1.1.2:
   version "1.1.2"

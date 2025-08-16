@@ -10,14 +10,14 @@
 		"typescript-eslint": "^8.32.0",
 		"use-async-helpers": "^1.0.31",
 		"use-data-loader": "^1.0.3",
-		"use-zod-default": "^1.0.20",
+		"use-zod-default": "^1.0.21",
 		"vitest": "^3.2.4",
 		"zod": "^4.0.17"
 	},
 	"peerDependencies": {
 		"lodash": "^4.17.21",
 		"use-async-helpers": "^1.0.31",
-		"use-zod-default": "^1.0.20",
+		"use-zod-default": "^1.0.21",
 		"zod": "^4.0.17"
 	},
 	"files": [
@@ -38,5 +38,5 @@
 		"test:coverage": "rm -rf coverage && vitest --coverage --run",
 		"test:watch": "vitest"
 	},
-	"version": "1.0.84"
+	"version": "1.0.85"
 }
