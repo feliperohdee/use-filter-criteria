@@ -18,6 +18,19 @@ import {
 } from './operators';
 
 const zDatetime = z.iso.datetime({ offset: true }).default('');
+
+// Relative date schema for dynamic date calculations
+const zRelativeDate = z.object({
+	years: z.number().optional(),
+	months: z.number().optional(),
+	days: z.number().optional(),
+	hours: z.number().optional(),
+	minutes: z.number().optional(),
+	seconds: z.number().optional(),
+	milliseconds: z.number().optional(),
+	gmt: z.string().optional() // GMT offset like '+00:00', '-03:00', 'UTC', etc.
+});
+
 const zFunction = z.custom<Function>(
 	value => {
 		return _.isFunction(value);
@@ -112,7 +125,16 @@ const criteriaDate = z.object({
 	defaultValue: z.string().default(''),
 	heavy: z.boolean().default(false),
 	matchInArray: z.boolean().default(true),
-	matchValue: matchValueGetter(z.union([zDatetime, z.tuple([zDatetime, zDatetime])])),
+	matchValue: matchValueGetter(
+		z.union([
+			zDatetime,
+			zRelativeDate,
+			z.tuple([zDatetime, zDatetime]),
+			z.tuple([zRelativeDate, zRelativeDate]),
+			z.tuple([zDatetime, zRelativeDate]),
+			z.tuple([zRelativeDate, zDatetime])
+		])
+	),
 	operator: operatorsDate.default('AFTER'),
 	type: z.literal('DATE'),
 	valueMapper: criteriaMapper,
@@ -281,6 +303,8 @@ namespace FilterCriteria {
 		reason: string;
 		value: any;
 	};
+
+	export type RelativeDate = z.infer<typeof zRelativeDate>;
 
 	export type LogicalOperator = z.infer<typeof logicalOperator>;
 	export type MatchInput = z.input<typeof matchInput>;
@@ -770,11 +794,11 @@ class FilterCriteria {
 		const passed =
 			filter.operator === 'AND'
 				? _.every(criteriaResults, r => {
-						return r.passed;
-					})
+					return r.passed;
+				})
 				: _.some(criteriaResults, r => {
-						return r.passed;
-					});
+					return r.passed;
+				});
 
 		return {
 			operator: filter.operator,
@@ -1005,6 +1029,25 @@ class FilterCriteria {
 
 	private applyDateCriteria(value: string, operator: FilterCriteria.Operators['date'], matchValue: any): boolean {
 		const validValue = _.isString(value);
+
+		// Helper to check if value is a relative date object
+		const isRelativeDate = (val: any): boolean => {
+			return _.isPlainObject(val) && (
+				'years' in val || 'months' in val || 'days' in val ||
+				'hours' in val || 'minutes' in val || 'seconds' in val ||
+				'milliseconds' in val || 'gmt' in val
+			);
+		};
+
+		// Convert relative dates to ISO strings
+		if (isRelativeDate(matchValue)) {
+			matchValue = this.calculateRelativeDate(matchValue);
+		} else if (_.isArray(matchValue)) {
+			matchValue = _.map(matchValue, (val) => {
+				return isRelativeDate(val) ? this.calculateRelativeDate(val) : val;
+			});
+		}
+
 		const validMatchValue = _.isString(matchValue) || isStringArray(matchValue);
 
 		if (!validValue || !validMatchValue) {
@@ -1707,6 +1750,68 @@ class FilterCriteria {
 		this.savedCriteria.set(criteria.alias, { criteria });
 
 		return this;
+	}
+
+	private calculateRelativeDate(relativeDate: z.infer<typeof zRelativeDate>): string {
+		// Parse GMT offset if provided
+		let baseDate: Date;
+
+		if (relativeDate.gmt) {
+			// Handle different GMT formats
+			const gmt = relativeDate.gmt.toUpperCase();
+
+			if (gmt === 'UTC' || gmt === 'GMT' || gmt === '+00:00' || gmt === 'Z') {
+				// Use UTC
+				baseDate = new Date();
+			} else {
+				// Parse offset like '+03:00' or '-05:00'
+				const match = gmt.match(/^([+-])(\d{2}):(\d{2})$/);
+				if (match) {
+					const [, sign, hours, minutes] = match;
+					const offsetMinutes = (parseInt(hours) * 60 + parseInt(minutes)) * (sign === '+' ? 1 : -1);
+
+					// Get current UTC time
+					const now = new Date();
+					const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
+
+					// Apply the specified offset
+					baseDate = new Date(utcTime + (offsetMinutes * 60000));
+				} else {
+					// Invalid format, use current time
+					baseDate = new Date();
+				}
+			}
+		} else {
+			// Use current local time
+			baseDate = new Date();
+		}
+
+		// Apply relative operations
+		const resultDate = new Date(baseDate);
+
+		if (relativeDate.years) {
+			resultDate.setFullYear(resultDate.getFullYear() + relativeDate.years);
+		}
+		if (relativeDate.months) {
+			resultDate.setMonth(resultDate.getMonth() + relativeDate.months);
+		}
+		if (relativeDate.days) {
+			resultDate.setDate(resultDate.getDate() + relativeDate.days);
+		}
+		if (relativeDate.hours) {
+			resultDate.setHours(resultDate.getHours() + relativeDate.hours);
+		}
+		if (relativeDate.minutes) {
+			resultDate.setMinutes(resultDate.getMinutes() + relativeDate.minutes);
+		}
+		if (relativeDate.seconds) {
+			resultDate.setSeconds(resultDate.getSeconds() + relativeDate.seconds);
+		}
+		if (relativeDate.milliseconds) {
+			resultDate.setMilliseconds(resultDate.getMilliseconds() + relativeDate.milliseconds);
+		}
+
+		return resultDate.toISOString();
 	}
 
 	private toRad(value: number): number {

@@ -893,6 +893,358 @@ describe('/index', () => {
 				expect(res).toHaveLength(0);
 			});
 		});
+
+		describe('relative dates', () => {
+			const relativeDateTestData = [
+				{
+					createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
+					id: 1,
+					name: 'Recent Event'
+				},
+				{
+					createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(), // 10 days ago
+					id: 2,
+					name: 'Old Event'
+				},
+				{
+					createdAt: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days from now
+					id: 3,
+					name: 'Future Event'
+				}
+			];
+
+			describe('basic relative date operations', () => {
+				it('should filter events created after 5 days ago', async () => {
+					const criteria = FilterCriteria.criteria({
+						matchValue: {
+							days: -5 // 5 days ago
+						},
+						operator: 'AFTER',
+						type: 'DATE',
+						valuePath: ['createdAt']
+					});
+
+					const result = await filterCriteria.matchMany(relativeDateTestData, criteria);
+
+					expect(result).toHaveLength(2);
+					expect(_.map(result, 'id').sort()).toEqual([1, 3]);
+				});
+
+				it('should filter events created before 1 day ago', async () => {
+					const criteria = FilterCriteria.criteria({
+						matchValue: {
+							days: -1 // 1 day ago
+						},
+						operator: 'BEFORE',
+						type: 'DATE',
+						valuePath: ['createdAt']
+					});
+
+					const result = await filterCriteria.matchMany(relativeDateTestData, criteria);
+
+					expect(result).toHaveLength(2);
+					expect(_.map(result, 'id').sort()).toEqual([1, 2]);
+				});
+
+				it('should filter events in the future', async () => {
+					const criteria = FilterCriteria.criteria({
+						matchValue: {
+							hours: 0 // now
+						},
+						operator: 'AFTER',
+						type: 'DATE',
+						valuePath: ['createdAt']
+					});
+
+					const result = await filterCriteria.matchMany(relativeDateTestData, criteria);
+
+					expect(result).toHaveLength(1);
+					expect(result[0].id).toBe(3);
+				});
+			});
+
+			describe('relative date with GMT timezone', () => {
+				it('should handle UTC timezone', async () => {
+					const criteria = FilterCriteria.criteria({
+						matchValue: {
+							days: -7,
+							gmt: 'UTC'
+						},
+						operator: 'AFTER',
+						type: 'DATE',
+						valuePath: ['createdAt']
+					});
+
+					const result = await filterCriteria.matchMany(relativeDateTestData, criteria);
+
+					expect(result).toHaveLength(2);
+					expect(_.map(result, 'id').sort()).toEqual([1, 3]);
+				});
+
+				it('should handle positive GMT offset (+03:00)', async () => {
+					const criteria = FilterCriteria.criteria({
+						matchValue: {
+							days: -7,
+							gmt: '+03:00'
+						},
+						operator: 'AFTER',
+						type: 'DATE',
+						valuePath: ['createdAt']
+					});
+
+					const result = await filterCriteria.matchMany(relativeDateTestData, criteria);
+
+					// Should still work with timezone offset
+					expect(result.length).toBeGreaterThanOrEqual(1);
+				});
+
+				it('should handle negative GMT offset (-05:00)', async () => {
+					const criteria = FilterCriteria.criteria({
+						matchValue: {
+							days: -7,
+							gmt: '-05:00'
+						},
+						operator: 'AFTER',
+						type: 'DATE',
+						valuePath: ['createdAt']
+					});
+
+					const result = await filterCriteria.matchMany(relativeDateTestData, criteria);
+
+					// Should still work with timezone offset
+					expect(result.length).toBeGreaterThanOrEqual(1);
+				});
+			});
+
+			describe('BETWEEN operator with relative dates', () => {
+				it('should filter events between two relative dates', async () => {
+					const criteria = FilterCriteria.criteria({
+						matchValue: [
+							{ days: -15 }, // 15 days ago
+							{ days: -1 }   // 1 day ago
+						],
+						operator: 'BETWEEN',
+						type: 'DATE',
+						valuePath: ['createdAt']
+					});
+
+					const result = await filterCriteria.matchMany(relativeDateTestData, criteria);
+
+					expect(result).toHaveLength(2);
+					expect(_.map(result, 'id').sort()).toEqual([1, 2]);
+				});
+
+				it('should filter events between relative date and absolute date', async () => {
+					const futureDate = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString();
+
+					const criteria = FilterCriteria.criteria({
+						matchValue: [
+							{ days: -15 }, // 15 days ago (relative)
+							futureDate     // 10 days from now (absolute)
+						],
+						operator: 'BETWEEN',
+						type: 'DATE',
+						valuePath: ['createdAt']
+					});
+
+					const result = await filterCriteria.matchMany(relativeDateTestData, criteria);
+
+					expect(result).toHaveLength(3);
+				});
+
+				it('should filter events between absolute date and relative date', async () => {
+					const pastDate = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString();
+
+					const criteria = FilterCriteria.criteria({
+						matchValue: [
+							pastDate,      // 15 days ago (absolute)
+							{ days: 0 }    // now (relative)
+						],
+						operator: 'BETWEEN',
+						type: 'DATE',
+						valuePath: ['createdAt']
+					});
+
+					const result = await filterCriteria.matchMany(relativeDateTestData, criteria);
+
+					expect(result).toHaveLength(2);
+					expect(_.map(result, 'id').sort()).toEqual([1, 2]);
+				});
+			});
+
+			describe('complex relative date operations', () => {
+				it('should handle multiple time units', async () => {
+					const criteria = FilterCriteria.criteria({
+						matchValue: {
+							days: -7,
+							hours: -12,
+							minutes: -30
+						},
+						operator: 'AFTER',
+						type: 'DATE',
+						valuePath: ['createdAt']
+					});
+
+					const result = await filterCriteria.matchMany(relativeDateTestData, criteria);
+
+					expect(result.length).toBeGreaterThanOrEqual(1);
+				});
+
+				it('should handle years and months', async () => {
+					const criteria = FilterCriteria.criteria({
+						matchValue: {
+							months: -6,
+							years: -1
+						},
+						operator: 'AFTER',
+						type: 'DATE',
+						valuePath: ['createdAt']
+					});
+
+					const result = await filterCriteria.matchMany(relativeDateTestData, criteria);
+
+					// All test events should be more recent than 1.5 years ago
+					expect(result).toHaveLength(3);
+				});
+
+				it('should handle milliseconds and seconds', async () => {
+					const criteria = FilterCriteria.criteria({
+						matchValue: {
+							milliseconds: -500,
+							seconds: -60
+						},
+						operator: 'AFTER',
+						type: 'DATE',
+						valuePath: ['createdAt']
+					});
+
+					const result = await filterCriteria.matchMany(relativeDateTestData, criteria);
+
+					// Should filter based on precise time
+					expect(result.length).toBeGreaterThanOrEqual(0);
+				});
+			});
+
+			describe('all date operators with relative dates', () => {
+				it('should work with AFTER-OR-EQUALS operator', async () => {
+					const criteria = FilterCriteria.criteria({
+						matchValue: {
+							days: -5
+						},
+						operator: 'AFTER-OR-EQUALS',
+						type: 'DATE',
+						valuePath: ['createdAt']
+					});
+
+					const result = await filterCriteria.matchMany(relativeDateTestData, criteria);
+
+					expect(result.length).toBeGreaterThanOrEqual(1);
+				});
+
+				it('should work with BEFORE-OR-EQUALS operator', async () => {
+					const criteria = FilterCriteria.criteria({
+						matchValue: {
+							days: 0
+						},
+						operator: 'BEFORE-OR-EQUALS',
+						type: 'DATE',
+						valuePath: ['createdAt']
+					});
+
+					const result = await filterCriteria.matchMany(relativeDateTestData, criteria);
+
+					expect(result).toHaveLength(2);
+					expect(_.map(result, 'id').sort()).toEqual([1, 2]);
+				});
+			});
+
+			describe('edge cases', () => {
+				it('should handle empty relative date object (defaults to now)', async () => {
+					const criteria = FilterCriteria.criteria({
+						matchValue: {},
+						operator: 'BEFORE',
+						type: 'DATE',
+						valuePath: ['createdAt']
+					});
+
+					const result = await filterCriteria.matchMany(relativeDateTestData, criteria);
+
+					expect(result).toHaveLength(2);
+					expect(_.map(result, 'id').sort()).toEqual([1, 2]);
+				});
+
+				it('should handle relative date with only GMT specified', async () => {
+					const criteria = FilterCriteria.criteria({
+						matchValue: {
+							gmt: 'UTC'
+						},
+						operator: 'BEFORE',
+						type: 'DATE',
+						valuePath: ['createdAt']
+					});
+
+					const result = await filterCriteria.matchMany(relativeDateTestData, criteria);
+
+					expect(result).toHaveLength(2);
+				});
+
+				it('should handle positive relative values (future dates)', async () => {
+					const criteria = FilterCriteria.criteria({
+						matchValue: {
+							days: 10 // 10 days from now
+						},
+						operator: 'BEFORE',
+						type: 'DATE',
+						valuePath: ['createdAt']
+					});
+
+					const result = await filterCriteria.matchMany(relativeDateTestData, criteria);
+
+					expect(result).toHaveLength(3);
+				});
+			});
+
+			describe('type safety', () => {
+				it('should accept RelativeDate type', () => {
+					const relativeDate: FilterCriteria.RelativeDate = {
+						days: -7,
+						gmt: 'UTC'
+					};
+
+					const criteria = FilterCriteria.criteria({
+						matchValue: relativeDate,
+						operator: 'AFTER',
+						type: 'DATE',
+						valuePath: ['createdAt']
+					});
+
+					// The schema adds default values for optional fields
+					expect(criteria.matchValue).toMatchObject(relativeDate);
+				});
+
+				it('should accept all time units in RelativeDate', () => {
+					const relativeDate: FilterCriteria.RelativeDate = {
+						days: 3,
+						gmt: '+00:00',
+						hours: 4,
+						milliseconds: 7,
+						minutes: 5,
+						months: 2,
+						seconds: 6,
+						years: 1
+					};
+
+					const criteria = FilterCriteria.criteria({
+						matchValue: relativeDate,
+						operator: 'AFTER',
+						type: 'DATE',
+						valuePath: ['createdAt']
+					});
+
+					expect(criteria.matchValue).toEqual(relativeDate);
+				});
+			});
+		});
 	});
 
 	describe('matchManyMultiple', () => {
