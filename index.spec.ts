@@ -424,7 +424,7 @@ describe('/index', () => {
 			const res = await filterCriteria.match('test', input);
 
 			expect(heavyPredicate).not.toHaveBeenCalled();
-			expect(res.passed).toBe(false);
+			expect(res.passed).toEqual(false);
 			expect(res.reason).toContain('short-circuited');
 		});
 
@@ -463,7 +463,7 @@ describe('/index', () => {
 			const res = await filterCriteria.match('test', input);
 
 			expect(heavyPredicate).toHaveBeenCalled();
-			expect(res.passed).toBe(true);
+			expect(res.passed).toEqual(true);
 		});
 
 		it('should return by filterGroup [OR]', async () => {
@@ -594,7 +594,7 @@ describe('/index', () => {
 			const res = await filterCriteria.match('test', input);
 
 			expect(heavyPredicate).not.toHaveBeenCalled();
-			expect(res.passed).toBe(false);
+			expect(res.passed).toEqual(false);
 			expect(res.reason).toContain('short-circuited');
 		});
 
@@ -623,7 +623,7 @@ describe('/index', () => {
 			const res = await filterCriteria.match('test', input);
 
 			expect(heavyPredicate).toHaveBeenCalled();
-			expect(res.passed).toBe(true);
+			expect(res.passed).toEqual(true);
 		});
 
 		it('should return truthy by criteria', async () => {
@@ -891,358 +891,6 @@ describe('/index', () => {
 
 				const res = await filterCriteria.matchMany(testData, input);
 				expect(res).toHaveLength(0);
-			});
-		});
-
-		describe('relative dates', () => {
-			const relativeDateTestData = [
-				{
-					createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
-					id: 1,
-					name: 'Recent Event'
-				},
-				{
-					createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(), // 10 days ago
-					id: 2,
-					name: 'Old Event'
-				},
-				{
-					createdAt: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days from now
-					id: 3,
-					name: 'Future Event'
-				}
-			];
-
-			describe('basic relative date operations', () => {
-				it('should filter events created after 5 days ago', async () => {
-					const criteria = FilterCriteria.criteria({
-						matchValue: {
-							days: -5 // 5 days ago
-						},
-						operator: 'AFTER',
-						type: 'DATE',
-						valuePath: ['createdAt']
-					});
-
-					const result = await filterCriteria.matchMany(relativeDateTestData, criteria);
-
-					expect(result).toHaveLength(2);
-					expect(_.map(result, 'id').sort()).toEqual([1, 3]);
-				});
-
-				it('should filter events created before 1 day ago', async () => {
-					const criteria = FilterCriteria.criteria({
-						matchValue: {
-							days: -1 // 1 day ago
-						},
-						operator: 'BEFORE',
-						type: 'DATE',
-						valuePath: ['createdAt']
-					});
-
-					const result = await filterCriteria.matchMany(relativeDateTestData, criteria);
-
-					expect(result).toHaveLength(2);
-					expect(_.map(result, 'id').sort()).toEqual([1, 2]);
-				});
-
-				it('should filter events in the future', async () => {
-					const criteria = FilterCriteria.criteria({
-						matchValue: {
-							hours: 0 // now
-						},
-						operator: 'AFTER',
-						type: 'DATE',
-						valuePath: ['createdAt']
-					});
-
-					const result = await filterCriteria.matchMany(relativeDateTestData, criteria);
-
-					expect(result).toHaveLength(1);
-					expect(result[0].id).toBe(3);
-				});
-			});
-
-			describe('relative date with GMT timezone', () => {
-				it('should handle UTC timezone', async () => {
-					const criteria = FilterCriteria.criteria({
-						matchValue: {
-							days: -7,
-							gmt: 'UTC'
-						},
-						operator: 'AFTER',
-						type: 'DATE',
-						valuePath: ['createdAt']
-					});
-
-					const result = await filterCriteria.matchMany(relativeDateTestData, criteria);
-
-					expect(result).toHaveLength(2);
-					expect(_.map(result, 'id').sort()).toEqual([1, 3]);
-				});
-
-				it('should handle positive GMT offset (+03:00)', async () => {
-					const criteria = FilterCriteria.criteria({
-						matchValue: {
-							days: -7,
-							gmt: '+03:00'
-						},
-						operator: 'AFTER',
-						type: 'DATE',
-						valuePath: ['createdAt']
-					});
-
-					const result = await filterCriteria.matchMany(relativeDateTestData, criteria);
-
-					// Should still work with timezone offset
-					expect(result.length).toBeGreaterThanOrEqual(1);
-				});
-
-				it('should handle negative GMT offset (-05:00)', async () => {
-					const criteria = FilterCriteria.criteria({
-						matchValue: {
-							days: -7,
-							gmt: '-05:00'
-						},
-						operator: 'AFTER',
-						type: 'DATE',
-						valuePath: ['createdAt']
-					});
-
-					const result = await filterCriteria.matchMany(relativeDateTestData, criteria);
-
-					// Should still work with timezone offset
-					expect(result.length).toBeGreaterThanOrEqual(1);
-				});
-			});
-
-			describe('BETWEEN operator with relative dates', () => {
-				it('should filter events between two relative dates', async () => {
-					const criteria = FilterCriteria.criteria({
-						matchValue: [
-							{ days: -15 }, // 15 days ago
-							{ days: -1 } // 1 day ago
-						],
-						operator: 'BETWEEN',
-						type: 'DATE',
-						valuePath: ['createdAt']
-					});
-
-					const result = await filterCriteria.matchMany(relativeDateTestData, criteria);
-
-					expect(result).toHaveLength(2);
-					expect(_.map(result, 'id').sort()).toEqual([1, 2]);
-				});
-
-				it('should filter events between relative date and absolute date', async () => {
-					const futureDate = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString();
-
-					const criteria = FilterCriteria.criteria({
-						matchValue: [
-							{ days: -15 }, // 15 days ago (relative)
-							futureDate // 10 days from now (absolute)
-						],
-						operator: 'BETWEEN',
-						type: 'DATE',
-						valuePath: ['createdAt']
-					});
-
-					const result = await filterCriteria.matchMany(relativeDateTestData, criteria);
-
-					expect(result).toHaveLength(3);
-				});
-
-				it('should filter events between absolute date and relative date', async () => {
-					const pastDate = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString();
-
-					const criteria = FilterCriteria.criteria({
-						matchValue: [
-							pastDate, // 15 days ago (absolute)
-							{ days: 0 } // now (relative)
-						],
-						operator: 'BETWEEN',
-						type: 'DATE',
-						valuePath: ['createdAt']
-					});
-
-					const result = await filterCriteria.matchMany(relativeDateTestData, criteria);
-
-					expect(result).toHaveLength(2);
-					expect(_.map(result, 'id').sort()).toEqual([1, 2]);
-				});
-			});
-
-			describe('complex relative date operations', () => {
-				it('should handle multiple time units', async () => {
-					const criteria = FilterCriteria.criteria({
-						matchValue: {
-							days: -7,
-							hours: -12,
-							minutes: -30
-						},
-						operator: 'AFTER',
-						type: 'DATE',
-						valuePath: ['createdAt']
-					});
-
-					const result = await filterCriteria.matchMany(relativeDateTestData, criteria);
-
-					expect(result.length).toBeGreaterThanOrEqual(1);
-				});
-
-				it('should handle years and months', async () => {
-					const criteria = FilterCriteria.criteria({
-						matchValue: {
-							months: -6,
-							years: -1
-						},
-						operator: 'AFTER',
-						type: 'DATE',
-						valuePath: ['createdAt']
-					});
-
-					const result = await filterCriteria.matchMany(relativeDateTestData, criteria);
-
-					// All test events should be more recent than 1.5 years ago
-					expect(result).toHaveLength(3);
-				});
-
-				it('should handle milliseconds and seconds', async () => {
-					const criteria = FilterCriteria.criteria({
-						matchValue: {
-							milliseconds: -500,
-							seconds: -60
-						},
-						operator: 'AFTER',
-						type: 'DATE',
-						valuePath: ['createdAt']
-					});
-
-					const result = await filterCriteria.matchMany(relativeDateTestData, criteria);
-
-					// Should filter based on precise time
-					expect(result.length).toBeGreaterThanOrEqual(0);
-				});
-			});
-
-			describe('all date operators with relative dates', () => {
-				it('should work with AFTER-OR-EQUALS operator', async () => {
-					const criteria = FilterCriteria.criteria({
-						matchValue: {
-							days: -5
-						},
-						operator: 'AFTER-OR-EQUALS',
-						type: 'DATE',
-						valuePath: ['createdAt']
-					});
-
-					const result = await filterCriteria.matchMany(relativeDateTestData, criteria);
-
-					expect(result.length).toBeGreaterThanOrEqual(1);
-				});
-
-				it('should work with BEFORE-OR-EQUALS operator', async () => {
-					const criteria = FilterCriteria.criteria({
-						matchValue: {
-							days: 0
-						},
-						operator: 'BEFORE-OR-EQUALS',
-						type: 'DATE',
-						valuePath: ['createdAt']
-					});
-
-					const result = await filterCriteria.matchMany(relativeDateTestData, criteria);
-
-					expect(result).toHaveLength(2);
-					expect(_.map(result, 'id').sort()).toEqual([1, 2]);
-				});
-			});
-
-			describe('edge cases', () => {
-				it('should handle empty relative date object (defaults to now)', async () => {
-					const criteria = FilterCriteria.criteria({
-						matchValue: {},
-						operator: 'BEFORE',
-						type: 'DATE',
-						valuePath: ['createdAt']
-					});
-
-					const result = await filterCriteria.matchMany(relativeDateTestData, criteria);
-
-					expect(result).toHaveLength(2);
-					expect(_.map(result, 'id').sort()).toEqual([1, 2]);
-				});
-
-				it('should handle relative date with only GMT specified', async () => {
-					const criteria = FilterCriteria.criteria({
-						matchValue: {
-							gmt: 'UTC'
-						},
-						operator: 'BEFORE',
-						type: 'DATE',
-						valuePath: ['createdAt']
-					});
-
-					const result = await filterCriteria.matchMany(relativeDateTestData, criteria);
-
-					expect(result).toHaveLength(2);
-				});
-
-				it('should handle positive relative values (future dates)', async () => {
-					const criteria = FilterCriteria.criteria({
-						matchValue: {
-							days: 10 // 10 days from now
-						},
-						operator: 'BEFORE',
-						type: 'DATE',
-						valuePath: ['createdAt']
-					});
-
-					const result = await filterCriteria.matchMany(relativeDateTestData, criteria);
-
-					expect(result).toHaveLength(3);
-				});
-			});
-
-			describe('type safety', () => {
-				it('should accept RelativeDate type', () => {
-					const relativeDate: FilterCriteria.RelativeDate = {
-						days: -7,
-						gmt: 'UTC'
-					};
-
-					const criteria = FilterCriteria.criteria({
-						matchValue: relativeDate,
-						operator: 'AFTER',
-						type: 'DATE',
-						valuePath: ['createdAt']
-					});
-
-					// The schema adds default values for optional fields
-					expect(criteria.matchValue).toMatchObject(relativeDate);
-				});
-
-				it('should accept all time units in RelativeDate', () => {
-					const relativeDate: FilterCriteria.RelativeDate = {
-						days: 3,
-						gmt: '+00:00',
-						hours: 4,
-						milliseconds: 7,
-						minutes: 5,
-						months: 2,
-						seconds: 6,
-						years: 1
-					};
-
-					const criteria = FilterCriteria.criteria({
-						matchValue: relativeDate,
-						operator: 'AFTER',
-						type: 'DATE',
-						valuePath: ['createdAt']
-					});
-
-					expect(criteria.matchValue).toEqual(relativeDate);
-				});
 			});
 		});
 	});
@@ -2484,6 +2132,900 @@ describe('/index', () => {
 					passed: true,
 					reason: 'DATE criteria "BETWEEN" check PASSED',
 					value: '2023-01-01T00:00:00Z'
+				});
+			});
+		});
+
+		describe('relative dates', () => {
+			const now = new Date();
+			const twoDaysAgo = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000);
+			const tenDaysAgo = new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000);
+			const fiveDaysFromNow = new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000);
+
+			const relativeDateTestData = [
+				{
+					createdAt: twoDaysAgo.toISOString(),
+					id: 1,
+					name: 'Recent Event'
+				},
+				{
+					createdAt: tenDaysAgo.toISOString(),
+					id: 2,
+					name: 'Old Event'
+				},
+				{
+					createdAt: fiveDaysFromNow.toISOString(),
+					id: 3,
+					name: 'Future Event'
+				}
+			];
+
+			describe('basic relative date operations', () => {
+				it('should handle AFTER operator with relative date (days)', async () => {
+					const criteria = FilterCriteria.criteria({
+						matchValue: {
+							days: -5 // 5 days ago
+						},
+						operator: 'AFTER',
+						type: 'DATE',
+						valuePath: ['createdAt']
+					});
+
+					// @ts-expect-error
+					const res = await filterCriteria.applyCriteria(relativeDateTestData[0], criteria);
+
+					expect(res).toEqual({
+						matchValue: JSON.stringify({
+							days: -5,
+							endOfDay: false,
+							gmt: '',
+							hours: 0,
+							milliseconds: 0,
+							minutes: 0,
+							months: 0,
+							seconds: 0,
+							startOfDay: false,
+							years: 0
+						}),
+						passed: true,
+						reason: 'DATE criteria "AFTER" check PASSED',
+						value: relativeDateTestData[0].createdAt
+					});
+				});
+
+				it('should handle BEFORE operator with relative date (days)', async () => {
+					const criteria = FilterCriteria.criteria({
+						matchValue: {
+							days: -1 // 1 day ago
+						},
+						operator: 'BEFORE',
+						type: 'DATE',
+						valuePath: ['createdAt']
+					});
+
+					// @ts-expect-error
+					const res = await filterCriteria.applyCriteria(relativeDateTestData[0], criteria);
+
+					expect(res).toEqual({
+						matchValue: JSON.stringify({
+							days: -1,
+							endOfDay: false,
+							gmt: '',
+							hours: 0,
+							milliseconds: 0,
+							minutes: 0,
+							months: 0,
+							seconds: 0,
+							startOfDay: false,
+							years: 0
+						}),
+						passed: true,
+						reason: 'DATE criteria "BEFORE" check PASSED',
+						value: relativeDateTestData[0].createdAt
+					});
+				});
+
+				it('should handle AFTER operator with relative date (hours)', async () => {
+					const criteria = FilterCriteria.criteria({
+						matchValue: {
+							hours: 0 // now
+						},
+						operator: 'AFTER',
+						type: 'DATE',
+						valuePath: ['createdAt']
+					});
+
+					// @ts-expect-error
+					const res = await filterCriteria.applyCriteria(relativeDateTestData[2], criteria);
+
+					expect(res).toEqual({
+						matchValue: JSON.stringify({
+							days: 0,
+							endOfDay: false,
+							gmt: '',
+							hours: 0,
+							milliseconds: 0,
+							minutes: 0,
+							months: 0,
+							seconds: 0,
+							startOfDay: false,
+							years: 0
+						}),
+						passed: true,
+						reason: 'DATE criteria "AFTER" check PASSED',
+						value: relativeDateTestData[2].createdAt
+					});
+				});
+
+				it('should fail when date is not after relative date', async () => {
+					const criteria = FilterCriteria.criteria({
+						matchValue: {
+							days: -1 // 1 day ago
+						},
+						operator: 'AFTER',
+						type: 'DATE',
+						valuePath: ['createdAt']
+					});
+
+					// @ts-expect-error
+					const res = await filterCriteria.applyCriteria(relativeDateTestData[1], criteria);
+
+					expect(res).toEqual({
+						matchValue: JSON.stringify({
+							days: -1,
+							endOfDay: false,
+							gmt: '',
+							hours: 0,
+							milliseconds: 0,
+							minutes: 0,
+							months: 0,
+							seconds: 0,
+							startOfDay: false,
+							years: 0
+						}),
+						passed: false,
+						reason: 'DATE criteria "AFTER" check FAILED',
+						value: relativeDateTestData[1].createdAt
+					});
+				});
+			});
+
+			describe('relative date with GMT timezone', () => {
+				it('should handle UTC timezone', async () => {
+					const criteria = FilterCriteria.criteria({
+						matchValue: {
+							days: -7,
+							gmt: 'UTC'
+						},
+						operator: 'AFTER',
+						type: 'DATE',
+						valuePath: ['createdAt']
+					});
+
+					// @ts-expect-error
+					const res = await filterCriteria.applyCriteria(relativeDateTestData[0], criteria);
+
+					expect(res).toEqual({
+						matchValue: JSON.stringify({
+							days: -7,
+							endOfDay: false,
+							gmt: 'UTC',
+							hours: 0,
+							milliseconds: 0,
+							minutes: 0,
+							months: 0,
+							seconds: 0,
+							startOfDay: false,
+							years: 0
+						}),
+						passed: true,
+						reason: 'DATE criteria "AFTER" check PASSED',
+						value: relativeDateTestData[0].createdAt
+					});
+				});
+
+				it('should handle positive GMT offset (+03:00)', async () => {
+					const criteria = FilterCriteria.criteria({
+						matchValue: {
+							days: -7,
+							gmt: '+03:00'
+						},
+						operator: 'AFTER',
+						type: 'DATE',
+						valuePath: ['createdAt']
+					});
+
+					// @ts-expect-error
+					const res = await filterCriteria.applyCriteria(relativeDateTestData[0], criteria);
+
+					expect(res).toEqual({
+						matchValue: JSON.stringify({
+							days: -7,
+							endOfDay: false,
+							gmt: '+03:00',
+							hours: 0,
+							milliseconds: 0,
+							minutes: 0,
+							months: 0,
+							seconds: 0,
+							startOfDay: false,
+							years: 0
+						}),
+						passed: true,
+						reason: 'DATE criteria "AFTER" check PASSED',
+						value: relativeDateTestData[0].createdAt
+					});
+				});
+
+				it('should handle negative GMT offset (-05:00)', async () => {
+					const criteria = FilterCriteria.criteria({
+						matchValue: {
+							days: -7,
+							gmt: '-05:00'
+						},
+						operator: 'AFTER',
+						type: 'DATE',
+						valuePath: ['createdAt']
+					});
+
+					// @ts-expect-error
+					const res = await filterCriteria.applyCriteria(relativeDateTestData[0], criteria);
+
+					expect(res).toEqual({
+						matchValue: JSON.stringify({
+							days: -7,
+							endOfDay: false,
+							gmt: '-05:00',
+							hours: 0,
+							milliseconds: 0,
+							minutes: 0,
+							months: 0,
+							seconds: 0,
+							startOfDay: false,
+							years: 0
+						}),
+						passed: true,
+						reason: 'DATE criteria "AFTER" check PASSED',
+						value: relativeDateTestData[0].createdAt
+					});
+				});
+
+				it('should handle GMT format (+00:00)', async () => {
+					const criteria = FilterCriteria.criteria({
+						matchValue: {
+							days: -7,
+							gmt: '+00:00'
+						},
+						operator: 'AFTER',
+						type: 'DATE',
+						valuePath: ['createdAt']
+					});
+
+					// @ts-expect-error
+					const res = await filterCriteria.applyCriteria(relativeDateTestData[0], criteria);
+
+					expect(res).toEqual({
+						matchValue: JSON.stringify({
+							days: -7,
+							endOfDay: false,
+							gmt: '+00:00',
+							hours: 0,
+							milliseconds: 0,
+							minutes: 0,
+							months: 0,
+							seconds: 0,
+							startOfDay: false,
+							years: 0
+						}),
+						passed: true,
+						reason: 'DATE criteria "AFTER" check PASSED',
+						value: relativeDateTestData[0].createdAt
+					});
+				});
+			});
+
+			describe('relative date with start/end of day', () => {
+				const now = new Date();
+				const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+				const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+				const todayMidday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0, 0);
+				const yesterdayStart = new Date(todayStart.getTime() - 24 * 60 * 60 * 1000);
+				const tomorrowEnd = new Date(todayEnd.getTime() + 24 * 60 * 60 * 1000);
+
+				const startEndOfDayTestData = [
+					{
+						id: 1,
+						name: 'Today Start',
+						createdAt: todayStart.toISOString()
+					},
+					{
+						id: 2,
+						name: 'Today Midday',
+						createdAt: todayMidday.toISOString()
+					},
+					{
+						id: 3,
+						name: 'Today End',
+						createdAt: todayEnd.toISOString()
+					},
+					{
+						id: 4,
+						name: 'Yesterday Start',
+						createdAt: yesterdayStart.toISOString()
+					},
+					{
+						id: 5,
+						name: 'Tomorrow End',
+						createdAt: tomorrowEnd.toISOString()
+					}
+				];
+
+				it('should handle startOfDay flag', async () => {
+					const criteria = FilterCriteria.criteria({
+						matchValue: {
+							days: 0,
+							startOfDay: true
+						},
+						operator: 'AFTER-OR-EQUALS',
+						type: 'DATE',
+						valuePath: ['createdAt']
+					});
+
+					// @ts-expect-error
+					const res = await filterCriteria.applyCriteria(startEndOfDayTestData[0], criteria);
+
+					expect(res.passed).toBe(true);
+					expect(res.reason).toBe('DATE criteria "AFTER-OR-EQUALS" check PASSED');
+				});
+
+				it('should handle endOfDay flag', async () => {
+					const criteria = FilterCriteria.criteria({
+						matchValue: {
+							days: 0,
+							endOfDay: true
+						},
+						operator: 'BEFORE-OR-EQUALS',
+						type: 'DATE',
+						valuePath: ['createdAt']
+					});
+
+					// @ts-expect-error
+					const res = await filterCriteria.applyCriteria(startEndOfDayTestData[2], criteria);
+
+					expect(res.passed).toBe(true);
+					expect(res.reason).toBe('DATE criteria "BEFORE-OR-EQUALS" check PASSED');
+				});
+
+				it('should filter TODAY birthdate using BETWEEN with start/end of day', async () => {
+					const criteria = FilterCriteria.criteria({
+						matchValue: [
+							{ days: 0, startOfDay: true },
+							{ days: 0, endOfDay: true }
+						],
+						operator: 'BETWEEN',
+						type: 'DATE',
+						valuePath: ['createdAt']
+					});
+
+					// @ts-expect-error
+					const res1 = await filterCriteria.applyCriteria(startEndOfDayTestData[0], criteria);
+					expect(res1.passed).toBe(true);
+
+					// @ts-expect-error
+					const res2 = await filterCriteria.applyCriteria(startEndOfDayTestData[1], criteria);
+					expect(res2.passed).toBe(true);
+
+					// @ts-expect-error
+					const res3 = await filterCriteria.applyCriteria(startEndOfDayTestData[2], criteria);
+					expect(res3.passed).toBe(true);
+
+					// @ts-expect-error
+					const res4 = await filterCriteria.applyCriteria(startEndOfDayTestData[3], criteria);
+					expect(res4.passed).toBe(false);
+
+					// @ts-expect-error
+					const res5 = await filterCriteria.applyCriteria(startEndOfDayTestData[4], criteria);
+					expect(res5.passed).toBe(false);
+				});
+
+				it('should handle startOfDay with days offset', async () => {
+					const criteria = FilterCriteria.criteria({
+						matchValue: {
+							days: -1,
+							startOfDay: true
+						},
+						operator: 'AFTER-OR-EQUALS',
+						type: 'DATE',
+						valuePath: ['createdAt']
+					});
+
+					// @ts-expect-error
+					const res = await filterCriteria.applyCriteria(startEndOfDayTestData[3], criteria);
+
+					expect(res.passed).toBe(true);
+				});
+
+				it('should handle endOfDay with days offset', async () => {
+					const criteria = FilterCriteria.criteria({
+						matchValue: {
+							days: 1,
+							endOfDay: true
+						},
+						operator: 'BEFORE-OR-EQUALS',
+						type: 'DATE',
+						valuePath: ['createdAt']
+					});
+
+					// @ts-expect-error
+					const res = await filterCriteria.applyCriteria(startEndOfDayTestData[4], criteria);
+
+					expect(res.passed).toBe(true);
+				});
+
+				it('should handle startOfDay with GMT timezone', async () => {
+					const criteria = FilterCriteria.criteria({
+						matchValue: {
+							days: 0,
+							startOfDay: true,
+							gmt: 'UTC'
+						},
+						operator: 'AFTER-OR-EQUALS',
+						type: 'DATE',
+						valuePath: ['createdAt']
+					});
+
+					// @ts-expect-error
+					const res = await filterCriteria.applyCriteria(startEndOfDayTestData[0], criteria);
+
+					expect(res.passed).toBe(true);
+				});
+
+				it('should handle endOfDay with GMT timezone', async () => {
+					const criteria = FilterCriteria.criteria({
+						matchValue: {
+							days: 0,
+							endOfDay: true,
+							gmt: 'UTC'
+						},
+						operator: 'BEFORE-OR-EQUALS',
+						type: 'DATE',
+						valuePath: ['createdAt']
+					});
+
+					// @ts-expect-error
+					const res = await filterCriteria.applyCriteria(startEndOfDayTestData[2], criteria);
+
+					expect(res.passed).toBe(true);
+				});
+			});
+
+			describe('BETWEEN operator with relative dates', () => {
+				it('should handle BETWEEN with two relative dates', async () => {
+					const criteria = FilterCriteria.criteria({
+						matchValue: [
+							{ days: -15 }, // 15 days ago
+							{ days: -1 } // 1 day ago
+						],
+						operator: 'BETWEEN',
+						type: 'DATE',
+						valuePath: ['createdAt']
+					});
+
+					// @ts-expect-error
+					const res = await filterCriteria.applyCriteria(relativeDateTestData[0], criteria);
+
+					expect(res).toEqual({
+						matchValue: JSON.stringify([{ days: -15 }, { days: -1 }]),
+						passed: true,
+						reason: 'DATE criteria "BETWEEN" check PASSED',
+						value: relativeDateTestData[0].createdAt
+					});
+				});
+
+				it('should handle BETWEEN with relative date and absolute date', async () => {
+					const futureDate = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString();
+
+					const criteria = FilterCriteria.criteria({
+						matchValue: [
+							{ days: -15 }, // 15 days ago (relative)
+							futureDate // 10 days from now (absolute)
+						],
+						operator: 'BETWEEN',
+						type: 'DATE',
+						valuePath: ['createdAt']
+					});
+
+					// @ts-expect-error
+					const res = await filterCriteria.applyCriteria(relativeDateTestData[0], criteria);
+
+					expect(res).toEqual({
+						matchValue: JSON.stringify([{ days: -15 }, futureDate]),
+						passed: true,
+						reason: 'DATE criteria "BETWEEN" check PASSED',
+						value: relativeDateTestData[0].createdAt
+					});
+				});
+
+				it('should handle BETWEEN with absolute date and relative date', async () => {
+					const pastDate = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString();
+
+					const criteria = FilterCriteria.criteria({
+						matchValue: [
+							pastDate, // 15 days ago (absolute)
+							{ days: 0 } // now (relative)
+						],
+						operator: 'BETWEEN',
+						type: 'DATE',
+						valuePath: ['createdAt']
+					});
+
+					// @ts-expect-error
+					const res = await filterCriteria.applyCriteria(relativeDateTestData[0], criteria);
+
+					expect(res).toEqual({
+						matchValue: JSON.stringify([pastDate, { days: 0 }]),
+						passed: true,
+						reason: 'DATE criteria "BETWEEN" check PASSED',
+						value: relativeDateTestData[0].createdAt
+					});
+				});
+
+				it('should fail when date is not between relative dates', async () => {
+					const criteria = FilterCriteria.criteria({
+						matchValue: [
+							{ days: -1 }, // 1 day ago
+							{ days: 0 } // now
+						],
+						operator: 'BETWEEN',
+						type: 'DATE',
+						valuePath: ['createdAt']
+					});
+
+					// @ts-expect-error
+					const res = await filterCriteria.applyCriteria(relativeDateTestData[1], criteria);
+
+					expect(res).toEqual({
+						matchValue: JSON.stringify([{ days: -1 }, { days: 0 }]),
+						passed: false,
+						reason: 'DATE criteria "BETWEEN" check FAILED',
+						value: relativeDateTestData[1].createdAt
+					});
+				});
+			});
+
+			describe('complex relative date operations', () => {
+				it('should handle multiple time units', async () => {
+					const criteria = FilterCriteria.criteria({
+						matchValue: {
+							days: -7,
+							hours: -12,
+							minutes: -30
+						},
+						operator: 'AFTER',
+						type: 'DATE',
+						valuePath: ['createdAt']
+					});
+
+					// @ts-expect-error
+					const res = await filterCriteria.applyCriteria(relativeDateTestData[0], criteria);
+
+					expect(res).toEqual({
+						matchValue: JSON.stringify({
+							days: -7,
+							endOfDay: false,
+							gmt: '',
+							hours: -12,
+							milliseconds: 0,
+							minutes: -30,
+							months: 0,
+							seconds: 0,
+							startOfDay: false,
+							years: 0
+						}),
+						passed: true,
+						reason: 'DATE criteria "AFTER" check PASSED',
+						value: relativeDateTestData[0].createdAt
+					});
+				});
+
+				it('should handle years and months', async () => {
+					const criteria = FilterCriteria.criteria({
+						matchValue: {
+							months: -6,
+							years: -1
+						},
+						operator: 'AFTER',
+						type: 'DATE',
+						valuePath: ['createdAt']
+					});
+
+					// @ts-expect-error
+					const res = await filterCriteria.applyCriteria(relativeDateTestData[0], criteria);
+
+					expect(res).toEqual({
+						matchValue: JSON.stringify({
+							days: 0,
+							endOfDay: false,
+							gmt: '',
+							hours: 0,
+							milliseconds: 0,
+							minutes: 0,
+							months: -6,
+							seconds: 0,
+							startOfDay: false,
+							years: -1
+						}),
+						passed: true,
+						reason: 'DATE criteria "AFTER" check PASSED',
+						value: relativeDateTestData[0].createdAt
+					});
+				});
+
+				it('should handle milliseconds and seconds', async () => {
+					const criteria = FilterCriteria.criteria({
+						matchValue: {
+							milliseconds: -500,
+							seconds: -60
+						},
+						operator: 'AFTER',
+						type: 'DATE',
+						valuePath: ['createdAt']
+					});
+
+					// @ts-expect-error
+					const res = await filterCriteria.applyCriteria(relativeDateTestData[0], criteria);
+
+					// The date is 2 days ago, which is before 60 seconds ago, so it should fail
+					expect(res).toEqual({
+						matchValue: JSON.stringify({
+							days: 0,
+							endOfDay: false,
+							gmt: '',
+							hours: 0,
+							milliseconds: -500,
+							minutes: 0,
+							months: 0,
+							seconds: -60,
+							startOfDay: false,
+							years: 0
+						}),
+						passed: false,
+						reason: 'DATE criteria "AFTER" check FAILED',
+						value: relativeDateTestData[0].createdAt
+					});
+				});
+			});
+
+			describe('all date operators with relative dates', () => {
+				it('should handle AFTER-OR-EQUALS operator', async () => {
+					const criteria = FilterCriteria.criteria({
+						matchValue: {
+							days: -5
+						},
+						operator: 'AFTER-OR-EQUALS',
+						type: 'DATE',
+						valuePath: ['createdAt']
+					});
+
+					// @ts-expect-error
+					const res = await filterCriteria.applyCriteria(relativeDateTestData[0], criteria);
+
+					expect(res).toEqual({
+						matchValue: JSON.stringify({
+							days: -5,
+							endOfDay: false,
+							gmt: '',
+							hours: 0,
+							milliseconds: 0,
+							minutes: 0,
+							months: 0,
+							seconds: 0,
+							startOfDay: false,
+							years: 0
+						}),
+						passed: true,
+						reason: 'DATE criteria "AFTER-OR-EQUALS" check PASSED',
+						value: relativeDateTestData[0].createdAt
+					});
+				});
+
+				it('should handle BEFORE-OR-EQUALS operator', async () => {
+					const criteria = FilterCriteria.criteria({
+						matchValue: {
+							days: 0
+						},
+						operator: 'BEFORE-OR-EQUALS',
+						type: 'DATE',
+						valuePath: ['createdAt']
+					});
+
+					// @ts-expect-error
+					const res = await filterCriteria.applyCriteria(relativeDateTestData[0], criteria);
+
+					expect(res).toEqual({
+						matchValue: JSON.stringify({
+							days: 0,
+							endOfDay: false,
+							gmt: '',
+							hours: 0,
+							milliseconds: 0,
+							minutes: 0,
+							months: 0,
+							seconds: 0,
+							startOfDay: false,
+							years: 0
+						}),
+						passed: true,
+						reason: 'DATE criteria "BEFORE-OR-EQUALS" check PASSED',
+						value: relativeDateTestData[0].createdAt
+					});
+				});
+
+				it('should handle BEFORE operator with future relative date', async () => {
+					const criteria = FilterCriteria.criteria({
+						matchValue: {
+							days: 10 // 10 days from now
+						},
+						operator: 'BEFORE',
+						type: 'DATE',
+						valuePath: ['createdAt']
+					});
+
+					// @ts-expect-error
+					const res = await filterCriteria.applyCriteria(relativeDateTestData[0], criteria);
+
+					expect(res).toEqual({
+						matchValue: JSON.stringify({
+							days: 10,
+							endOfDay: false,
+							gmt: '',
+							hours: 0,
+							milliseconds: 0,
+							minutes: 0,
+							months: 0,
+							seconds: 0,
+							startOfDay: false,
+							years: 0
+						}),
+						passed: true,
+						reason: 'DATE criteria "BEFORE" check PASSED',
+						value: relativeDateTestData[0].createdAt
+					});
+				});
+			});
+
+			describe('edge cases', () => {
+				it('should handle empty relative date object (defaults to now)', async () => {
+					const criteria = FilterCriteria.criteria({
+						matchValue: {},
+						operator: 'BEFORE',
+						type: 'DATE',
+						valuePath: ['createdAt']
+					});
+
+					// @ts-expect-error
+					const res = await filterCriteria.applyCriteria(relativeDateTestData[0], criteria);
+
+					expect(res).toEqual({
+						matchValue: JSON.stringify({
+							days: 0,
+							endOfDay: false,
+							gmt: '',
+							hours: 0,
+							milliseconds: 0,
+							minutes: 0,
+							months: 0,
+							seconds: 0,
+							startOfDay: false,
+							years: 0
+						}),
+						passed: true,
+						reason: 'DATE criteria "BEFORE" check PASSED',
+						value: relativeDateTestData[0].createdAt
+					});
+				});
+
+				it('should handle relative date with only GMT specified', async () => {
+					const criteria = FilterCriteria.criteria({
+						matchValue: {
+							gmt: 'UTC'
+						},
+						operator: 'BEFORE',
+						type: 'DATE',
+						valuePath: ['createdAt']
+					});
+
+					// @ts-expect-error
+					const res = await filterCriteria.applyCriteria(relativeDateTestData[0], criteria);
+
+					expect(res).toEqual({
+						matchValue: JSON.stringify({
+							days: 0,
+							endOfDay: false,
+							gmt: 'UTC',
+							hours: 0,
+							milliseconds: 0,
+							minutes: 0,
+							months: 0,
+							seconds: 0,
+							startOfDay: false,
+							years: 0
+						}),
+						passed: true,
+						reason: 'DATE criteria "BEFORE" check PASSED',
+						value: relativeDateTestData[0].createdAt
+					});
+				});
+
+				it('should handle positive relative values (future dates)', async () => {
+					const criteria = FilterCriteria.criteria({
+						matchValue: {
+							days: 10 // 10 days from now
+						},
+						operator: 'BEFORE',
+						type: 'DATE',
+						valuePath: ['createdAt']
+					});
+
+					// @ts-expect-error
+					const res = await filterCriteria.applyCriteria(relativeDateTestData[0], criteria);
+
+					expect(res).toEqual({
+						matchValue: JSON.stringify({
+							days: 10,
+							endOfDay: false,
+							gmt: '',
+							hours: 0,
+							milliseconds: 0,
+							minutes: 0,
+							months: 0,
+							seconds: 0,
+							startOfDay: false,
+							years: 0
+						}),
+						passed: true,
+						reason: 'DATE criteria "BEFORE" check PASSED',
+						value: relativeDateTestData[0].createdAt
+					});
+				});
+
+				it('should handle all time units together', async () => {
+					const criteria = FilterCriteria.criteria({
+						matchValue: {
+							days: 3,
+							gmt: '+00:00',
+							hours: 4,
+							milliseconds: 7,
+							minutes: 5,
+							months: 2,
+							seconds: 6,
+							years: 1
+						},
+						operator: 'BEFORE',
+						type: 'DATE',
+						valuePath: ['createdAt']
+					});
+
+					// @ts-expect-error
+					const res = await filterCriteria.applyCriteria(relativeDateTestData[0], criteria);
+
+					expect(res).toEqual({
+						matchValue: JSON.stringify({
+							days: 3,
+							endOfDay: false,
+							gmt: '+00:00',
+							hours: 4,
+							milliseconds: 7,
+							minutes: 5,
+							months: 2,
+							seconds: 6,
+							startOfDay: false,
+							years: 1
+						}),
+						passed: true,
+						reason: 'DATE criteria "BEFORE" check PASSED',
+						value: relativeDateTestData[0].createdAt
+					});
 				});
 			});
 		});
@@ -4063,7 +4605,7 @@ describe('/index', () => {
 			const res = await filterCriteria.applyFilter(testData[0], filter);
 
 			expect(heavyPredicate).not.toHaveBeenCalled();
-			expect(res.passed).toBe(false);
+			expect(res.passed).toEqual(false);
 			expect(res.reason).toContain('short-circuited');
 			expect(res.results).toHaveLength(2); // short-circuited
 		});
@@ -4102,7 +4644,7 @@ describe('/index', () => {
 			const res = await filterCriteria.applyFilter(testData[0], filter);
 
 			expect(heavyPredicate).toHaveBeenCalled();
-			expect(res.passed).toBe(true);
+			expect(res.passed).toEqual(true);
 			expect(res.reason).toContain('PASSED');
 			expect(res.results).toHaveLength(3); // non-short-circuited
 		});
@@ -4151,7 +4693,7 @@ describe('/index', () => {
 			// @ts-expect-error
 			const res = await filterCriteria.applyFilter(testData[0], filter);
 
-			expect(res.passed).toBe(true);
+			expect(res.passed).toEqual(true);
 			expect(execution).toEqual(['non-heavy-1', 'non-heavy-2', 'heavy-1', 'heavy-2']);
 		});
 
@@ -4185,7 +4727,7 @@ describe('/index', () => {
 			expect(heavyPredicate1).toHaveBeenCalled();
 			expect(heavyPredicate2).toHaveBeenCalled();
 
-			expect(res.passed).toBe(false);
+			expect(res.passed).toEqual(false);
 			expect(res.reason).not.toContain('short-circuited');
 			expect(res.reason).toContain('FAILED');
 			expect(res.results).toHaveLength(2); //
@@ -4221,7 +4763,7 @@ describe('/index', () => {
 			expect(predicate1).toHaveBeenCalled();
 			expect(predicate2).toHaveBeenCalled();
 
-			expect(res.passed).toBe(true);
+			expect(res.passed).toEqual(true);
 			expect(res.reason).toContain('PASSED');
 			expect(res.results).toHaveLength(2); // non-short-circuited
 		});
@@ -4634,7 +5176,7 @@ describe('/index', () => {
 			const res = JSON.parse(filterCriteria.inspect());
 
 			expect(res.savedCriteria).toEqual({});
-			expect(Object.keys(res.operators).length).toBe(9); // Check that operators are still present
+			expect(Object.keys(res.operators).length).toEqual(9); // Check that operators are still present
 		});
 	});
 
@@ -4727,44 +5269,44 @@ describe('/index', () => {
 	describe('objectContaining', () => {
 		it('should return false for null or undefined values', () => {
 			// @ts-expect-error
-			expect(filterCriteria.objectContaining(null, {})).toBe(false);
+			expect(filterCriteria.objectContaining(null, {})).toEqual(false);
 			// @ts-expect-error
-			expect(filterCriteria.objectContaining(undefined, {})).toBe(false);
+			expect(filterCriteria.objectContaining(undefined, {})).toEqual(false);
 			// @ts-expect-error
-			expect(filterCriteria.objectContaining({}, null)).toBe(false);
+			expect(filterCriteria.objectContaining({}, null)).toEqual(false);
 			// @ts-expect-error
-			expect(filterCriteria.objectContaining({}, undefined)).toBe(false);
+			expect(filterCriteria.objectContaining({}, undefined)).toEqual(false);
 		});
 
 		it('should compare strings', () => {
 			// @ts-expect-error
-			expect(filterCriteria.objectContaining('hello', 'hello')).toBe(true);
+			expect(filterCriteria.objectContaining('hello', 'hello')).toEqual(true);
 			// @ts-expect-error
-			expect(filterCriteria.objectContaining('Hello', 'hello')).toBe(false);
+			expect(filterCriteria.objectContaining('Hello', 'hello')).toEqual(false);
 			// @ts-expect-error
-			expect(filterCriteria.objectContaining('hello', 'Hello')).toBe(false);
+			expect(filterCriteria.objectContaining('hello', 'Hello')).toEqual(false);
 		});
 
 		it('should compare primitive values directly', () => {
 			// @ts-expect-error
-			expect(filterCriteria.objectContaining(42, 42)).toBe(true);
+			expect(filterCriteria.objectContaining(42, 42)).toEqual(true);
 			// @ts-expect-error
-			expect(filterCriteria.objectContaining(42, 43)).toBe(false);
+			expect(filterCriteria.objectContaining(42, 43)).toEqual(false);
 			// @ts-expect-error
-			expect(filterCriteria.objectContaining(true, true)).toBe(true);
+			expect(filterCriteria.objectContaining(true, true)).toEqual(true);
 			// @ts-expect-error
-			expect(filterCriteria.objectContaining(true, false)).toBe(false);
+			expect(filterCriteria.objectContaining(true, false)).toEqual(false);
 		});
 
 		it('should handle array comparisons', () => {
 			// @ts-expect-error
-			expect(filterCriteria.objectContaining([1, 2, 3], [1, 2])).toBe(true);
+			expect(filterCriteria.objectContaining([1, 2, 3], [1, 2])).toEqual(true);
 			// @ts-expect-error
-			expect(filterCriteria.objectContaining([1, 2], [1, 2, 3])).toBe(false);
+			expect(filterCriteria.objectContaining([1, 2], [1, 2, 3])).toEqual(false);
 			// @ts-expect-error
-			expect(filterCriteria.objectContaining([{ a: 1 }, { b: 2 }], [{ a: 1 }])).toBe(true);
+			expect(filterCriteria.objectContaining([{ a: 1 }, { b: 2 }], [{ a: 1 }])).toEqual(true);
 			// @ts-expect-error
-			expect(filterCriteria.objectContaining([1, 2, 3], [4, 5])).toBe(false);
+			expect(filterCriteria.objectContaining([1, 2, 3], [4, 5])).toEqual(false);
 		});
 
 		it('should handle nested array comparisons', () => {
@@ -4777,7 +5319,7 @@ describe('/index', () => {
 					],
 					[[1, 2]]
 				)
-			).toBe(true);
+			).toEqual(true);
 			expect(
 				// @ts-expect-error
 				filterCriteria.objectContaining(
@@ -4787,18 +5329,18 @@ describe('/index', () => {
 						[3, 4]
 					]
 				)
-			).toBe(false);
+			).toEqual(false);
 			// @ts-expect-error
-			expect(filterCriteria.objectContaining([[{ a: 1 }]], [[{ a: 1 }]])).toBe(true);
+			expect(filterCriteria.objectContaining([[{ a: 1 }]], [[{ a: 1 }]])).toEqual(true);
 		});
 
 		it('should handle object comparisons', () => {
 			// @ts-expect-error
-			expect(filterCriteria.objectContaining({ a: 1, b: 2 }, { a: 1 })).toBe(true);
+			expect(filterCriteria.objectContaining({ a: 1, b: 2 }, { a: 1 })).toEqual(true);
 			// @ts-expect-error
-			expect(filterCriteria.objectContaining({ a: 1 }, { a: 1, b: 2 })).toBe(false);
+			expect(filterCriteria.objectContaining({ a: 1 }, { a: 1, b: 2 })).toEqual(false);
 			// @ts-expect-error
-			expect(filterCriteria.objectContaining({ a: { b: 2 } }, { a: { b: 2 } })).toBe(true);
+			expect(filterCriteria.objectContaining({ a: { b: 2 } }, { a: { b: 2 } })).toEqual(true);
 		});
 
 		it('should handle mixed nested structures', () => {
@@ -4809,11 +5351,11 @@ describe('/index', () => {
 			};
 
 			// @ts-expect-error
-			expect(filterCriteria.objectContaining(obj, { b: [{ c: 3 }] })).toBe(true);
+			expect(filterCriteria.objectContaining(obj, { b: [{ c: 3 }] })).toEqual(true);
 			// @ts-expect-error
-			expect(filterCriteria.objectContaining(obj, { d: { e: [4] } })).toBe(true);
+			expect(filterCriteria.objectContaining(obj, { d: { e: [4] } })).toEqual(true);
 			// @ts-expect-error
-			expect(filterCriteria.objectContaining(obj, { b: [{ c: 4 }] })).toBe(false);
+			expect(filterCriteria.objectContaining(obj, { b: [{ c: 4 }] })).toEqual(false);
 		});
 
 		it('should handle string comparisons in nested structures with normalize = true', () => {
@@ -4823,20 +5365,20 @@ describe('/index', () => {
 			};
 
 			// @ts-expect-error
-			expect(filterCriteria.objectContaining(obj, { details: [{ city: 'New York' }] })).toBe(true);
+			expect(filterCriteria.objectContaining(obj, { details: [{ city: 'New York' }] })).toEqual(true);
 			// @ts-expect-error
-			expect(filterCriteria.objectContaining(obj, { details: [{ city: 'Caple Town' }] })).toBe(false);
+			expect(filterCriteria.objectContaining(obj, { details: [{ city: 'Caple Town' }] })).toEqual(false);
 		});
 
 		it('should handle edge cases', () => {
 			// @ts-expect-error
-			expect(filterCriteria.objectContaining({}, {})).toBe(true);
+			expect(filterCriteria.objectContaining({}, {})).toEqual(true);
 			// @ts-expect-error
-			expect(filterCriteria.objectContaining([], [])).toBe(true);
+			expect(filterCriteria.objectContaining([], [])).toEqual(true);
 			// @ts-expect-error
-			expect(filterCriteria.objectContaining({ a: [] }, { a: [] })).toBe(true);
+			expect(filterCriteria.objectContaining({ a: [] }, { a: [] })).toEqual(true);
 			// @ts-expect-error
-			expect(filterCriteria.objectContaining({ a: {} }, { a: {} })).toBe(true);
+			expect(filterCriteria.objectContaining({ a: {} }, { a: {} })).toEqual(true);
 		});
 	});
 
@@ -5236,7 +5778,7 @@ describe('/index', () => {
 
 				const { valid, error } = await filterCriteria.validate(input);
 
-				expect(valid).toBe(true);
+				expect(valid).toEqual(true);
 				expect(error).toBeNull();
 			});
 
@@ -5255,7 +5797,7 @@ describe('/index', () => {
 
 				const { valid, error } = await filterCriteria.validate(input);
 
-				expect(valid).toBe(true);
+				expect(valid).toEqual(true);
 				expect(error).toBeNull();
 			});
 
@@ -5279,7 +5821,7 @@ describe('/index', () => {
 
 				const { valid, error } = await filterCriteria.validate(input);
 
-				expect(valid).toBe(true);
+				expect(valid).toEqual(true);
 				expect(error).toBeNull();
 			});
 		});
@@ -5290,7 +5832,7 @@ describe('/index', () => {
 
 				const { valid, error } = await filterCriteria.validate(input);
 
-				expect(valid).toBe(true);
+				expect(valid).toEqual(true);
 				expect(error).toBeNull();
 			});
 
@@ -5302,7 +5844,7 @@ describe('/index', () => {
 
 				const { valid, error } = await filterCriteria.validate(input);
 
-				expect(valid).toBe(true);
+				expect(valid).toEqual(true);
 				expect(error).toBeNull();
 			});
 
@@ -5319,7 +5861,7 @@ describe('/index', () => {
 
 				const { valid, error } = await filterCriteria.validate(input);
 
-				expect(valid).toBe(true);
+				expect(valid).toEqual(true);
 				expect(error).toBeNull();
 			});
 
@@ -5327,7 +5869,7 @@ describe('/index', () => {
 				const input = FilterCriteria.alias('non-existent-alias');
 				const { valid, error } = await filterCriteria.validate(input);
 
-				expect(valid).toBe(false);
+				expect(valid).toEqual(false);
 				expect(error).toEqual(new Error('Criteria "non-existent-alias" not found'));
 			});
 
@@ -5339,7 +5881,7 @@ describe('/index', () => {
 
 				const { valid, error } = await filterCriteria.validate(input);
 
-				expect(valid).toBe(false);
+				expect(valid).toEqual(false);
 				expect(error).toEqual(new Error('Criteria "non-existent-alias" not found'));
 			});
 
@@ -5356,7 +5898,7 @@ describe('/index', () => {
 
 				const { valid, error } = await filterCriteria.validate(input);
 
-				expect(valid).toBe(false);
+				expect(valid).toEqual(false);
 				expect(error).toEqual(new Error('Criteria "non-existent-alias" not found'));
 			});
 		});
@@ -5373,7 +5915,7 @@ describe('/index', () => {
 				// @ts-expect-error
 				const { valid, error } = await filterCriteria.validate(input);
 
-				expect(valid).toBe(false);
+				expect(valid).toEqual(false);
 				expect(error).toBeInstanceOf(Error);
 			});
 
@@ -5388,7 +5930,7 @@ describe('/index', () => {
 				// @ts-expect-error
 				const { valid, error } = await filterCriteria.validate(input);
 
-				expect(valid).toBe(false);
+				expect(valid).toEqual(false);
 				expect(error).toBeInstanceOf(Error);
 			});
 
@@ -5408,7 +5950,7 @@ describe('/index', () => {
 				// @ts-expect-error - Testing invalid operator
 				const { valid, error } = await filterCriteria.validate(input);
 
-				expect(valid).toBe(false);
+				expect(valid).toEqual(false);
 				expect(error).toBeInstanceOf(Error);
 			});
 
@@ -5433,7 +5975,7 @@ describe('/index', () => {
 				// @ts-expect-error - Testing invalid operator
 				const { valid, error } = await filterCriteria.validate(input);
 
-				expect(valid).toBe(false);
+				expect(valid).toEqual(false);
 				expect(error).toBeInstanceOf(Error);
 			});
 		});

@@ -21,14 +21,19 @@ const zDatetime = z.iso.datetime({ offset: true }).default('');
 
 // Relative date schema for dynamic date calculations
 const zRelativeDate = z.object({
-	years: z.number().optional(),
-	months: z.number().optional(),
 	days: z.number().optional(),
+	// Set time to end of day (23:59:59.999)
+	endOfDay: z.boolean().optional(),
+	// GMT offset like '+00:00', '-03:00', 'UTC', etc.
+	gmt: z.string().optional(),
 	hours: z.number().optional(),
-	minutes: z.number().optional(),
-	seconds: z.number().optional(),
 	milliseconds: z.number().optional(),
-	gmt: z.string().optional() // GMT offset like '+00:00', '-03:00', 'UTC', etc.
+	minutes: z.number().optional(),
+	months: z.number().optional(),
+	seconds: z.number().optional(),
+	// Set time to start of day (00:00:00.000)
+	startOfDay: z.boolean().optional(),
+	years: z.number().optional()
 });
 
 const zFunction = z.custom<Function>(
@@ -1815,6 +1820,13 @@ class FilterCriteria {
 		}
 		if (relativeDate.milliseconds) {
 			resultDate.setMilliseconds(resultDate.getMilliseconds() + relativeDate.milliseconds);
+		}
+
+		// Apply start/end of day edge cases
+		if (relativeDate.startOfDay) {
+			resultDate.setHours(0, 0, 0, 0);
+		} else if (relativeDate.endOfDay) {
+			resultDate.setHours(23, 59, 59, 999);
 		}
 
 		return resultDate.toISOString();
