@@ -794,11 +794,11 @@ class FilterCriteria {
 		const passed =
 			filter.operator === 'AND'
 				? _.every(criteriaResults, r => {
-					return r.passed;
-				})
+						return r.passed;
+					})
 				: _.some(criteriaResults, r => {
-					return r.passed;
-				});
+						return r.passed;
+					});
 
 		return {
 			operator: filter.operator,
@@ -1032,10 +1032,16 @@ class FilterCriteria {
 
 		// Helper to check if value is a relative date object
 		const isRelativeDate = (val: any): boolean => {
-			return _.isPlainObject(val) && (
-				'years' in val || 'months' in val || 'days' in val ||
-				'hours' in val || 'minutes' in val || 'seconds' in val ||
-				'milliseconds' in val || 'gmt' in val
+			return (
+				_.isPlainObject(val) &&
+				('years' in val ||
+					'months' in val ||
+					'days' in val ||
+					'hours' in val ||
+					'minutes' in val ||
+					'seconds' in val ||
+					'milliseconds' in val ||
+					'gmt' in val)
 			);
 		};
 
@@ -1043,7 +1049,7 @@ class FilterCriteria {
 		if (isRelativeDate(matchValue)) {
 			matchValue = this.calculateRelativeDate(matchValue);
 		} else if (_.isArray(matchValue)) {
-			matchValue = _.map(matchValue, (val) => {
+			matchValue = _.map(matchValue, val => {
 				return isRelativeDate(val) ? this.calculateRelativeDate(val) : val;
 			});
 		}
@@ -1772,10 +1778,10 @@ class FilterCriteria {
 
 					// Get current UTC time
 					const now = new Date();
-					const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
+					const utcTime = now.getTime() + now.getTimezoneOffset() * 60000;
 
 					// Apply the specified offset
-					baseDate = new Date(utcTime + (offsetMinutes * 60000));
+					baseDate = new Date(utcTime + offsetMinutes * 60000);
 				} else {
 					// Invalid format, use current time
 					baseDate = new Date();

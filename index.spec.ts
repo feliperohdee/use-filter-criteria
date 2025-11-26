@@ -1021,7 +1021,7 @@ describe('/index', () => {
 					const criteria = FilterCriteria.criteria({
 						matchValue: [
 							{ days: -15 }, // 15 days ago
-							{ days: -1 }   // 1 day ago
+							{ days: -1 } // 1 day ago
 						],
 						operator: 'BETWEEN',
 						type: 'DATE',
@@ -1040,7 +1040,7 @@ describe('/index', () => {
 					const criteria = FilterCriteria.criteria({
 						matchValue: [
 							{ days: -15 }, // 15 days ago (relative)
-							futureDate     // 10 days from now (absolute)
+							futureDate // 10 days from now (absolute)
 						],
 						operator: 'BETWEEN',
 						type: 'DATE',
@@ -1057,8 +1057,8 @@ describe('/index', () => {
 
 					const criteria = FilterCriteria.criteria({
 						matchValue: [
-							pastDate,      // 15 days ago (absolute)
-							{ days: 0 }    // now (relative)
+							pastDate, // 15 days ago (absolute)
+							{ days: 0 } // now (relative)
 						],
 						operator: 'BETWEEN',
 						type: 'DATE',
