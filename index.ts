@@ -389,6 +389,13 @@ const filterGroupFactory = <T extends FilterCriteria.FilterGroup = FilterCriteri
 	return zDefault(filterGroup, input) as T;
 };
 
+const isRelativeDate = (val: any): val is FilterCriteria.RelativeDate => {
+	return (
+		_.isPlainObject(val) &&
+		('years' in val || 'months' in val || 'days' in val || 'hours' in val || 'minutes' in val || 'seconds' in val || 'milliseconds' in val)
+	);
+};
+
 class FilterCriteria {
 	private savedCriteria: Map<string, { criteria: FilterCriteria.Criteria }> = new Map();
 
@@ -702,7 +709,7 @@ class FilterCriteria {
 			}
 
 			// Clean up matchValue for stringification (remove ignoreYear: false from relative dates)
-			const cleanedMatchValue = criteria.type === 'DATE' ? this.cleanupRelativeDateForStringify(criteria.matchValue) : criteria.matchValue;
+			const cleanedMatchValue = criteria.type === 'DATE' ? this.cleanupRelativeDateForStringify(criteria) : criteria.matchValue;
 
 			return {
 				matchValue: stringify(cleanedMatchValue),
@@ -1040,20 +1047,6 @@ class FilterCriteria {
 	private applyDateCriteria(value: string, operator: FilterCriteria.Operators['date'], matchValue: any): boolean {
 		const validValue = _.isString(value);
 
-		// Helper to check if value is a relative date object
-		const isRelativeDate = (val: any): boolean => {
-			return (
-				_.isPlainObject(val) &&
-				('years' in val ||
-					'months' in val ||
-					'days' in val ||
-					'hours' in val ||
-					'minutes' in val ||
-					'seconds' in val ||
-					'milliseconds' in val)
-			);
-		};
-
 		// Helper to normalize date to compare only month and day (ignoring year)
 		const normalizeToMonthDay = (date: Date): Date => {
 			const normalized = new Date(date);
@@ -1061,13 +1054,27 @@ class FilterCriteria {
 			return normalized;
 		};
 
+		// Helper to get start of day for a date
+		const getStartOfDay = (date: Date): Date => {
+			const start = new Date(date);
+			start.setHours(0, 0, 0, 0);
+			return start;
+		};
+
+		// Helper to get end of day for a date
+		const getEndOfDay = (date: Date): Date => {
+			const end = new Date(date);
+			end.setHours(23, 59, 59, 999);
+			return end;
+		};
+
 		// Extract ignoreYear flag before converting relative dates
-		let ignoreYear = false;
+		let relativeDateIgnoreYear = false;
 		if (isRelativeDate(matchValue)) {
-			ignoreYear = Boolean(matchValue.ignoreYear);
+			relativeDateIgnoreYear = Boolean(matchValue.ignoreYear);
 			matchValue = this.calculateRelativeDate(matchValue);
 		} else if (_.isArray(matchValue)) {
-			ignoreYear = _.some(matchValue, val => {
+			relativeDateIgnoreYear = _.some(matchValue, val => {
 				return isRelativeDate(val) && Boolean(val.ignoreYear);
 			});
 			matchValue = _.map(matchValue, val => {
@@ -1083,7 +1090,13 @@ class FilterCriteria {
 
 		let date = new Date(value);
 
-		if (_.isString(matchValue)) {
+		// For EQUALS operator, always force start and end of day
+		if (operator === 'EQUALS' && _.isString(matchValue)) {
+			const baseDate = new Date(matchValue);
+			const startDate = getStartOfDay(baseDate);
+			const endDate = getEndOfDay(baseDate);
+			matchValue = [startDate.toISOString(), endDate.toISOString()];
+		} else if (_.isString(matchValue)) {
 			matchValue = [matchValue, new Date().toISOString()];
 		}
 
@@ -1091,8 +1104,8 @@ class FilterCriteria {
 			return new Date(d);
 		});
 
-		// Normalize dates to compare only month and day if ignoreYear is enabled
-		if (ignoreYear) {
+		// Normalize dates to compare only month and day if relativeDateIgnoreYear === true
+		if (relativeDateIgnoreYear) {
 			date = normalizeToMonthDay(date);
 			start = normalizeToMonthDay(start);
 			end = normalizeToMonthDay(end);
@@ -1116,6 +1129,10 @@ class FilterCriteria {
 			}
 
 			case 'BETWEEN': {
+				return date >= start && date <= end;
+			}
+
+			case 'EQUALS': {
 				return date >= start && date <= end;
 			}
 
@@ -1624,36 +1641,35 @@ class FilterCriteria {
 	}
 
 	// Helper to clean up relative date objects by removing ignoreYear: false when not explicitly set
-	private cleanupRelativeDateForStringify(matchValue: any): any {
-		const isRelativeDate = (val: any): boolean => {
-			return (
-				_.isPlainObject(val) &&
-				('years' in val ||
-					'months' in val ||
-					'days' in val ||
-					'hours' in val ||
-					'minutes' in val ||
-					'seconds' in val ||
-					'milliseconds' in val)
-			);
-		};
-
-		if (isRelativeDate(matchValue)) {
-			const cleaned = { ...matchValue };
-			// Remove ignoreYear: false as it's the default and wasn't explicitly set
-			if (cleaned.ignoreYear === false) {
-				delete cleaned.ignoreYear;
+	private cleanupRelativeDateForStringify(criteria: FilterCriteria.CriteriaInput & { type: 'DATE' }): any {
+		if (isRelativeDate(criteria.matchValue)) {
+			if (criteria.matchValue.ignoreYear === false) {
+				criteria.matchValue = _.omit(criteria.matchValue, ['ignoreYear']);
 			}
-			return cleaned;
+
+			if (criteria.operator === 'EQUALS') {
+				criteria.matchValue = {
+					...criteria.matchValue,
+					startOfDay: true,
+					endOfDay: true
+				};
+			}
 		}
 
-		if (_.isArray(matchValue)) {
-			return _.map(matchValue, val => {
-				return isRelativeDate(val) ? this.cleanupRelativeDateForStringify(val) : val;
+		if (_.isArray(criteria.matchValue)) {
+			return _.map(criteria.matchValue, matchValue => {
+				if (isRelativeDate(matchValue)) {
+					return this.cleanupRelativeDateForStringify({
+						...criteria,
+						matchValue
+					});
+				}
+
+				return matchValue;
 			});
 		}
 
-		return matchValue;
+		return criteria.matchValue;
 	}
 
 	/*

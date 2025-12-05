@@ -645,7 +645,7 @@ const birthdayToday = FilterCriteria.criteria({
 
 **All Date Operators Support Relative Dates:**
 
-All date operators (`AFTER`, `BEFORE`, `BETWEEN`, `AFTER-OR-EQUALS`, `BEFORE-OR-EQUALS`) work with relative dates, making it easy to create dynamic date filters that always stay current.
+All date operators (`AFTER`, `BEFORE`, `BETWEEN`, `AFTER-OR-EQUALS`, `BEFORE-OR-EQUALS`, `EQUALS`) work with relative dates, making it easy to create dynamic date filters that always stay current.
 
 ### Geographic Operators
 

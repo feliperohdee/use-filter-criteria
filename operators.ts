@@ -32,7 +32,7 @@ const operatorsBoolean = z.enum([
 	'STRICT-EQUAL',
 	'STRICT-NOT-EQUAL'
 ]);
-const operatorsDate = z.enum(['AFTER', 'AFTER-OR-EQUALS', 'BEFORE', 'BEFORE-OR-EQUALS', 'BETWEEN']);
+const operatorsDate = z.enum(['AFTER', 'AFTER-OR-EQUALS', 'BEFORE', 'BEFORE-OR-EQUALS', 'BETWEEN', 'EQUALS']);
 const operatorsGeo = z.enum(['IN-RADIUS', 'NOT-IN-RADIUS']);
 const operatorsMap = z.enum([
 	'CONTAINS',

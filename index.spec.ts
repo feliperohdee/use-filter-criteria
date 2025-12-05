@@ -4,6 +4,9 @@ import DataLoader from 'use-data-loader';
 
 import FilterCriteria from './index';
 
+// @ts-expect-error - process.env is not typed
+process.env.TZ = 'UTC';
+
 const testData = [
 	{
 		active: true,
@@ -2134,6 +2137,25 @@ describe('/index', () => {
 					value: '2023-01-01T00:00:00Z'
 				});
 			});
+
+			it('should handle EQUALS operator', async () => {
+				const criteria = FilterCriteria.criteria({
+					matchValue: '2023-01-01T10:00:00Z',
+					operator: 'EQUALS',
+					type: 'DATE',
+					valuePath: ['createdAt']
+				});
+
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
+
+				expect(res).toEqual({
+					matchValue: '2023-01-01T10:00:00Z',
+					passed: true,
+					reason: 'DATE criteria "EQUALS" check PASSED',
+					value: '2023-01-01T00:00:00Z'
+				});
+			});
 		});
 
 		describe('relative dates', () => {
@@ -2474,8 +2496,8 @@ describe('/index', () => {
 					// @ts-expect-error
 					const res = await filterCriteria.applyCriteria(startEndOfDayTestData[0], criteria);
 
-					expect(res.passed).toBe(true);
-					expect(res.reason).toBe('DATE criteria "AFTER-OR-EQUALS" check PASSED');
+					expect(res.passed).toEqual(true);
+					expect(res.reason).toEqual('DATE criteria "AFTER-OR-EQUALS" check PASSED');
 				});
 
 				it('should handle endOfDay flag', async () => {
@@ -2492,8 +2514,8 @@ describe('/index', () => {
 					// @ts-expect-error
 					const res = await filterCriteria.applyCriteria(startEndOfDayTestData[2], criteria);
 
-					expect(res.passed).toBe(true);
-					expect(res.reason).toBe('DATE criteria "BEFORE-OR-EQUALS" check PASSED');
+					expect(res.passed).toEqual(true);
+					expect(res.reason).toEqual('DATE criteria "BEFORE-OR-EQUALS" check PASSED');
 				});
 
 				it('should filter TODAY birthdate using BETWEEN with start/end of day', async () => {
@@ -2509,23 +2531,23 @@ describe('/index', () => {
 
 					// @ts-expect-error
 					const res1 = await filterCriteria.applyCriteria(startEndOfDayTestData[0], criteria);
-					expect(res1.passed).toBe(true);
+					expect(res1.passed).toEqual(true);
 
 					// @ts-expect-error
 					const res2 = await filterCriteria.applyCriteria(startEndOfDayTestData[1], criteria);
-					expect(res2.passed).toBe(true);
+					expect(res2.passed).toEqual(true);
 
 					// @ts-expect-error
 					const res3 = await filterCriteria.applyCriteria(startEndOfDayTestData[2], criteria);
-					expect(res3.passed).toBe(true);
+					expect(res3.passed).toEqual(true);
 
 					// @ts-expect-error
 					const res4 = await filterCriteria.applyCriteria(startEndOfDayTestData[3], criteria);
-					expect(res4.passed).toBe(false);
+					expect(res4.passed).toEqual(false);
 
 					// @ts-expect-error
 					const res5 = await filterCriteria.applyCriteria(startEndOfDayTestData[4], criteria);
-					expect(res5.passed).toBe(false);
+					expect(res5.passed).toEqual(false);
 				});
 
 				it('should handle startOfDay with days offset', async () => {
@@ -2542,7 +2564,7 @@ describe('/index', () => {
 					// @ts-expect-error
 					const res = await filterCriteria.applyCriteria(startEndOfDayTestData[3], criteria);
 
-					expect(res.passed).toBe(true);
+					expect(res.passed).toEqual(true);
 				});
 
 				it('should handle endOfDay with days offset', async () => {
@@ -2559,7 +2581,7 @@ describe('/index', () => {
 					// @ts-expect-error
 					const res = await filterCriteria.applyCriteria(startEndOfDayTestData[4], criteria);
 
-					expect(res.passed).toBe(true);
+					expect(res.passed).toEqual(true);
 				});
 
 				it('should handle startOfDay with GMT timezone', async () => {
@@ -2577,7 +2599,7 @@ describe('/index', () => {
 					// @ts-expect-error
 					const res = await filterCriteria.applyCriteria(startEndOfDayTestData[0], criteria);
 
-					expect(res.passed).toBe(true);
+					expect(res.passed).toEqual(true);
 				});
 
 				it('should handle endOfDay with GMT timezone', async () => {
@@ -2595,7 +2617,7 @@ describe('/index', () => {
 					// @ts-expect-error
 					const res = await filterCriteria.applyCriteria(startEndOfDayTestData[2], criteria);
 
-					expect(res.passed).toBe(true);
+					expect(res.passed).toEqual(true);
 				});
 			});
 
@@ -3048,7 +3070,7 @@ describe('/index', () => {
 				// Birthdate on different month/day (should not match)
 				const differentMonthDay = new Date(1985, (currentMonth + 1) % 12, currentDate, 12, 0, 0, 0).toISOString();
 
-				const ignoreYearTestData = [
+				const testData = [
 					{
 						id: 1,
 						name: 'John Doe',
@@ -3076,7 +3098,7 @@ describe('/index', () => {
 					}
 				];
 
-				it("should match birthdates on today's date (any year) using BETWEEN with ignoreYear", async () => {
+				it(`should match birthdates on today's date (any year) using BETWEEN with ignoreYear`, async () => {
 					const criteria = FilterCriteria.criteria({
 						matchValue: [
 							{ days: 0, startOfDay: true, ignoreYear: true },
@@ -3088,32 +3110,32 @@ describe('/index', () => {
 					});
 
 					// @ts-expect-error 1988-[todayMonth]-[todayDate]
-					const res1 = await filterCriteria.applyCriteria(ignoreYearTestData[0], criteria);
-					expect(res1.passed).toBe(true);
-					expect(res1.reason).toBe('DATE criteria "BETWEEN" check PASSED');
+					const res1 = await filterCriteria.applyCriteria(testData[0], criteria);
+					expect(res1.passed).toEqual(true);
+					expect(res1.reason).toEqual('DATE criteria "BETWEEN" check PASSED');
 
 					// @ts-expect-error 1995-[todayMonth]-[todayDate]
-					const res2 = await filterCriteria.applyCriteria(ignoreYearTestData[1], criteria);
-					expect(res2.passed).toBe(true);
-					expect(res2.reason).toBe('DATE criteria "BETWEEN" check PASSED');
+					const res2 = await filterCriteria.applyCriteria(testData[1], criteria);
+					expect(res2.passed).toEqual(true);
+					expect(res2.reason).toEqual('DATE criteria "BETWEEN" check PASSED');
 
 					// @ts-expect-error 2000-[yesterdayMonth]-[yesterdayDate]
-					const res3 = await filterCriteria.applyCriteria(ignoreYearTestData[2], criteria);
-					expect(res3.passed).toBe(false);
-					expect(res3.reason).toBe('DATE criteria "BETWEEN" check FAILED');
+					const res3 = await filterCriteria.applyCriteria(testData[2], criteria);
+					expect(res3.passed).toEqual(false);
+					expect(res3.reason).toEqual('DATE criteria "BETWEEN" check FAILED');
 
 					// @ts-expect-error 1990-[tomorrowMonth]-[tomorrowDate]
-					const res4 = await filterCriteria.applyCriteria(ignoreYearTestData[3], criteria);
-					expect(res4.passed).toBe(false);
-					expect(res4.reason).toBe('DATE criteria "BETWEEN" check FAILED');
+					const res4 = await filterCriteria.applyCriteria(testData[3], criteria);
+					expect(res4.passed).toEqual(false);
+					expect(res4.reason).toEqual('DATE criteria "BETWEEN" check FAILED');
 
 					// @ts-expect-error 1985-[differentMonth]-[currentDate]
-					const res5 = await filterCriteria.applyCriteria(ignoreYearTestData[4], criteria);
-					expect(res5.passed).toBe(false);
-					expect(res5.reason).toBe('DATE criteria "BETWEEN" check FAILED');
+					const res5 = await filterCriteria.applyCriteria(testData[4], criteria);
+					expect(res5.passed).toEqual(false);
+					expect(res5.reason).toEqual('DATE criteria "BETWEEN" check FAILED');
 				});
 
-				it("should match birthdates on yesterday's date (any year) using BETWEEN with ignoreYear", async () => {
+				it(`should match birthdates on yesterday's date (any year) using BETWEEN with ignoreYear`, async () => {
 					const criteria = FilterCriteria.criteria({
 						matchValue: [
 							{ days: -1, startOfDay: true, ignoreYear: true },
@@ -3125,17 +3147,17 @@ describe('/index', () => {
 					});
 
 					// @ts-expect-error 2000-[yesterdayMonth]-[yesterdayDate]
-					const res1 = await filterCriteria.applyCriteria(ignoreYearTestData[2], criteria);
-					expect(res1.passed).toBe(true);
-					expect(res1.reason).toBe('DATE criteria "BETWEEN" check PASSED');
+					const res1 = await filterCriteria.applyCriteria(testData[2], criteria);
+					expect(res1.passed).toEqual(true);
+					expect(res1.reason).toEqual('DATE criteria "BETWEEN" check PASSED');
 
 					// @ts-expect-error 1988-[todayMonth]-[todayDate]
-					const res2 = await filterCriteria.applyCriteria(ignoreYearTestData[0], criteria);
-					expect(res2.passed).toBe(false);
-					expect(res2.reason).toBe('DATE criteria "BETWEEN" check FAILED');
+					const res2 = await filterCriteria.applyCriteria(testData[0], criteria);
+					expect(res2.passed).toEqual(false);
+					expect(res2.reason).toEqual('DATE criteria "BETWEEN" check FAILED');
 				});
 
-				it("should match birthdates on tomorrow's date (any year) using BETWEEN with ignoreYear", async () => {
+				it(`should match birthdates on tomorrow's date (any year) using BETWEEN with ignoreYear`, async () => {
 					const criteria = FilterCriteria.criteria({
 						matchValue: [
 							{ days: 1, startOfDay: true, ignoreYear: true },
@@ -3147,14 +3169,106 @@ describe('/index', () => {
 					});
 
 					// @ts-expect-error 1990-[tomorrowMonth]-[tomorrowDate]
-					const res1 = await filterCriteria.applyCriteria(ignoreYearTestData[3], criteria);
-					expect(res1.passed).toBe(true);
-					expect(res1.reason).toBe('DATE criteria "BETWEEN" check PASSED');
+					const res1 = await filterCriteria.applyCriteria(testData[3], criteria);
+					expect(res1.passed).toEqual(true);
+					expect(res1.reason).toEqual('DATE criteria "BETWEEN" check PASSED');
 
 					// @ts-expect-error 1988-[todayMonth]-[todayDate]
-					const res2 = await filterCriteria.applyCriteria(ignoreYearTestData[0], criteria);
-					expect(res2.passed).toBe(false);
-					expect(res2.reason).toBe('DATE criteria "BETWEEN" check FAILED');
+					const res2 = await filterCriteria.applyCriteria(testData[0], criteria);
+					expect(res2.passed).toEqual(false);
+					expect(res2.reason).toEqual('DATE criteria "BETWEEN" check FAILED');
+				});
+
+				it(`should match birthdates on today's date (any year) using EQUALS with ignoreYear=true`, async () => {
+					const criteria = FilterCriteria.criteria({
+						matchValue: { days: 0, ignoreYear: true },
+						operator: 'EQUALS',
+						type: 'DATE',
+						valuePath: ['birthdate']
+					});
+
+					// @ts-expect-error today
+					const res0 = await filterCriteria.applyCriteria(
+						{
+							id: 0,
+							name: 'Today',
+							birthdate: new Date().toISOString()
+						},
+						criteria
+					);
+					expect(res0.passed).toEqual(true);
+					expect(res0.reason).toEqual('DATE criteria "EQUALS" check PASSED');
+
+					// @ts-expect-error 1988-[todayMonth]-[todayDate] at 10:30
+					const res1 = await filterCriteria.applyCriteria(testData[0], criteria);
+					expect(res1.passed).toEqual(true);
+					expect(res1.reason).toEqual('DATE criteria "EQUALS" check PASSED');
+
+					// @ts-expect-error 1995-[todayMonth]-[todayDate] at 14:15
+					const res2 = await filterCriteria.applyCriteria(testData[1], criteria);
+					expect(res2.passed).toEqual(true);
+					expect(res2.reason).toEqual('DATE criteria "EQUALS" check PASSED');
+
+					// @ts-expect-error 2000-[yesterdayMonth]-[yesterdayDate]
+					const res3 = await filterCriteria.applyCriteria(testData[2], criteria);
+					expect(res3.passed).toEqual(false);
+					expect(res3.reason).toEqual('DATE criteria "EQUALS" check FAILED');
+
+					// @ts-expect-error 1990-[tomorrowMonth]-[tomorrowDate]
+					const res4 = await filterCriteria.applyCriteria(testData[3], criteria);
+					expect(res4.passed).toEqual(false);
+					expect(res4.reason).toEqual('DATE criteria "EQUALS" check FAILED');
+
+					// @ts-expect-error 1985-[differentMonth]-[currentDate]
+					const res5 = await filterCriteria.applyCriteria(testData[4], criteria);
+					expect(res5.passed).toEqual(false);
+					expect(res5.reason).toEqual('DATE criteria "EQUALS" check FAILED');
+				});
+
+				it('should match exact dates (including year) using EQUALS with ignoreYear=false', async () => {
+					const criteria = FilterCriteria.criteria({
+						matchValue: { days: 0, ignoreYear: false },
+						operator: 'EQUALS',
+						type: 'DATE',
+						valuePath: ['birthdate']
+					});
+
+					// @ts-expect-error today
+					const res0 = await filterCriteria.applyCriteria(
+						{
+							id: 0,
+							name: 'Today',
+							birthdate: new Date().toISOString()
+						},
+						criteria
+					);
+					expect(res0.passed).toEqual(true);
+					expect(res0.reason).toEqual('DATE criteria "EQUALS" check PASSED');
+
+					// @ts-expect-error 1988-[todayMonth]-[todayDate] at 10:30
+					const res1 = await filterCriteria.applyCriteria(testData[0], criteria);
+					expect(res1.passed).toEqual(false);
+					expect(res1.reason).toEqual('DATE criteria "EQUALS" check FAILED');
+
+					// @ts-expect-error 1995-[todayMonth]-[todayDate] at 14:15
+					const res2 = await filterCriteria.applyCriteria(testData[1], criteria);
+					expect(res2.passed).toEqual(false);
+					expect(res2.reason).toEqual('DATE criteria "EQUALS" check FAILED');
+
+					// @ts-expect-error 2000-[yesterdayMonth]-[yesterdayDate]
+					const res3 = await filterCriteria.applyCriteria(testData[2], criteria);
+					expect(res3.passed).toEqual(false);
+					expect(res3.reason).toEqual('DATE criteria "EQUALS" check FAILED');
+
+					// @ts-expect-error 1990-[tomorrowMonth]-[tomorrowDate]
+					const res4 = await filterCriteria.applyCriteria(testData[3], criteria);
+					expect(res4.passed).toEqual(false);
+					expect(res4.reason).toEqual('DATE criteria "EQUALS" check FAILED');
+
+					// @ts-expect-error 1985-[differentMonth]-[currentDate]
+					const res5 = await filterCriteria.applyCriteria(testData[4], criteria);
+					expect(res5.passed).toEqual(false);
+					expect(res5.reason).toEqual('DATE criteria "EQUALS" check FAILED');
 				});
 			});
 		});
@@ -4917,8 +5031,8 @@ describe('/index', () => {
 			const res = await filterCriteria.applyCriteria(relativeDate, criteria);
 
 			const matchValue = JSON.parse(res.matchValue);
-			expect(matchValue.ignoreYear).toBe(true);
-			expect(matchValue.days).toBe(-5);
+			expect(matchValue.ignoreYear).toEqual(true);
+			expect(matchValue.days).toEqual(-5);
 		});
 
 		it('should keep ignoreYear in array of relative dates', async () => {
@@ -4936,11 +5050,11 @@ describe('/index', () => {
 			const res = await filterCriteria.applyCriteria(relativeDate, criteria);
 
 			const matchValue = JSON.parse(res.matchValue);
-			expect(Array.isArray(matchValue)).toBe(true);
-			expect(matchValue[0].ignoreYear).toBe(true);
-			expect(matchValue[1].ignoreYear).toBe(true);
-			expect(matchValue[0].days).toBe(-15);
-			expect(matchValue[1].days).toBe(-1);
+			expect(Array.isArray(matchValue)).toEqual(true);
+			expect(matchValue[0].ignoreYear).toEqual(true);
+			expect(matchValue[1].ignoreYear).toEqual(true);
+			expect(matchValue[0].days).toEqual(-15);
+			expect(matchValue[1].days).toEqual(-1);
 		});
 
 		it('should remove ignoreYear from single relative date object', async () => {
@@ -4956,7 +5070,7 @@ describe('/index', () => {
 
 			const matchValue = JSON.parse(res.matchValue);
 			expect(matchValue.ignoreYear).toBeUndefined();
-			expect(matchValue.days).toBe(-5);
+			expect(matchValue.days).toEqual(-5);
 		});
 
 		it('should remove ignoreYear from array of relative dates', async () => {
@@ -4974,11 +5088,11 @@ describe('/index', () => {
 			const res = await filterCriteria.applyCriteria(relativeDate, criteria);
 
 			const matchValue = JSON.parse(res.matchValue);
-			expect(Array.isArray(matchValue)).toBe(true);
+			expect(Array.isArray(matchValue)).toEqual(true);
 			expect(matchValue[0].ignoreYear).toBeUndefined();
 			expect(matchValue[1].ignoreYear).toBeUndefined();
-			expect(matchValue[0].days).toBe(-15);
-			expect(matchValue[1].days).toBe(-1);
+			expect(matchValue[0].days).toEqual(-15);
+			expect(matchValue[1].days).toEqual(-1);
 		});
 	});
 
@@ -5297,7 +5411,7 @@ describe('/index', () => {
 					'STRICT-EQUAL',
 					'STRICT-NOT-EQUAL'
 				],
-				date: ['AFTER', 'AFTER-OR-EQUALS', 'BEFORE', 'BEFORE-OR-EQUALS', 'BETWEEN'],
+				date: ['AFTER', 'AFTER-OR-EQUALS', 'BEFORE', 'BEFORE-OR-EQUALS', 'BETWEEN', 'EQUALS'],
 				geo: ['IN-RADIUS', 'NOT-IN-RADIUS'],
 				map: [
 					'CONTAINS',
