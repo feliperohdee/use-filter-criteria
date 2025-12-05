@@ -27,6 +27,8 @@ const zRelativeDate = z.object({
 	// GMT offset like '+00:00', '-03:00', 'UTC', etc.
 	gmt: z.string().optional(),
 	hours: z.number().optional(),
+	// Ignore year when matching (compare only month and day)
+	ignoreYear: z.boolean().optional(),
 	milliseconds: z.number().optional(),
 	minutes: z.number().optional(),
 	months: z.number().optional(),
@@ -699,8 +701,11 @@ class FilterCriteria {
 				passed = this.evaluateCriteria(value, criteria);
 			}
 
+			// Clean up matchValue for stringification (remove ignoreYear: false from relative dates)
+			const cleanedMatchValue = criteria.type === 'DATE' ? this.cleanupRelativeDateForStringify(criteria.matchValue) : criteria.matchValue;
+
 			return {
-				matchValue: stringify(criteria.matchValue),
+				matchValue: stringify(cleanedMatchValue),
 				passed,
 				reason: `${criteria.type} criteria "${criteria.operator}" check ${passed ? 'PASSED' : 'FAILED'}`,
 				value
@@ -1045,15 +1050,26 @@ class FilterCriteria {
 					'hours' in val ||
 					'minutes' in val ||
 					'seconds' in val ||
-					'milliseconds' in val ||
-					'gmt' in val)
+					'milliseconds' in val)
 			);
 		};
 
-		// Convert relative dates to ISO strings
+		// Helper to normalize date to compare only month and day (ignoring year)
+		const normalizeToMonthDay = (date: Date): Date => {
+			const normalized = new Date(date);
+			normalized.setFullYear(2000); // Use a fixed year for comparison
+			return normalized;
+		};
+
+		// Extract ignoreYear flag before converting relative dates
+		let ignoreYear = false;
 		if (isRelativeDate(matchValue)) {
+			ignoreYear = Boolean(matchValue.ignoreYear);
 			matchValue = this.calculateRelativeDate(matchValue);
 		} else if (_.isArray(matchValue)) {
+			ignoreYear = _.some(matchValue, val => {
+				return isRelativeDate(val) && Boolean(val.ignoreYear);
+			});
 			matchValue = _.map(matchValue, val => {
 				return isRelativeDate(val) ? this.calculateRelativeDate(val) : val;
 			});
@@ -1065,15 +1081,22 @@ class FilterCriteria {
 			return false;
 		}
 
-		const date = new Date(value);
+		let date = new Date(value);
 
 		if (_.isString(matchValue)) {
 			matchValue = [matchValue, new Date().toISOString()];
 		}
 
-		const [start, end] = _.map(matchValue, d => {
+		let [start, end] = _.map(matchValue, d => {
 			return new Date(d);
 		});
+
+		// Normalize dates to compare only month and day if ignoreYear is enabled
+		if (ignoreYear) {
+			date = normalizeToMonthDay(date);
+			start = normalizeToMonthDay(start);
+			end = normalizeToMonthDay(end);
+		}
 
 		switch (operator) {
 			case 'AFTER': {
@@ -1598,6 +1621,39 @@ class FilterCriteria {
 		const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
 		const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 		return R * c;
+	}
+
+	// Helper to clean up relative date objects by removing ignoreYear: false when not explicitly set
+	private cleanupRelativeDateForStringify(matchValue: any): any {
+		const isRelativeDate = (val: any): boolean => {
+			return (
+				_.isPlainObject(val) &&
+				('years' in val ||
+					'months' in val ||
+					'days' in val ||
+					'hours' in val ||
+					'minutes' in val ||
+					'seconds' in val ||
+					'milliseconds' in val)
+			);
+		};
+
+		if (isRelativeDate(matchValue)) {
+			const cleaned = { ...matchValue };
+			// Remove ignoreYear: false as it's the default and wasn't explicitly set
+			if (cleaned.ignoreYear === false) {
+				delete cleaned.ignoreYear;
+			}
+			return cleaned;
+		}
+
+		if (_.isArray(matchValue)) {
+			return _.map(matchValue, val => {
+				return isRelativeDate(val) ? this.cleanupRelativeDateForStringify(val) : val;
+			});
+		}
+
+		return matchValue;
 	}
 
 	/*

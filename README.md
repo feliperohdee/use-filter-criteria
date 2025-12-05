@@ -540,6 +540,113 @@ This is more efficient than running multiple separate matchMany operations when 
 - `BEFORE-OR-EQUALS`: Date is before or equal to the filter value
 - `BETWEEN`: Date is between two filter values (inclusive)
 
+#### Relative Dates
+
+The library supports relative date calculations, allowing you to filter dates dynamically based on the current time. Instead of hardcoding specific dates, you can use relative date objects that calculate dates relative to "now".
+
+**Basic Syntax:**
+
+```typescript
+// Events created in the last 7 days
+const last7Days = FilterCriteria.criteria({
+	type: 'DATE',
+	operator: 'AFTER',
+	matchValue: { days: -7 },
+	valuePath: ['createdAt']
+});
+
+// Events older than 5 days
+const olderThan5Days = FilterCriteria.criteria({
+	type: 'DATE',
+	operator: 'BEFORE',
+	matchValue: { days: -5 },
+	valuePath: ['createdAt']
+});
+
+// Future events
+const futureEvents = FilterCriteria.criteria({
+	type: 'DATE',
+	operator: 'AFTER',
+	matchValue: { hours: 0 }, // Now
+	valuePath: ['createdAt']
+});
+```
+
+**Supported Time Units:**
+
+- `years`: Number of years to add/subtract
+- `months`: Number of months to add/subtract
+- `days`: Number of days to add/subtract
+- `hours`: Number of hours to add/subtract
+- `minutes`: Number of minutes to add/subtract
+- `seconds`: Number of seconds to add/subtract
+- `milliseconds`: Number of milliseconds to add/subtract
+
+**Timezone Support:**
+
+You can specify a timezone using the `gmt` property:
+
+```typescript
+// Events in the last 7 days (UTC timezone)
+const last7DaysUTC = FilterCriteria.criteria({
+	type: 'DATE',
+	operator: 'AFTER',
+	matchValue: {
+		days: -7,
+		gmt: 'UTC' // or '+00:00', '-03:00', etc.
+	},
+	valuePath: ['createdAt']
+});
+```
+
+Supported GMT formats: `'UTC'`, `'GMT'`, `'+00:00'`, `'Z'`, or offset strings like `'+03:00'`, `'-05:00'`.
+
+**Start/End of Day:**
+
+Use `startOfDay` and `endOfDay` to set the time to the beginning or end of the day:
+
+```typescript
+// Events created today (from start to end of day)
+const todayEvents = FilterCriteria.criteria({
+	type: 'DATE',
+	operator: 'BETWEEN',
+	matchValue: [
+		{ days: 0, startOfDay: true }, // Start of today (00:00:00.000)
+		{ days: 0, endOfDay: true } // End of today (23:59:59.999)
+	],
+	valuePath: ['createdAt']
+});
+
+// Events created at start of today or later
+const fromStartOfToday = FilterCriteria.criteria({
+	type: 'DATE',
+	operator: 'AFTER-OR-EQUALS',
+	matchValue: { days: 0, startOfDay: true },
+	valuePath: ['createdAt']
+});
+```
+
+**Ignore Year (Month/Day Matching):**
+
+Use `ignoreYear: true` to compare dates ignoring the year (useful for recurring dates like birthdays):
+
+```typescript
+// People with birthdays today (any year)
+const birthdayToday = FilterCriteria.criteria({
+	type: 'DATE',
+	operator: 'BETWEEN',
+	matchValue: [
+		{ days: 0, startOfDay: true, ignoreYear: true },
+		{ days: 0, endOfDay: true, ignoreYear: true }
+	],
+	valuePath: ['birthdate']
+});
+```
+
+**All Date Operators Support Relative Dates:**
+
+All date operators (`AFTER`, `BEFORE`, `BETWEEN`, `AFTER-OR-EQUALS`, `BEFORE-OR-EQUALS`) work with relative dates, making it easy to create dynamic date filters that always stay current.
+
 ### Geographic Operators
 
 - `IN-RADIUS`: Point is within the specified radius

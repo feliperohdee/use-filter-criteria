@@ -3028,6 +3028,135 @@ describe('/index', () => {
 					});
 				});
 			});
+
+			describe('ignoreYear', () => {
+				// Create test data with birthdates on different years but same month/day
+				const now = new Date();
+				const currentMonth = now.getMonth();
+				const currentDate = now.getDate();
+
+				// Birthdate matching today's date in 1988
+				const birthdate1988 = new Date(1988, currentMonth, currentDate, 10, 30, 0, 0).toISOString();
+				// Birthdate matching today's date in 1995
+				const birthdate1995 = new Date(1995, currentMonth, currentDate, 14, 15, 0, 0).toISOString();
+				// Birthdate matching yesterday's date in 2000
+				const yesterdayDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+				const birthdateYesterday = new Date(2000, yesterdayDate.getMonth(), yesterdayDate.getDate(), 8, 0, 0, 0).toISOString();
+				// Birthdate matching tomorrow's date in 1990
+				const tomorrowDate = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+				const birthdateTomorrow = new Date(1990, tomorrowDate.getMonth(), tomorrowDate.getDate(), 16, 45, 0, 0).toISOString();
+				// Birthdate on different month/day (should not match)
+				const differentMonthDay = new Date(1985, (currentMonth + 1) % 12, currentDate, 12, 0, 0, 0).toISOString();
+
+				const ignoreYearTestData = [
+					{
+						id: 1,
+						name: 'John Doe',
+						birthdate: birthdate1988
+					},
+					{
+						id: 2,
+						name: 'Jane Smith',
+						birthdate: birthdate1995
+					},
+					{
+						id: 3,
+						name: 'Bob Johnson',
+						birthdate: birthdateYesterday
+					},
+					{
+						id: 4,
+						name: 'Alice Brown',
+						birthdate: birthdateTomorrow
+					},
+					{
+						id: 5,
+						name: 'Charlie Wilson',
+						birthdate: differentMonthDay
+					}
+				];
+
+				it("should match birthdates on today's date (any year) using BETWEEN with ignoreYear", async () => {
+					const criteria = FilterCriteria.criteria({
+						matchValue: [
+							{ days: 0, startOfDay: true, ignoreYear: true },
+							{ days: 0, endOfDay: true, ignoreYear: true }
+						],
+						operator: 'BETWEEN',
+						type: 'DATE',
+						valuePath: ['birthdate']
+					});
+
+					// @ts-expect-error 1988-[todayMonth]-[todayDate]
+					const res1 = await filterCriteria.applyCriteria(ignoreYearTestData[0], criteria);
+					expect(res1.passed).toBe(true);
+					expect(res1.reason).toBe('DATE criteria "BETWEEN" check PASSED');
+
+					// @ts-expect-error 1995-[todayMonth]-[todayDate]
+					const res2 = await filterCriteria.applyCriteria(ignoreYearTestData[1], criteria);
+					expect(res2.passed).toBe(true);
+					expect(res2.reason).toBe('DATE criteria "BETWEEN" check PASSED');
+
+					// @ts-expect-error 2000-[yesterdayMonth]-[yesterdayDate]
+					const res3 = await filterCriteria.applyCriteria(ignoreYearTestData[2], criteria);
+					expect(res3.passed).toBe(false);
+					expect(res3.reason).toBe('DATE criteria "BETWEEN" check FAILED');
+
+					// @ts-expect-error 1990-[tomorrowMonth]-[tomorrowDate]
+					const res4 = await filterCriteria.applyCriteria(ignoreYearTestData[3], criteria);
+					expect(res4.passed).toBe(false);
+					expect(res4.reason).toBe('DATE criteria "BETWEEN" check FAILED');
+
+					// @ts-expect-error 1985-[differentMonth]-[currentDate]
+					const res5 = await filterCriteria.applyCriteria(ignoreYearTestData[4], criteria);
+					expect(res5.passed).toBe(false);
+					expect(res5.reason).toBe('DATE criteria "BETWEEN" check FAILED');
+				});
+
+				it("should match birthdates on yesterday's date (any year) using BETWEEN with ignoreYear", async () => {
+					const criteria = FilterCriteria.criteria({
+						matchValue: [
+							{ days: -1, startOfDay: true, ignoreYear: true },
+							{ days: -1, endOfDay: true, ignoreYear: true }
+						],
+						operator: 'BETWEEN',
+						type: 'DATE',
+						valuePath: ['birthdate']
+					});
+
+					// @ts-expect-error 2000-[yesterdayMonth]-[yesterdayDate]
+					const res1 = await filterCriteria.applyCriteria(ignoreYearTestData[2], criteria);
+					expect(res1.passed).toBe(true);
+					expect(res1.reason).toBe('DATE criteria "BETWEEN" check PASSED');
+
+					// @ts-expect-error 1988-[todayMonth]-[todayDate]
+					const res2 = await filterCriteria.applyCriteria(ignoreYearTestData[0], criteria);
+					expect(res2.passed).toBe(false);
+					expect(res2.reason).toBe('DATE criteria "BETWEEN" check FAILED');
+				});
+
+				it("should match birthdates on tomorrow's date (any year) using BETWEEN with ignoreYear", async () => {
+					const criteria = FilterCriteria.criteria({
+						matchValue: [
+							{ days: 1, startOfDay: true, ignoreYear: true },
+							{ days: 1, endOfDay: true, ignoreYear: true }
+						],
+						operator: 'BETWEEN',
+						type: 'DATE',
+						valuePath: ['birthdate']
+					});
+
+					// @ts-expect-error 1990-[tomorrowMonth]-[tomorrowDate]
+					const res1 = await filterCriteria.applyCriteria(ignoreYearTestData[3], criteria);
+					expect(res1.passed).toBe(true);
+					expect(res1.reason).toBe('DATE criteria "BETWEEN" check PASSED');
+
+					// @ts-expect-error 1988-[todayMonth]-[todayDate]
+					const res2 = await filterCriteria.applyCriteria(ignoreYearTestData[0], criteria);
+					expect(res2.passed).toBe(false);
+					expect(res2.reason).toBe('DATE criteria "BETWEEN" check FAILED');
+				});
+			});
 		});
 
 		describe('geo', () => {
@@ -4766,6 +4895,90 @@ describe('/index', () => {
 			expect(res.passed).toEqual(true);
 			expect(res.reason).toContain('PASSED');
 			expect(res.results).toHaveLength(2); // non-short-circuited
+		});
+	});
+
+	describe('cleanupRelativeDateForStringify', () => {
+		const relativeDate = {
+			createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+			id: 1,
+			name: 'Recent Event'
+		};
+
+		it('should keep ignoreYear in single relative date object', async () => {
+			const criteria = FilterCriteria.criteria({
+				matchValue: { days: -5, ignoreYear: true },
+				operator: 'AFTER',
+				type: 'DATE',
+				valuePath: ['createdAt']
+			});
+
+			// @ts-expect-error
+			const res = await filterCriteria.applyCriteria(relativeDate, criteria);
+
+			const matchValue = JSON.parse(res.matchValue);
+			expect(matchValue.ignoreYear).toBe(true);
+			expect(matchValue.days).toBe(-5);
+		});
+
+		it('should keep ignoreYear in array of relative dates', async () => {
+			const criteria = FilterCriteria.criteria({
+				matchValue: [
+					{ days: -15, ignoreYear: true },
+					{ days: -1, ignoreYear: true }
+				],
+				operator: 'BETWEEN',
+				type: 'DATE',
+				valuePath: ['createdAt']
+			});
+
+			// @ts-expect-error
+			const res = await filterCriteria.applyCriteria(relativeDate, criteria);
+
+			const matchValue = JSON.parse(res.matchValue);
+			expect(Array.isArray(matchValue)).toBe(true);
+			expect(matchValue[0].ignoreYear).toBe(true);
+			expect(matchValue[1].ignoreYear).toBe(true);
+			expect(matchValue[0].days).toBe(-15);
+			expect(matchValue[1].days).toBe(-1);
+		});
+
+		it('should remove ignoreYear from single relative date object', async () => {
+			const criteria = FilterCriteria.criteria({
+				matchValue: { days: -5, ignoreYear: false },
+				operator: 'AFTER',
+				type: 'DATE',
+				valuePath: ['createdAt']
+			});
+
+			// @ts-expect-error
+			const res = await filterCriteria.applyCriteria(relativeDate, criteria);
+
+			const matchValue = JSON.parse(res.matchValue);
+			expect(matchValue.ignoreYear).toBeUndefined();
+			expect(matchValue.days).toBe(-5);
+		});
+
+		it('should remove ignoreYear from array of relative dates', async () => {
+			const criteria = FilterCriteria.criteria({
+				matchValue: [
+					{ days: -15, ignoreYear: false },
+					{ days: -1, ignoreYear: false }
+				],
+				operator: 'BETWEEN',
+				type: 'DATE',
+				valuePath: ['createdAt']
+			});
+
+			// @ts-expect-error
+			const res = await filterCriteria.applyCriteria(relativeDate, criteria);
+
+			const matchValue = JSON.parse(res.matchValue);
+			expect(Array.isArray(matchValue)).toBe(true);
+			expect(matchValue[0].ignoreYear).toBeUndefined();
+			expect(matchValue[1].ignoreYear).toBeUndefined();
+			expect(matchValue[0].days).toBe(-15);
+			expect(matchValue[1].days).toBe(-1);
 		});
 	});
 
