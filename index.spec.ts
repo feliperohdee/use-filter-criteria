@@ -404,6 +404,25 @@ describe('/index', () => {
 					value: ['developer', 'javascript']
 				});
 			});
+
+			it('should convert Set to array when value is a Set', async () => {
+				const criteria = FilterCriteria.criteria({
+					matchValue: ['developer', 'javascript'],
+					operator: 'EXACTLY-MATCHES',
+					type: 'ARRAY',
+					valuePath: ['tagsSet']
+				});
+
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
+
+				expect(res).toEqual({
+					matchValue: JSON.stringify(['developer', 'javascript']),
+					passed: true,
+					reason: 'ARRAY criteria "EXACTLY-MATCHES" check PASSED',
+					value: new Set(['developer', 'javascript'])
+				});
+			});
 		});
 
 		describe('boolean', () => {
@@ -3156,6 +3175,25 @@ describe('/index', () => {
 					value: new Set(['developer', 'javascript'])
 				});
 			});
+
+			it('should fallback to array matcher when value is an array', async () => {
+				const criteria = FilterCriteria.criteria({
+					matchValue: ['developer', 'javascript'],
+					operator: 'EXACTLY-MATCHES',
+					type: 'SET',
+					valuePath: ['tags']
+				});
+
+				// @ts-expect-error
+				const res = await filterCriteria.applyCriteria(testData[0], criteria);
+
+				expect(res).toEqual({
+					matchValue: JSON.stringify(['developer', 'javascript']),
+					passed: true,
+					reason: 'SET criteria "EXACTLY-MATCHES" check PASSED',
+					value: ['developer', 'javascript']
+				});
+			});
 		});
 
 		it('should handle criteriaMapper', async () => {
@@ -4359,7 +4397,7 @@ describe('/index', () => {
 					'key-with-dashes': 'value2',
 					'@special!chars': 'value3'
 				};
-				
+
 				// @ts-expect-error
 				expect(filterCriteria.findByPath(specialChars, ['["key.with.dots"]'])).toEqual({
 					arrayBranching: false,

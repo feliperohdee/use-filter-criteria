@@ -826,7 +826,11 @@ class FilterCriteria {
 	}
 
 	private evaluateCriteria(value: any, criteria: FilterCriteria.CriteriaInput): boolean {
-		if ('matchInArray' in criteria && criteria.matchInArray && _.isArray(value)) {
+		// exclude SET: applySetCriteria and applyArrayCriteria have fallback guards to handle each other's
+		// value types (array ↔ set). Without this exclusion, matchInArray splits the array into individual
+		// items (e.g. 'developer', 'javascript') before reaching applySetCriteria, so the _.isArray(value)
+		// guard there never sees the whole array and the fallback never fires.
+		if ('matchInArray' in criteria && criteria.matchInArray && _.isArray(value) && criteria.type !== 'SET') {
 			return _.some(value, item => {
 				return this.evaluateSingleCriteria(item, criteria);
 			});
@@ -865,6 +869,10 @@ class FilterCriteria {
 	}
 
 	private applyArrayCriteria(value: any[], operator: FilterCriteria.Operators['array'], matchValue: any): boolean {
+		if (_.isSet(value)) {
+			return this.applyArrayCriteria(Array.from(value), operator, matchValue);
+		}
+
 		const validValue = _.isArray(value);
 
 		if (!validValue) {
@@ -1428,6 +1436,10 @@ class FilterCriteria {
 	}
 
 	private applySetCriteria(value: Set<any>, operator: FilterCriteria.Operators['set'], matchValue: any): boolean {
+		if (_.isArray(value)) {
+			return this.applyArrayCriteria(value, operator, matchValue);
+		}
+
 		const validValue = _.isSet(value);
 
 		if (!validValue) {
